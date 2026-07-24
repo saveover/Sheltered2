@@ -162,35 +162,29 @@ public sealed partial class PetsPage : Page
         WireNumber(AffectionXpBox, (p, v) => p.Affection.Experience = (int)v);
     }
 
-    private void WireNumber(NumberBox box, Action<Pet, double> apply)
+    private void WireNumber(NumberBox box, Action<Pet, double> apply) => box.ValueChanged += (s, e) =>
     {
-        box.ValueChanged += (s, e) =>
+        if (!isPopulating && PetComboBox.SelectedItem is Pet pet && !double.IsNaN(e.NewValue))
         {
-            if (!isPopulating && PetComboBox.SelectedItem is Pet pet && !double.IsNaN(e.NewValue))
-            {
-                apply(pet, e.NewValue);
-            }
-        };
-    }
+            apply(pet, e.NewValue);
+        }
+    };
 
     // Edits commit whole numbers; snap the box in case the user typed a fraction.
-    private void WireHunger()
+    private void WireHunger() => PetHungerNumberBox.ValueChanged += (s, e) =>
     {
-        PetHungerNumberBox.ValueChanged += (s, e) =>
+        if (isPopulating || PetComboBox.SelectedItem is not Pet pet || double.IsNaN(e.NewValue))
         {
-            if (isPopulating || PetComboBox.SelectedItem is not Pet pet || double.IsNaN(e.NewValue))
-            {
-                return;
-            }
+            return;
+        }
 
-            double whole = RoundHunger(e.NewValue);
-            pet.Hunger = whole;
-            if (PetHungerNumberBox.Value != whole)
-            {
-                PetHungerNumberBox.Value = whole;
-            }
-        };
-    }
+        double whole = RoundHunger(e.NewValue);
+        pet.Hunger = whole;
+        if (PetHungerNumberBox.Value != whole)
+        {
+            PetHungerNumberBox.Value = whole;
+        }
+    };
 
     /// <summary>Sets every training skill's level to its cap and clears its experience.</summary>
     private void MaxTrainingButton_Click(object sender, RoutedEventArgs e) =>

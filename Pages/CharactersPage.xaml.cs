@@ -373,7 +373,7 @@ public sealed partial class CharactersPage : Page
         {
             if (existing is not null)
             {
-                tree.Remove(existing);
+                _ = tree.Remove(existing);
             }
         }
         else if (existing is not null)
@@ -507,43 +507,37 @@ public sealed partial class CharactersPage : Page
         WireNeed(StressNumberBox, (c, v) => c.Stress = v);
     }
 
-    private void WireNeed(NumberBox box, Action<Character, double> apply)
+    private void WireNeed(NumberBox box, Action<Character, double> apply) => box.ValueChanged += (s, e) =>
     {
-        box.ValueChanged += (s, e) =>
+        if (isPopulating || CharacterComboBox.SelectedItem is not Character character || double.IsNaN(e.NewValue))
         {
-            if (isPopulating || CharacterComboBox.SelectedItem is not Character character || double.IsNaN(e.NewValue))
-            {
-                return;
-            }
+            return;
+        }
 
-            // Edits commit whole numbers; snap the box in case the user typed a fraction.
-            double whole = RoundNeed(Math.Clamp(e.NewValue, 0, 100));
-            apply(character, whole);
-            if (box.Value != whole)
-            {
-                box.Value = whole;
-            }
-        };
-    }
+        // Edits commit whole numbers; snap the box in case the user typed a fraction.
+        double whole = RoundNeed(Math.Clamp(e.NewValue, 0, 100));
+        apply(character, whole);
+        if (box.Value != whole)
+        {
+            box.Value = whole;
+        }
+    };
 
     /// <summary>Rounds a raw 0-100 need to the nearest whole number for display/editing.</summary>
     private static double RoundNeed(double value) =>
         Math.Round(Math.Clamp(value, 0, 100), MidpointRounding.AwayFromZero);
 
-    private void WireStatLevel(NumberBox levelBox, NumberBox capBox, Func<Character, Stat> selectStat)
+    private void WireStatLevel(NumberBox levelBox, NumberBox capBox, Func<Character, Stat> selectStat) => levelBox.ValueChanged += (s, e) =>
     {
-        levelBox.ValueChanged += (s, e) =>
+        if (isPopulating || CharacterComboBox.SelectedItem is not Character character)
         {
-            if (isPopulating || CharacterComboBox.SelectedItem is not Character character)
-            {
-                return;
-            }
+            return;
+        }
 
-            Stat stat = selectStat(character);
-            stat.Level = double.IsNaN(e.NewValue) ? Stat.MinLevel : (int)e.NewValue;
-            capBox.Value = stat.Cap; // Keep the derived cap in sync as the level changes.
-        };
-    }
+        Stat stat = selectStat(character);
+        stat.Level = double.IsNaN(e.NewValue) ? Stat.MinLevel : (int)e.NewValue;
+        capBox.Value = stat.Cap; // Keep the derived cap in sync as the level changes.
+    };
 
     private void WireCheckBox(CheckBox checkBox, Action<Character, bool> apply)
     {
