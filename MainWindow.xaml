@@ -2,18 +2,107 @@
 <Window
     x:Class="SaveOver.Sheltered2.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:SaveOver.Sheltered2"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d"
-    Title="SaveOver.Sheltered2">
+    mc:Ignorable="d">
 
     <Window.SystemBackdrop>
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
     <Grid>
+        <!-- Title bar -->
+        <Border x:Name="TitleBarArea"
+                Margin="48,16,0,0"
+                VerticalAlignment="Top"
+                AutomationProperties.AccessibilityView="Raw">
+            <StackPanel Orientation="Horizontal"
+                       Spacing="12">
+                <Image Source="/Assets/AppIcon.ico"
+                       Width="18"
+                       Height="18"
+                       AutomationProperties.Name="Application Icon"
+                       AutomationProperties.AccessibilityView="Raw" />
+                <TextBlock Style="{StaticResource CaptionTextBlockStyle}"
+                          Text="Sheltered 2 Save Editor"
+                          AutomationProperties.AccessibilityView="Raw"
+                          Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+            </StackPanel>
+        </Border>
 
+        <!-- Main view -->
+        <NavigationView x:Name="NavigationViewControl"
+                        IsTabStop="False"
+                        SelectionChanged="OnNavigationViewSelectionChanged"
+                        BackRequested="OnNavigationViewBackRequested"
+                        IsBackEnabled="{x:Bind RootFrame.CanGoBack, Mode=OneWay}">
+
+            <!-- Content frame -->
+            <ScrollViewer>
+                <Frame x:Name="RootFrame"
+                       Navigated="OnNavigated"
+                       NavigationFailed="OnNavigationFailed">
+                </Frame>
+            </ScrollViewer>
+
+            <!-- Navigation menu -->
+            <NavigationView.MenuItems>
+                <NavigationViewItem Tag="Home" 
+                                    Content="Home">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Home" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+
+                <NavigationViewItemSeparator />
+
+                <NavigationViewItem Tag="Characters"
+                                    Content="Characters">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="People" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+
+                <NavigationViewItem Tag="Pets"
+                                    Content="Pets">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xEA79;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+
+                <NavigationViewItem Tag="Inventory"
+                                    Content="Inventory">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE7B8;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+
+                <NavigationViewItem Tag="Crafting"
+                                    Content="Crafting">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Repair" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+
+                <NavigationViewItem Tag="Factions"
+                                    Content="Factions">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Flag" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+
+            <!-- Footer -->
+            <NavigationView.FooterMenuItems>
+                <NavigationViewItemSeparator />
+                <NavigationViewItem Tag="Donate"
+                                    Content="Donate">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xEB52;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.FooterMenuItems>
+        </NavigationView>
     </Grid>
 </Window>

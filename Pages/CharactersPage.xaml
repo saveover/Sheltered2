@@ -1,0 +1,487 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="SaveOver.Sheltered2.Pages.CharactersPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:SaveOver.Sheltered2.ViewModels"
+    mc:Ignorable="d"
+    NavigationCacheMode="Enabled">
+
+    <!-- Two groups: Basics/Health/Needs/Relationships left, Stats/Skills right.
+         Breakpoints: < 900 everything stacks, >= 900 Basics|Health pair up,
+         >= 1400 the two groups sit side by side. Visual states only reflow. -->
+    <Grid x:Name="RootGrid" Margin="36" ColumnSpacing="24" RowSpacing="24">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup>
+                <VisualState x:Name="NarrowLayout">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="0"/>
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="LeftColumn.(Grid.ColumnSpan)" Value="2"/>
+                        <Setter Target="RightColumn.(Grid.Row)" Value="3"/>
+                        <Setter Target="RightColumn.(Grid.Column)" Value="0"/>
+                        <Setter Target="RightColumn.(Grid.ColumnSpan)" Value="2"/>
+                        <Setter Target="BasicsCard.(Grid.ColumnSpan)" Value="2"/>
+                        <Setter Target="HealthCard.(Grid.Row)" Value="1"/>
+                        <Setter Target="HealthCard.(Grid.Column)" Value="0"/>
+                        <Setter Target="HealthCard.(Grid.ColumnSpan)" Value="2"/>
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="MediumLayout">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="900"/>
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <!-- Single column, but Basics | Health side by side (InfoGrid default). -->
+                        <Setter Target="LeftColumn.(Grid.ColumnSpan)" Value="2"/>
+                        <Setter Target="RightColumn.(Grid.Row)" Value="3"/>
+                        <Setter Target="RightColumn.(Grid.Column)" Value="0"/>
+                        <Setter Target="RightColumn.(Grid.ColumnSpan)" Value="2"/>
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="WideLayout">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="1400"/>
+                    </VisualState.StateTriggers>
+                    <!-- Default markup already places the two groups in two columns. -->
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <TextBlock Grid.Row="0" Grid.ColumnSpan="2"
+                   Text="Characters"
+                   Style="{StaticResource TitleTextBlockStyle}"
+                   AutomationProperties.HeadingLevel="Level1"/>
+
+        <!-- DisplayMemberPath needs the public Character.FullName. -->
+        <ComboBox x:Name="CharacterComboBox"
+                  Grid.Row="1" Grid.ColumnSpan="2"
+                  Header="Select a character from the drop-down menu and edit the relevant fields."
+                  PlaceholderText="Select a character"
+                  DisplayMemberPath="FullName"
+                  SelectionChanged="CharacterComboBox_SelectionChanged"/>
+
+        <!-- Left group -->
+        <StackPanel x:Name="LeftColumn"
+                    Grid.Row="2" Grid.Column="0"
+                    VerticalAlignment="Top"
+                    Spacing="24">
+
+            <!-- Basics and Health pair up in one row; they stack when narrow. -->
+            <Grid ColumnSpacing="24" RowSpacing="24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Basics -->
+                <Border x:Name="BasicsCard"
+                        Grid.Row="0" Grid.Column="0"
+                        Style="{StaticResource CharacterBorderStyle}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Basics"
+                                   Style="{StaticResource SubtitleTextBlockStyle}"
+                                   AutomationProperties.HeadingLevel="Level2"/>
+                        <TextBox x:Name="FirstNameTextBox"
+                                 MaxWidth="250"
+                                 HorizontalAlignment="Left"
+                                 MinWidth="180"
+                                 Header="First name:"
+                                 PlaceholderText="Jane"
+                                 MaxLength="15" />
+                        <TextBox x:Name="LastNameTextBox"
+                                 MaxWidth="250"
+                                 MinWidth="180"
+                                 HorizontalAlignment="Left"
+                                 Header="Last name:"
+                                 PlaceholderText="Doe"
+                                 MaxLength="15" />
+                        <CheckBox x:Name="InteractingCheckBox" Content="Interacting" />
+                        <CheckBox x:Name="InteractingWithObjCheckBox" Content="Interacting with object" />
+                        <CheckBox x:Name="IsPsychoCheckBox" Content="Is a psychopath" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Health and Conditions -->
+                <Border x:Name="HealthCard"
+                        Grid.Row="0" Grid.Column="1"
+                        Style="{StaticResource CharacterBorderStyle}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Health and Conditions"
+                                   Style="{StaticResource SubtitleTextBlockStyle}"
+                                   AutomationProperties.HeadingLevel="Level2"/>
+                        <NumberBox x:Name="CurrentHealthNumberBox"
+                                   MaxWidth="250"
+                                   MinWidth="180"
+                                   HorizontalAlignment="Left"
+                                   Header="Current health:"
+                                   Minimum="1"
+                                   Maximum="10000"
+                                   SpinButtonPlacementMode="Inline"
+                                   SmallChange="10"
+                                   LargeChange="100"/>
+                        <NumberBox x:Name="MaxHealthNumberBox"
+                                   MaxWidth="250"
+                                   MinWidth="180"
+                                   HorizontalAlignment="Left"
+                                   Header="Maximum health:"
+                                   Minimum="1"
+                                   Maximum="10000"
+                                   SpinButtonPlacementMode="Inline"
+                                   SmallChange="10"
+                                   LargeChange="100"/>
+                        <CheckBox x:Name="HasBeenDefibbedCheckBox" Content="Has been defibrillated"/>
+                        <CheckBox x:Name="PassedOutCheckBox" Content="Is passed out"/>
+                        <CheckBox x:Name="IsUnconsciousCheckBox" Content="Is unconscious"/>
+
+                        <!-- Applied on save; see SaveWriter.ApplyPositionResets. -->
+                        <CheckBox x:Name="ResetPositionCheckBox"
+                                  Content="Reset position on save (frees a stuck member)"
+                                  ToolTipService.ToolTip="On save, moves this member to another family member's location."/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Needs -->
+            <Border Style="{StaticResource CharacterBorderStyle}">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Needs"
+                               Style="{StaticResource SubtitleTextBlockStyle}"
+                               AutomationProperties.HeadingLevel="Level2"/>
+                    <TextBlock TextWrapping="Wrap"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Text="0 means fully satisfied; 100 is critical. Values are shown as whole numbers; a need you don't change keeps its exact saved value." />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Name="SatisfyNeedsButton"
+                                Content="Satisfy all (0)"
+                                Click="SatisfyNeedsButton_Click"/>
+                        <Button x:Name="DepleteNeedsButton"
+                                Content="Deplete all (100)"
+                                Click="DepleteNeedsButton_Click"/>
+                    </StackPanel>
+                    <TextBlock x:Name="NeedsFeedbackTextBlock"
+                               Foreground="Gray"
+                               AutomationProperties.LiveSetting="Polite"/>
+                    <Grid RowSpacing="8" ColumnSpacing="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="&#127829; Hunger" VerticalAlignment="Center"/>
+                        <NumberBox x:Name="HungerNumberBox" Grid.Row="0" Grid.Column="1" Width="120"
+                                   Minimum="0" Maximum="100" SpinButtonPlacementMode="Compact" SmallChange="5"
+                                   AutomationProperties.Name="Hunger"/>
+                        <TextBlock Grid.Row="0" Grid.Column="3" Text="&#129380; Thirst" VerticalAlignment="Center"/>
+                        <NumberBox x:Name="ThirstNumberBox" Grid.Row="0" Grid.Column="4" Width="120"
+                                   Minimum="0" Maximum="100" SpinButtonPlacementMode="Compact" SmallChange="5"
+                                   AutomationProperties.Name="Thirst"/>
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="&#128164; Fatigue" VerticalAlignment="Center"/>
+                        <NumberBox x:Name="FatigueNumberBox" Grid.Row="1" Grid.Column="1" Width="120"
+                                   Minimum="0" Maximum="100" SpinButtonPlacementMode="Compact" SmallChange="5"
+                                   AutomationProperties.Name="Fatigue"/>
+                        <TextBlock Grid.Row="1" Grid.Column="3" Text="&#128703; Dirtiness" VerticalAlignment="Center"/>
+                        <NumberBox x:Name="DirtinessNumberBox" Grid.Row="1" Grid.Column="4" Width="120"
+                                   Minimum="0" Maximum="100" SpinButtonPlacementMode="Compact" SmallChange="5"
+                                   AutomationProperties.Name="Dirtiness"/>
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="&#128701; Toilet" VerticalAlignment="Center"/>
+                        <NumberBox x:Name="ToiletNumberBox" Grid.Row="2" Grid.Column="1" Width="120"
+                                   Minimum="0" Maximum="100" SpinButtonPlacementMode="Compact" SmallChange="5"
+                                   AutomationProperties.Name="Toilet"/>
+                        <TextBlock Grid.Row="2" Grid.Column="3" Text="&#128543; Stress" VerticalAlignment="Center"/>
+                        <NumberBox x:Name="StressNumberBox" Grid.Row="2" Grid.Column="4" Width="120"
+                                   Minimum="0" Maximum="100" SpinButtonPlacementMode="Compact" SmallChange="5"
+                                   AutomationProperties.Name="Stress"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Relationships -->
+            <Border Style="{StaticResource CharacterBorderStyle}">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Relationships"
+                               Style="{StaticResource SubtitleTextBlockStyle}"
+                               AutomationProperties.HeadingLevel="Level2"/>
+                    <TextBlock TextWrapping="Wrap"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Text="How this character feels about the other shelter members (-100 = hostile, 100 = best friends)." />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Name="MaxRelationshipsButton"
+                                Content="Set all to 100"
+                                Click="MaxRelationshipsButton_Click"/>
+                        <Button x:Name="MinRelationshipsButton"
+                                Content="Set all to -100"
+                                Click="MinRelationshipsButton_Click"/>
+                    </StackPanel>
+                    <TextBlock x:Name="RelationshipsFeedbackTextBlock"
+                               Foreground="Gray"
+                               AutomationProperties.LiveSetting="Polite"/>
+                    <TextBlock x:Name="NoRelationshipsTextBlock"
+                               Text="No relationships recorded for this character."
+                               Foreground="Gray"
+                               Visibility="Collapsed"/>
+                    <ItemsControl x:Name="RelationshipsItemsControl">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:RelationshipRowViewModel">
+                                <Grid ColumnSpacing="12" Margin="0,0,0,8" MaxWidth="360" HorizontalAlignment="Left">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" MinWidth="140"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Bind Name}"
+                                               VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis"/>
+                                    <NumberBox Grid.Column="1" Width="120"
+                                               Minimum="-100" Maximum="100"
+                                               SpinButtonPlacementMode="Compact" SmallChange="5"
+                                               Value="{x:Bind Level, Mode=TwoWay}"
+                                               AutomationProperties.Name="{x:Bind AutomationName}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <!-- Right group -->
+        <StackPanel x:Name="RightColumn"
+                    Grid.Row="2" Grid.Column="1"
+                    VerticalAlignment="Top"
+                    Spacing="24">
+
+            <!-- Fixed-width boxes so the rows stay even at any column width. -->
+            <Border Style="{StaticResource CharacterBorderStyle}">
+                <StackPanel Orientation="Vertical" Spacing="12">
+                    <TextBlock Text="Stats"
+                               Style="{StaticResource SubtitleTextBlockStyle}"
+                               AutomationProperties.HeadingLevel="Level2"/>
+                    <TextBlock TextWrapping="Wrap"
+                               Margin="0,0,0,12"
+                               Text="Each stat has a current and maximum level, referred to as the 'cap.' The current level determines the cap and cannot be directly modified to maintain game logic. For levels 1 to 5, the cap increases by 2 points for each level. Once a level exceeds 5, the cap is always 20." />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Name="MaxStatsButton"
+                                Content="Maximise all stats"
+                                Click="MaxStatsButton_Click" />
+                        <Button x:Name="MinStatsButton"
+                                Content="Minimise all stats"
+                                Click="MinStatsButton_Click" />
+                    </StackPanel>
+                    <TextBlock x:Name="StatsFeedbackTextBlock"
+                               Margin="0,4,0,0"
+                               Foreground="Gray"
+                               AutomationProperties.LiveSetting="Polite"/>
+
+                    <Grid x:Name="StatsGrid" RowSpacing="8" ColumnSpacing="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Column headers -->
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="Current level:"
+                                   Style="{StaticResource BodyStrongTextBlockStyle}"/>
+                        <TextBlock Grid.Row="0" Grid.Column="2" Text="Maximum level:"
+                                   Style="{StaticResource BodyStrongTextBlockStyle}"/>
+
+                        <!-- One row per stat -->
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="&#128170; Strength" VerticalAlignment="Center"/>
+                        <NumberBox x:Name="StrengthLevelBox" Grid.Row="1" Grid.Column="1" Width="120"
+                                   Minimum="1" Maximum="20" SpinButtonPlacementMode="Compact" SmallChange="1"
+                                   AutomationProperties.Name="Strength current level"/>
+                        <NumberBox x:Name="StrengthCapBox" Grid.Row="1" Grid.Column="2" Width="120" IsEnabled="False"
+                                   AutomationProperties.Name="Strength maximum level"/>
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="&#127939; Dexterity" VerticalAlignment="Center"/>
+                        <NumberBox x:Name="DexterityLevelBox" Grid.Row="2" Grid.Column="1" Width="120"
+                                   Minimum="1" Maximum="20" SpinButtonPlacementMode="Compact" SmallChange="1"
+                                   AutomationProperties.Name="Dexterity current level"/>
+                        <NumberBox x:Name="DexterityCapBox" Grid.Row="2" Grid.Column="2" Width="120" IsEnabled="False"
+                                   AutomationProperties.Name="Dexterity maximum level"/>
+
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="&#129504; Intelligence" VerticalAlignment="Center"/>
+                        <NumberBox x:Name="IntelligenceLevelBox" Grid.Row="3" Grid.Column="1" Width="120"
+                                   Minimum="1" Maximum="20" SpinButtonPlacementMode="Compact" SmallChange="1"
+                                   AutomationProperties.Name="Intelligence current level"/>
+                        <NumberBox x:Name="IntelligenceCapBox" Grid.Row="3" Grid.Column="2" Width="120" IsEnabled="False"
+                                   AutomationProperties.Name="Intelligence maximum level"/>
+
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="&#128068; Charisma" VerticalAlignment="Center"/>
+                        <NumberBox x:Name="CharismaLevelBox" Grid.Row="4" Grid.Column="1" Width="120"
+                                   Minimum="1" Maximum="20" SpinButtonPlacementMode="Compact" SmallChange="1"
+                                   AutomationProperties.Name="Charisma current level"/>
+                        <NumberBox x:Name="CharismaCapBox" Grid.Row="4" Grid.Column="2" Width="120" IsEnabled="False"
+                                   AutomationProperties.Name="Charisma maximum level"/>
+
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="&#128064; Perception" VerticalAlignment="Center"/>
+                        <NumberBox x:Name="PerceptionLevelBox" Grid.Row="5" Grid.Column="1" Width="120"
+                                   Minimum="1" Maximum="20" SpinButtonPlacementMode="Compact" SmallChange="1"
+                                   AutomationProperties.Name="Perception current level"/>
+                        <NumberBox x:Name="PerceptionCapBox" Grid.Row="5" Grid.Column="2" Width="120" IsEnabled="False"
+                                   AutomationProperties.Name="Perception maximum level"/>
+
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="&#10084; Fortitude" VerticalAlignment="Center"/>
+                        <NumberBox x:Name="FortitudeLevelBox" Grid.Row="6" Grid.Column="1" Width="120"
+                                   Minimum="1" Maximum="20" SpinButtonPlacementMode="Compact" SmallChange="1"
+                                   AutomationProperties.Name="Fortitude current level"/>
+                        <NumberBox x:Name="FortitudeCapBox" Grid.Row="6" Grid.Column="2" Width="120" IsEnabled="False"
+                                   AutomationProperties.Name="Fortitude maximum level"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Skills -->
+            <Border Style="{StaticResource CharacterBorderStyle}">
+                <StackPanel Spacing="12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Text="Skills"
+                                   VerticalAlignment="Center"
+                                   Style="{StaticResource SubtitleTextBlockStyle}"
+                                   AutomationProperties.HeadingLevel="Level2"/>
+                        <DropDownButton x:Name="SkillActionsButton"
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        Content="Bulk edit">
+                            <DropDownButton.Flyout>
+                                <MenuFlyout>
+                                    <MenuFlyoutItem Text="Maximise this skill tree" Click="MaxTreeMenuItem_Click"/>
+                                    <MenuFlyoutItem Text="Maximise all skill trees" Click="MaxAllTreesMenuItem_Click"/>
+                                    <MenuFlyoutSeparator/>
+                                    <MenuFlyoutItem Text="Remove all points in this tree" Click="ClearTreeMenuItem_Click"/>
+                                    <MenuFlyoutItem Text="Remove all skill points" Click="ClearAllMenuItem_Click"/>
+                                </MenuFlyout>
+                            </DropDownButton.Flyout>
+                        </DropDownButton>
+                    </Grid>
+
+                    <TextBlock TextWrapping="Wrap"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Text="Pick a stat, then set how many points are invested in each skill. Each skill's stars show its maximum rank." />
+
+                    <!-- SelectorBar items don't wrap, so scroll instead of clipping. -->
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                                  HorizontalScrollMode="Auto"
+                                  VerticalScrollBarVisibility="Disabled"
+                                  VerticalScrollMode="Disabled">
+                        <SelectorBar x:Name="SelectorBar" SelectionChanged="SelectorBar_SelectionChanged">
+                            <SelectorBarItem x:Name="SelectorBarItemStrength"
+                             Text="&#128170; Strength" Tag="Strength" IsSelected="True"/>
+                            <SelectorBarItem x:Name="SelectorBarItemDexterity"
+                             Text="&#127939; Dexterity" Tag="Dexterity"/>
+                            <SelectorBarItem x:Name="SelectorBarItemIntelligence"
+                             Text="&#129504; Intelligence" Tag="Intelligence"/>
+                            <SelectorBarItem x:Name="SelectorBarItemCharisma"
+                             Text="&#128068; Charisma" Tag="Charisma"/>
+                            <SelectorBarItem x:Name="SelectorBarItemPerception"
+                             Text="&#128064; Perception" Tag="Perception"/>
+                            <SelectorBarItem x:Name="SelectorBarItemFortitude"
+                             Text="&#10084; Fortitude" Tag="Fortitude"/>
+                        </SelectorBar>
+                    </ScrollViewer>
+
+                    <TextBlock x:Name="SkillsFeedbackTextBlock"
+                               Foreground="Gray"
+                               AutomationProperties.LiveSetting="Polite"/>
+
+                    <!-- One section per tier; ItemsSource set in code-behind. -->
+                    <ItemsControl x:Name="SkillTiersItemsControl">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:SkillTierViewModel">
+                                <StackPanel Spacing="8" Margin="0,4,0,16">
+                                    <TextBlock Text="{x:Bind Title}"
+                                               Style="{StaticResource BodyStrongTextBlockStyle}"/>
+                                    <ItemsRepeater ItemsSource="{x:Bind Skills}">
+                                        <ItemsRepeater.Layout>
+                                            <UniformGridLayout MinItemWidth="112"
+                                                               MinColumnSpacing="12"
+                                                               MinRowSpacing="16"/>
+                                        </ItemsRepeater.Layout>
+                                        <ItemsRepeater.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:SkillSlotViewModel">
+                                                <!-- Fixed row heights keep the star rows aligned. -->
+                                                <Grid Width="112">
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="56"/>
+                                                        <RowDefinition Height="36"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                    </Grid.RowDefinitions>
+                                                    <!-- Decorative; the name below carries the meaning. -->
+                                                    <Image Grid.Row="0"
+                                                           Source="{x:Bind Icon}"
+                                                           Width="56"
+                                                           Height="56"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center"
+                                                           AutomationProperties.AccessibilityView="Raw"/>
+                                                    <TextBlock Grid.Row="1"
+                                                               Text="{x:Bind Name}"
+                                                               FontSize="12"
+                                                               MaxLines="2"
+                                                               TextWrapping="Wrap"
+                                                               TextAlignment="Center"
+                                                               HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center"
+                                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                                    <RatingControl Grid.Row="2"
+                                                                   HorizontalAlignment="Center"
+                                                                   MaxRating="{x:Bind MaxLevel}"
+                                                                   Value="{x:Bind RatingValue, Mode=TwoWay}"
+                                                                   IsClearEnabled="True"
+                                                                   AutomationProperties.Name="{x:Bind Name}"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsRepeater.ItemTemplate>
+                                    </ItemsRepeater>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </Grid>
+</Page>
