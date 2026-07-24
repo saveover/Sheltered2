@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 SaveOver -->
 <Page
     x:Class="SaveOver.Sheltered2.Pages.DonatePage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -9,50 +12,78 @@
     NavigationCacheMode="Enabled">
 
     <ScrollViewer>
-        <!-- MaxWidth keeps line lengths readable on very wide windows; the page still
-             shrinks fluidly because every child wraps and nothing has a fixed width. -->
-        <StackPanel Margin="36" Spacing="24" MaxWidth="880" HorizontalAlignment="Left">
-            <TextBlock Text="Donate"
-                       Style="{StaticResource TitleTextBlockStyle}"
-                       AutomationProperties.HeadingLevel="Level1"/>
+        <StackPanel Margin="36,40,36,36" Spacing="32">
+            <!-- Intro -->
+            <StackPanel Spacing="8">
+                <TextBlock Text="Donate"
+                           Style="{StaticResource TitleTextBlockStyle}"
+                           AutomationProperties.HeadingLevel="Level1"/>
+                <TextBlock TextWrapping="Wrap"
+                           Text="SaveOver is free and stays free, for everyone. Supporting here funds the time that goes into it, most of which is spent on the unglamorous part: pulling a save format apart byte by byte until it gives up."/>
+            </StackPanel>
 
-            <TextBlock TextWrapping="Wrap"
-                       Text="This save editor is free and open source. If it saved your shelter (or your sanity), consider supporting its development - every contribution helps and is very much appreciated!" />
-
-            <!-- Support platforms -->
+            <!-- Buy Me a Coffee -->
             <Border BorderThickness="1"
                     CornerRadius="{StaticResource OverlayCornerRadius}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     Padding="24">
                 <StackPanel Spacing="16">
-                    <TextBlock Text="Support platforms"
+                    <TextBlock Text="Buy Me a Coffee"
                                Style="{StaticResource SubtitleTextBlockStyle}"
                                AutomationProperties.HeadingLevel="Level2"/>
+
+                    <TextBlock TextWrapping="Wrap"
+                               Text="A one-off coffee, or a monthly membership. Members get early builds and their name in the release credits. Patrons and Founders also propose and vote on which game gets an editor next."/>
+
                     <TextBlock TextWrapping="Wrap"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               Text="One-off or recurring - whichever you prefer. All links open in your browser." />
+                               Text="This is the only place the memberships live. Roles, votes and early access are all handled here."/>
+
+                    <StackPanel>
+                        <HyperlinkButton NavigateUri="https://buymeacoffee.com/saveover"
+                                         AutomationProperties.Name="Buy me a coffee (opens buymeacoffee.com in browser)">
+                            <Image Height="60">
+                                <Image.Source>
+                                    <SvgImageSource UriSource="ms-appx:///Assets/Donation/bmc.svg"/>
+                                </Image.Source>
+                            </Image>
+                        </HyperlinkButton>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Other platforms -->
+            <Border BorderThickness="1"
+                    CornerRadius="{StaticResource OverlayCornerRadius}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    Padding="24">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="Other platforms"
+                               Style="{StaticResource SubtitleTextBlockStyle}"
+                               AutomationProperties.HeadingLevel="Level2"/>
+
+                    <TextBlock TextWrapping="Wrap"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Text="Already use one of these? One-off tips are welcome there too. Memberships and their perks are handled through Buy Me a Coffee only. All links open in your browser."/>
 
                     <StackPanel Orientation="Horizontal" Spacing="12">
-                        <HyperlinkButton NavigateUri="https://buymeacoffee.com/tsvenbla"
-                                         AutomationProperties.Name="Support on Buy Me a Coffee (opens in browser)">
+                        <HyperlinkButton NavigateUri="https://ko-fi.com/saveover"
+                                         AutomationProperties.Name="Tip on Ko-fi (opens in browser)">
                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                <TextBlock Text="Buy Me a Coffee"/>
-                                <FontIcon Glyph="&#xE8A7;" FontSize="12" AutomationProperties.AccessibilityView="Raw"/>
-                            </StackPanel>
-                        </HyperlinkButton>
-                        <HyperlinkButton NavigateUri="https://ko-fi.com/tsvenbla"
-                                         AutomationProperties.Name="Support on Ko-fi (opens in browser)">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE8A7;" FontSize="16" AutomationProperties.AccessibilityView="Raw"/>
                                 <TextBlock Text="Ko-fi"/>
+                                <FontIcon Glyph="&#xE8A7;" FontSize="12"
+                                          AutomationProperties.AccessibilityView="Raw"/>
                             </StackPanel>
                         </HyperlinkButton>
-                        <HyperlinkButton NavigateUri="https://liberapay.com/tsvenbla"
-                                         AutomationProperties.Name="Support on Liberapay (opens in browser)">
+
+                        <HyperlinkButton NavigateUri="https://patreon.com/saveover"
+                                         AutomationProperties.Name="Tip on Patreon (opens in browser)">
                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE8A7;" FontSize="16" AutomationProperties.AccessibilityView="Raw"/>
-                                <TextBlock Text="Liberapay"/>
+                                <TextBlock Text="Patreon"/>
+                                <FontIcon Glyph="&#xE8A7;" FontSize="12"
+                                          AutomationProperties.AccessibilityView="Raw"/>
                             </StackPanel>
                         </HyperlinkButton>
                     </StackPanel>
@@ -69,9 +100,16 @@
                     <TextBlock Text="Cryptocurrency"
                                Style="{StaticResource SubtitleTextBlockStyle}"
                                AutomationProperties.HeadingLevel="Level2"/>
+
+                    <InfoBar IsOpen="True"
+                             IsClosable="False"
+                             Severity="Warning"
+                             Title="No perks attached"
+                             Message="Crypto transfers are anonymous, so there's no way to tell who sent one or link it to a Discord account. They can't unlock roles, votes, early builds, or credits. They are strictly treated as a one-way thank-you. For the membership perks, use Buy Me a Coffee above."/>
+
                     <TextBlock TextWrapping="Wrap"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               Text="Prefer crypto? Copy an address below. Always double-check the first and last characters after pasting - clipboard hijackers exist." />
+                               Text="Copy an address below. Always double-check the first and last characters after pasting; clipboard hijackers exist. Transfers are irreversible and can't be refunded."/>
 
                     <Grid RowSpacing="12" ColumnSpacing="12">
                         <Grid.ColumnDefinitions>
@@ -87,6 +125,7 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
+                        <!-- Bitcoin -->
                         <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <Image Width="24" Height="24"
                                    Source="ms-appx:///Assets/Donation/bitcoin.svg"
@@ -125,6 +164,7 @@
                             </Grid>
                         </Button>
 
+                        <!-- Ethereum -->
                         <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <Image Width="24" Height="24"
                                    Source="ms-appx:///Assets/Donation/ethereum.svg"
@@ -163,6 +203,7 @@
                             </Grid>
                         </Button>
 
+                        <!-- Cardano -->
                         <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <Image Width="24" Height="24"
                                    Source="ms-appx:///Assets/Donation/cardano.svg"
@@ -201,6 +242,7 @@
                             </Grid>
                         </Button>
 
+                        <!-- Solana -->
                         <StackPanel Grid.Row="3" Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <Image Width="24" Height="24"
                                    Source="ms-appx:///Assets/Donation/solana.svg"
@@ -239,6 +281,7 @@
                             </Grid>
                         </Button>
 
+                        <!-- Litecoin -->
                         <StackPanel Grid.Row="4" Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <Image Width="24" Height="24"
                                    Source="ms-appx:///Assets/Donation/litecoin.svg"
@@ -285,9 +328,45 @@
                 </StackPanel>
             </Border>
 
+            <!-- Other ways to help -->
+            <Border BorderThickness="1"
+                    CornerRadius="{StaticResource OverlayCornerRadius}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    Padding="24">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Other ways to help"
+                               Style="{StaticResource SubtitleTextBlockStyle}"
+                               AutomationProperties.HeadingLevel="Level2"/>
+
+                    <TextBlock TextWrapping="Wrap"
+                               Text="Money is only one kind of contribution. A precise bug report, a save file that reproduces something odd, or an answer to someone stuck in #support all move the project along just as much."/>
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <HyperlinkButton NavigateUri="https://discord.gg/nzQSeGcta8"
+                                         AutomationProperties.Name="Join the SaveOver Discord (opens in browser)">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="Join the Discord"/>
+                                <FontIcon Glyph="&#xE8A7;" FontSize="12"
+                                          AutomationProperties.AccessibilityView="Raw"/>
+                            </StackPanel>
+                        </HyperlinkButton>
+
+                        <HyperlinkButton NavigateUri="https://github.com/saveover/Sheltered2/issues"
+                                         AutomationProperties.Name="Report an issue on GitHub (opens in browser)">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="Report an issue"/>
+                                <FontIcon Glyph="&#xE8A7;" FontSize="12"
+                                          AutomationProperties.AccessibilityView="Raw"/>
+                            </StackPanel>
+                        </HyperlinkButton>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
             <TextBlock TextWrapping="Wrap"
                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                       Text="Thank you for supporting open-source software! &#x2764;" />
+                       Text="Thank you for supporting open-source software! &#x2764;"/>
         </StackPanel>
     </ScrollViewer>
 </Page>
