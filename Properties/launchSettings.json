@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "SaveOver.Sheltered2 (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "SaveOver.Sheltered2 (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
