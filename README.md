@@ -1,6 +1,6 @@
 # SaveOver — Sheltered 2 Save Editor
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE.txt)
 [![Discord](https://img.shields.io/badge/Discord-join-5865F2?logo=discord&logoColor=white)](https://discord.gg/nzQSeGcta8)
 
 A free, open-source save editor for **Sheltered 2** on Windows.
