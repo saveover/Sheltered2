@@ -21,6 +21,12 @@
             <Setter Property="Padding" Value="24"/>
         </Style>
 
+        <!-- Colours for the copy status line. Declared here so the code-behind looks them up
+             from the page's own dictionary: probing Application.Current.Resources for the
+             System* brushes doesn't reliably resolve them from code. -->
+        <SolidColorBrush x:Key="CopySuccessBrush" Color="{ThemeResource SystemFillColorSuccess}"/>
+        <SolidColorBrush x:Key="CopyErrorBrush" Color="{ThemeResource SystemFillColorCritical}"/>
+
         <!-- Label plus the "leaves the app" glyph, shared by every off-app link.
              The bound value is the button's own Content. -->
         <DataTemplate x:Key="ExternalLinkTemplate">
@@ -43,10 +49,10 @@
                            Style="{StaticResource TitleTextBlockStyle}"
                            AutomationProperties.HeadingLevel="Level1"/>
                 <TextBlock TextWrapping="Wrap"
-                           Text="SaveOver's software is free for everyone and stays that way. Donating pays for the time that goes into building editors for more games, keeping the existing ones working when a patch changes a save format, and helping people whose saves won't open."/>
+                           Text="SaveOver's software is free for everyone and stays that way. Donating funds covers the time spent building editors for more games, keeping the existing ones working when a patch changes a save format, and helping people whose saves won't open."/>
                 <TextBlock TextWrapping="Wrap"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                           Text="Memberships and the perks that come with them live on Buy Me a Coffee. Everything else below is a one-off thank-you."/>
+                           Text="Memberships and the perks that come with them are available through Buy Me a Coffee. To join, visit the SaveOver page on Buy Me a Coffee, select your preferred membership tier, and sign up there. Once you've joined, you’ll be able to access your perks directly on the platform, including early builds, voting, and credit listings. Everything else below is a one-off thank-you."/>
             </StackPanel>
 
             <!-- Buy Me a Coffee -->
@@ -63,12 +69,11 @@
                              IsClosable="False"
                              Severity="Informational"
                              Title="Perks are granted here"
-                             Message="Memberships run through Buy Me a Coffee only. Roles, votes, early access and credits are all handled from here, so this is the option to pick if you want them."/>
+                             Message="Memberships are available only through Buy Me a Coffee. Roles, votes, early access, and credits are all handled from here, so this is the option to pick if you want them."/>
 
                     <HyperlinkButton NavigateUri="https://buymeacoffee.com/saveover"
-                                     HorizontalAlignment="Left"
                                      AutomationProperties.Name="Support on Buy Me a Coffee (opens in your browser)">
-                        <Image Height="60"
+                        <Image Height="50"
                                Source="ms-appx:///Assets/Donation/bmc.svg"
                                AutomationProperties.AccessibilityView="Raw"/>
                     </HyperlinkButton>
@@ -83,18 +88,17 @@
                                AutomationProperties.HeadingLevel="Level2"/>
 
                     <TextBlock TextWrapping="Wrap"
-                               Text="Already have an account on Ko-fi or Patreon? A one-off donation is just as welcome there."/>
+                               Text="Already have a Ko-fi, Patreon, or Liberapay account? Donations are just as welcome there."/>
 
                     <InfoBar IsOpen="True"
                              IsClosable="False"
-                             Severity="Informational"
+                             Severity="Warning"
                              Title="No perks attached"
-                             Message="The project doesn't run memberships on Ko-fi or Patreon, so anything sent there is treated as a one-off thank-you. It can't unlock roles, votes, early builds or credits."/>
+                             Message="The project doesn't run memberships on Ko-fi, Patreon, or Liberapay, so anything sent there is treated as a one-off thank-you. It can't unlock roles, votes, early builds, or credits. If you want to receive membership perks, you can switch to Buy Me a Coffee at any time. Sign up there with your preferred tier, and future support will unlock the full range of platform perks."/>
 
                     <StackPanel x:Name="PlatformLinks"
                                 Orientation="Horizontal"
-                                Spacing="12"
-                                HorizontalAlignment="Left">
+                                Spacing="12">
                         <HyperlinkButton NavigateUri="https://ko-fi.com/saveover"
                                          Content="Ko-fi"
                                          ContentTemplate="{StaticResource ExternalLinkTemplate}"
@@ -104,6 +108,11 @@
                                          Content="Patreon"
                                          ContentTemplate="{StaticResource ExternalLinkTemplate}"
                                          AutomationProperties.Name="Donate on Patreon (opens in your browser)"/>
+
+                        <HyperlinkButton NavigateUri="https://liberapay.com/saveover/"
+                                         Content="Liberapay"
+                                         ContentTemplate="{StaticResource ExternalLinkTemplate}"
+                                         AutomationProperties.Name="Donate on Liberapay (opens in your browser)"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -122,11 +131,11 @@
                              IsClosable="False"
                              Severity="Warning"
                              Title="No perks attached, and no refunds"
-                             Message="Crypto transfers are anonymous, so there's no way to tell who sent one or tie it to a Discord account. It can't unlock roles, votes, early builds or credits. Transfers are also final and can't be reversed, so send only what you mean to."/>
+                             Message="Crypto transfers are pseudonymous, making it difficult to identify the sender or link transactions to a Discord account. Therefore, cryptocurrency donations will not unlock roles, votes, early builds, or credits. All transfers are final and cannot be reversed. Please ensure you send only the intended amount."/>
 
                     <TextBlock TextWrapping="Wrap"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               Text="Copy an address below, then check the first and last characters after pasting. Clipboard hijackers exist."/>
+                               Text="Copy an address below. For your security, always double-check wallet addresses before sending, use a trusted wallet application, and verify the first and last characters of the destination address after copying and pasting. Be cautious of clipboard hijackers or phishing scams."/>
 
                     <!-- One row per wallet: the name sits above the address so a long address
                          gets the full card width instead of being squeezed into a column. -->
@@ -167,9 +176,8 @@
                                                 VerticalAlignment="Center"
                                                 Padding="8"
                                                 Background="Transparent"
-                                                BorderThickness="0"
                                                 Click="CopyAddressButton_Click"
-                                                Tag="{x:Bind Address}"
+                                                Tag="{x:Bind}"
                                                 AutomationProperties.Name="{x:Bind CopyLabel}"
                                                 ToolTipService.ToolTip="{x:Bind CopyLabel}">
                                             <Grid>
@@ -202,12 +210,11 @@
                                AutomationProperties.HeadingLevel="Level2"/>
 
                     <TextBlock TextWrapping="Wrap"
-                               Text="Donating is only one kind of contribution. A precise bug report, a save file that reproduces something odd, or a pull request all move the project along just as much."/>
+                               Text="Donating is only one kind of contribution. A precise bug report, a save file that reproduces something odd, or a pull request all move the project along just as much. To share bug reports or save files, please post them on our issue tracker or in the community Discord, including steps to reproduce the issue and any helpful details. If you want to contribute code, visit our GitHub repository to open a pull request by forking the project, making your changes, and submitting the request. Clear steps are always appreciated and help us address your contribution more quickly."/>
 
                     <StackPanel x:Name="HelpLinks"
                                 Orientation="Horizontal"
-                                Spacing="12"
-                                HorizontalAlignment="Left">
+                                Spacing="12">
                         <HyperlinkButton NavigateUri="https://discord.gg/nzQSeGcta8"
                                          Content="Join the Discord"
                                          ContentTemplate="{StaticResource ExternalLinkTemplate}"

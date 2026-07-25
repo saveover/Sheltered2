@@ -2,13 +2,13 @@
 // Copyright (C) 2026 SaveOver
 
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Foundation;
 
@@ -22,10 +22,7 @@ namespace SaveOver.Sheltered2.Pages;
 /// <param name="Icon">Coin logo from Assets/Donation.</param>
 public sealed record CryptoWallet(string Name, string Address, ImageSource Icon)
 {
-    /// <summary>
-    /// Accessible name and tooltip for the row's copy button. <see cref="DonatePage"/> strips
-    /// the leading "Copy " off it to build the screen-reader confirmation.
-    /// </summary>
+    /// <summary>Accessible name and tooltip for the row's copy button.</summary>
     public string CopyLabel => $"Copy {Name} address";
 }
 
@@ -34,6 +31,18 @@ public sealed record CryptoWallet(string Name, string Address, ImageSource Icon)
 /// </summary>
 public sealed partial class DonatePage : Page
 {
+    /// <summary>How long the checkmark stays up before the copy icon fades back in.</summary>
+    private const int HoldMs = 2000;
+
+    private const int FadeOutMs = 150;
+    private const int FadeInMs = 200;
+
+    // Property paths that walk from an icon to its centred CompositeTransform's scale.
+    private const string ScaleXPath = "(UIElement.RenderTransform).(CompositeTransform.ScaleX)";
+    private const string ScaleYPath = "(UIElement.RenderTransform).(CompositeTransform.ScaleY)";
+
+    private static readonly Point Center = new(0.5, 0.5);
+
     /// <summary>Wallets bound to the Cryptocurrency card's repeater, in display order.</summary>
     public IReadOnlyList<CryptoWallet> Wallets { get; } =
     [
@@ -44,150 +53,159 @@ public sealed partial class DonatePage : Page
         new("Litecoin", "ltc1q7amegshwzavg7vgqvd7nhx4u4xl3sw70j24chn", Logo("litecoin")),
     ];
 
+    /// <summary>Fades the checkmark back once <see cref="HoldMs"/> has elapsed. Reused across
+    /// copies so a second copy can cancel the reset pending on the first.</summary>
+    private readonly DispatcherTimer _resetTimer = new() { Interval = TimeSpan.FromMilliseconds(HoldMs) };
+
+    /// <summary>The icons of the row currently showing a checkmark, if any.</summary>
+    private (FrameworkElement Copy, FrameworkElement Check)? _shownRow;
+
     private static SvgImageSource Logo(string coin) => new(new Uri($"ms-appx:///Assets/Donation/{coin}.svg"));
 
-    public DonatePage() => InitializeComponent();
+    public DonatePage()
+    {
+        InitializeComponent();
+        _resetTimer.Tick += (_, _) => RestoreShownRow();
+    }
 
     /// <summary>
-    /// Copies the wallet address carried in the clicked button's Tag to the clipboard,
-    /// announces the result via the live-region feedback text, and cross-fades the button's
-    /// copy icon to a green checkmark and back (matching the Home page's copy feedback).
+    /// Copies the clicked row's address to the clipboard, announces it through the live-region
+    /// feedback line, and cross-fades the button's copy icon to a checkmark and back.
     /// </summary>
     private void CopyAddressButton_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not Button { Tag: string address } button)
+        if (sender is not Button { Tag: CryptoWallet wallet } button)
         {
             return;
         }
 
         try
         {
-            DataPackage dataPackage = new();
-            dataPackage.SetText(address);
-            Clipboard.SetContent(dataPackage);
-
-            // The automation name is e.g. "Copy Bitcoin address"; reuse it for the feedback
-            // line, which is a polite live region so screen readers announce the copy.
-            string what = AutomationProperties.GetName(button).Replace("Copy ", string.Empty);
-            SetFeedback($"{what} copied to clipboard.", "SystemFillColorSuccessBrush");
-
-            ShowCopySuccessFeedback(button);
+            DataPackage package = new();
+            package.SetText(wallet.Address);
+            Clipboard.SetContent(package);
         }
         catch (Exception ex)
         {
-            SetFeedback(
-                "Could not copy the address. Please select and copy it manually.",
-                "SystemFillColorCriticalBrush");
-            System.Diagnostics.Debug.WriteLine($"Copy address error: {ex}");
+            SetFeedback("Could not copy the address. Please select and copy it manually.", success: false);
+            Debug.WriteLine($"Copy address error: {ex}");
+            return;
+        }
+
+        SetFeedback($"{wallet.Name} address copied to clipboard.", success: true);
+
+        // The icon swap is decoration. With the address already safely on the clipboard, a
+        // failure here is not worth taking the app down for.
+        try
+        {
+            PlayCopyFeedback(button);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Copy feedback animation error: {ex}");
         }
     }
 
     /// <summary>
     /// Writes the live-region feedback line and colours it for the outcome, so a failure
-    /// doesn't get reported in the success green.
+    /// isn't reported in the success green.
     /// </summary>
-    private void SetFeedback(string message, string brushKey)
+    private void SetFeedback(string message, bool success)
     {
         CopyFeedbackTextBlock.Text = message;
-
-        if (Application.Current.Resources.TryGetValue(brushKey, out object? resource) && resource is Brush brush)
-        {
-            CopyFeedbackTextBlock.Foreground = brush;
-        }
+        CopyFeedbackTextBlock.Foreground = (Brush)Resources[success ? "CopySuccessBrush" : "CopyErrorBrush"];
     }
 
     /// <summary>
-    /// Cross-fades the clicked button's copy icon to the checkmark and back after a short
-    /// delay. The button's content is a Grid holding the copy icon then the check icon; the
-    /// two overlap and are driven by opacity and scale, matching HomePage's storyboards.
+    /// Cross-fades the button's copy icon to the checkmark and starts the clock that fades it
+    /// back. The button's content is a Grid holding the copy icon then the checkmark; the two
+    /// overlap and are driven by opacity and scale, matching HomePage's storyboards.
     /// </summary>
-    private static void ShowCopySuccessFeedback(Button button)
+    private void PlayCopyFeedback(Button button)
     {
-        if (button.Content is not Panel panel
-            || panel.Children.Count < 2
-            || panel.Children[0] is not FrameworkElement copyIcon
-            || panel.Children[1] is not FrameworkElement checkIcon)
+        if (button.Content is not Panel { Children: [FrameworkElement copyIcon, FrameworkElement checkIcon, ..] })
         {
             return;
         }
 
-        CrossFade(copyIcon, checkIcon);
+        // A second copy before the first has reset would leave two rows showing a checkmark
+        // and two resets racing, so settle the previous row before starting this one.
+        RestoreShownRow();
 
-        // Cross-fade back to the copy icon after 2 seconds.
-        DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(2) };
-        timer.Tick += (s, args) =>
-        {
-            CrossFade(checkIcon, copyIcon);
-            timer.Stop();
-        };
-        timer.Start();
+        CrossFade(copyIcon, checkIcon);
+        _shownRow = (copyIcon, checkIcon);
+        _resetTimer.Start();
     }
 
-    // Property paths that walk from the icon to its centred CompositeTransform's scale.
-    private const string ScaleXPath = "(UIElement.RenderTransform).(CompositeTransform.ScaleX)";
-    private const string ScaleYPath = "(UIElement.RenderTransform).(CompositeTransform.ScaleY)";
+    /// <summary>Fades the checkmark back to the copy icon on whichever row is showing one.</summary>
+    private void RestoreShownRow()
+    {
+        _resetTimer.Stop();
+
+        if (_shownRow is (FrameworkElement copyIcon, FrameworkElement checkIcon))
+        {
+            CrossFade(checkIcon, copyIcon);
+            _shownRow = null;
+        }
+    }
 
     /// <summary>Fades and scales <paramref name="fadeOut"/> out while bringing <paramref name="fadeIn"/> in.</summary>
     private static void CrossFade(FrameworkElement fadeOut, FrameworkElement fadeIn)
     {
-        EnsureCenteredTransform(fadeOut);
-        EnsureCenteredTransform(fadeIn);
+        CenterForScaling(fadeOut);
+        CenterForScaling(fadeIn);
 
+        CubicEase easeOut = new() { EasingMode = EasingMode.EaseOut };
+        BackEase bounce = new() { EasingMode = EasingMode.EaseOut, Amplitude = 0.3 };
         Storyboard storyboard = new();
 
-        AddAnimation(storyboard, fadeOut, "Opacity", null, 0, 0, 150, EaseOut());
-        AddAnimation(storyboard, fadeOut, ScaleXPath, null, 0.8, 0, 150, EaseOut());
-        AddAnimation(storyboard, fadeOut, ScaleYPath, null, 0.8, 0, 150, EaseOut());
+        // One storyboard per direction: a storyboard must not animate the same property of the
+        // same element twice, which rules out putting the return leg in here on a delay.
+        // Leaving the outgoing From null starts it from wherever it currently sits, so an
+        // interrupted fade picks up mid-flight instead of snapping.
+        Add(fadeOut, "Opacity", null, 0, 0, FadeOutMs, easeOut);
+        Add(fadeOut, ScaleXPath, null, 0.8, 0, FadeOutMs, easeOut);
+        Add(fadeOut, ScaleYPath, null, 0.8, 0, FadeOutMs, easeOut);
 
-        AddAnimation(storyboard, fadeIn, "Opacity", 0, 1, 100, 200, Bounce());
-        AddAnimation(storyboard, fadeIn, ScaleXPath, 0.6, 1, 100, 200, Bounce());
-        AddAnimation(storyboard, fadeIn, ScaleYPath, 0.6, 1, 100, 200, Bounce());
+        // The incoming icon overlaps the outgoing one by starting before it finishes.
+        Add(fadeIn, "Opacity", 0, 1, 100, FadeInMs, bounce);
+        Add(fadeIn, ScaleXPath, 0.6, 1, 100, FadeInMs, bounce);
+        Add(fadeIn, ScaleYPath, 0.6, 1, 100, FadeInMs, bounce);
 
         storyboard.Begin();
+
+        void Add(
+            DependencyObject target,
+            string property,
+            double? from,
+            double to,
+            int beginMs,
+            int durationMs,
+            EasingFunctionBase easing)
+        {
+            DoubleAnimation animation = new()
+            {
+                From = from,
+                To = to,
+                BeginTime = TimeSpan.FromMilliseconds(beginMs),
+                Duration = new Duration(TimeSpan.FromMilliseconds(durationMs)),
+                EasingFunction = easing,
+            };
+
+            Storyboard.SetTarget(animation, target);
+            Storyboard.SetTargetProperty(animation, property);
+            storyboard.Children.Add(animation);
+        }
     }
 
-    private static void AddAnimation(
-        Storyboard storyboard,
-        DependencyObject target,
-        string property,
-        double? from,
-        double to,
-        int beginMs,
-        int durationMs,
-        EasingFunctionBase easing)
+    /// <summary>Gives the element a <see cref="CompositeTransform"/> that scales about its centre.</summary>
+    private static void CenterForScaling(FrameworkElement element)
     {
-        DoubleAnimation animation = new()
+        if (element.RenderTransform is not CompositeTransform)
         {
-            To = to,
-            BeginTime = TimeSpan.FromMilliseconds(beginMs),
-            Duration = new Duration(TimeSpan.FromMilliseconds(durationMs)),
-            EasingFunction = easing,
-        };
-
-        if (from.HasValue)
-        {
-            animation.From = from.Value;
+            element.RenderTransform = new CompositeTransform();
         }
 
-        Storyboard.SetTarget(animation, target);
-        Storyboard.SetTargetProperty(animation, property);
-        storyboard.Children.Add(animation);
+        element.RenderTransformOrigin = Center;
     }
-
-    /// <summary>Ensures the element scales about its centre, returning its composite transform.</summary>
-    private static CompositeTransform EnsureCenteredTransform(FrameworkElement element)
-    {
-        if (element.RenderTransform is not CompositeTransform transform)
-        {
-            transform = new CompositeTransform();
-            element.RenderTransform = transform;
-        }
-
-        element.RenderTransformOrigin = new Point(0.5, 0.5);
-        return transform;
-    }
-
-    private static CubicEase EaseOut() => new() { EasingMode = EasingMode.EaseOut };
-
-    private static BackEase Bounce() => new() { EasingMode = EasingMode.EaseOut, Amplitude = 0.3 };
 }
