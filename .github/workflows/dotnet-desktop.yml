@@ -46,10 +46,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@main
+        uses: actions/checkout@v7
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@main
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -87,7 +87,7 @@ jobs:
           -o publish/${{ matrix.rid }}
  
       - name: Upload portable artifact
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@v7
         with:
           name: portable-${{ matrix.rid }}
           path: publish/${{ matrix.rid }}
@@ -107,10 +107,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@main
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -147,7 +147,7 @@ jobs:
           /p:PublishReadyToRun=false
  
       - name: Upload MSIX artifact
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@v7
         with:
           name: msix-${{ matrix.platform }}
           path: AppPackages/**
@@ -166,7 +166,7 @@ jobs:
  
     steps:
       - name: Download portable builds
-        uses: actions/download-artifact@main
+        uses: actions/download-artifact@v8
         with:
           pattern: portable-*
           path: artifacts
@@ -199,7 +199,7 @@ jobs:
  
     steps:
       - name: Download MSIX packages
-        uses: actions/download-artifact@main
+        uses: actions/download-artifact@v8
         with:
           pattern: msix-*
           path: AppPackages
