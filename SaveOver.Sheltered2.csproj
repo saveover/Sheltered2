@@ -68,6 +68,7 @@
 
 	<ItemGroup>
 		<None Remove="Pages\*.xaml" />
+		<None Remove="Assets\Donation\kofi.svg" />
 		<Page Update="Pages\*.xaml">
 			<Generator>MSBuild:Compile</Generator>
 		</Page>

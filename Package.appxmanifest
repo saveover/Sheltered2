@@ -7,7 +7,7 @@
   IgnorableNamespaces="uap rescap">
 
   <Identity
-    Name="SaveOverApp.Sheltered2SaveEditor"
+    Name="SaveOverApp.SaveOverforSheltered2"
     Publisher="CN=5E538825-40D2-4F7F-BBB8-35A55A95F567"
     Version="1.0.0.0" />
 
@@ -31,7 +31,7 @@
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
         DisplayName="SaveOver for Sheltered 2"
-        Description="Edit your Sheltered 2 save files: characters, pets, inventory, and faction standing. Not affiliated with Unicube or Team17."
+        Description="Edit your Sheltered 2 save files: characters, pets, inventory, and faction standing."
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">

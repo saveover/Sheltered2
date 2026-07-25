@@ -12,30 +12,76 @@
     NavigationCacheMode="Enabled">
 
     <Page.Resources>
-        <!-- Every section on this page is the same card. -->
-        <Style x:Key="DonateCardStyle" TargetType="Border">
-            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
-            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="{StaticResource OverlayCornerRadius}"/>
-            <Setter Property="Padding" Value="24"/>
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <!-- The platform logos are fixed-colour brand artwork we can't recolour, and
+                     all three are dark-on-transparent. They sit on a light plate instead, so
+                     one asset set stays legible in either theme. The plate stays white even in
+                     high contrast for the same reason: the artwork won't follow system colours,
+                     so a dark plate would swallow it. -->
+                <ResourceDictionary x:Key="Default">
+                    <SolidColorBrush x:Key="BrandPlateBrush" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="BrandPlateStrokeBrush" Color="#26000000"/>
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="BrandPlateBrush" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="BrandPlateStrokeBrush" Color="#14000000"/>
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="HighContrast">
+                    <SolidColorBrush x:Key="BrandPlateBrush" Color="#FFFFFFFF"/>
+                    <SolidColorBrush x:Key="BrandPlateStrokeBrush" Color="#FF000000"/>
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
 
-        <!-- Colours for the copy status line. Declared here so the code-behind looks them up
-             from the page's own dictionary: probing Application.Current.Resources for the
-             System* brushes doesn't reliably resolve them from code. -->
-        <SolidColorBrush x:Key="CopySuccessBrush" Color="{ThemeResource SystemFillColorSuccess}"/>
-        <SolidColorBrush x:Key="CopyErrorBrush" Color="{ThemeResource SystemFillColorCritical}"/>
+            <!-- Every section on this page is the same card. -->
+            <Style x:Key="DonateCardStyle" TargetType="Border">
+                <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
+                <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="{StaticResource OverlayCornerRadius}"/>
+                <Setter Property="Padding" Value="24"/>
+            </Style>
 
-        <!-- Label plus the "leaves the app" glyph, shared by every off-app link.
-             The bound value is the button's own Content. -->
-        <DataTemplate x:Key="ExternalLinkTemplate">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-                <TextBlock Text="{Binding}"/>
-                <FontIcon Glyph="&#xE8A7;" FontSize="12"
-                          AutomationProperties.AccessibilityView="Raw"/>
-            </StackPanel>
-        </DataTemplate>
+            <!-- Tier cards stretch to the tallest of the row, so their contents sit at the top. -->
+            <Style x:Key="TierCardStyle" TargetType="Border" BasedOn="{StaticResource DonateCardStyle}">
+                <Setter Property="VerticalAlignment" Value="Stretch"/>
+                <Setter Property="Padding" Value="20"/>
+            </Style>
+
+            <Style x:Key="TierPriceStyle" TargetType="TextBlock" BasedOn="{StaticResource SubtitleTextBlockStyle}">
+                <Setter Property="Foreground" Value="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+            </Style>
+
+            <Style x:Key="PerkTextStyle" TargetType="TextBlock">
+                <Setter Property="TextWrapping" Value="Wrap"/>
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>
+            </Style>
+
+            <!-- The plate a platform logo sits on. See the theme dictionaries above. -->
+            <Style x:Key="BrandPlateStyle" TargetType="Border">
+                <Setter Property="Background" Value="{ThemeResource BrandPlateBrush}"/>
+                <Setter Property="BorderBrush" Value="{ThemeResource BrandPlateStrokeBrush}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="8"/>
+                <Setter Property="Padding" Value="16,10"/>
+            </Style>
+
+            <!-- Colours for the copy status line. Declared here so the code-behind looks them up
+                 from the page's own dictionary: probing Application.Current.Resources for the
+                 System* brushes doesn't reliably resolve them from code. -->
+            <SolidColorBrush x:Key="CopySuccessBrush" Color="{ThemeResource SystemFillColorSuccess}"/>
+            <SolidColorBrush x:Key="CopyErrorBrush" Color="{ThemeResource SystemFillColorCritical}"/>
+
+            <!-- Label plus the "leaves the app" glyph, shared by every off-app link.
+                 The bound value is the button's own Content. -->
+            <DataTemplate x:Key="ExternalLinkTemplate">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="{Binding}"/>
+                    <FontIcon Glyph="&#xE8A7;" FontSize="12"
+                              AutomationProperties.AccessibilityView="Raw"/>
+                </StackPanel>
+            </DataTemplate>
+        </ResourceDictionary>
     </Page.Resources>
 
     <ScrollViewer>
@@ -43,79 +89,317 @@
                     Margin="36,40,36,36"
                     Spacing="32">
 
+            <!-- The three tiers sit side by side from 1000px and stack below that. Empty
+                 Auto rows collapse, so the wide layout costs nothing; the narrow state adds
+                 its own margins rather than RowSpacing, which would apply either way. -->
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup>
+                    <VisualState x:Name="NarrowTiers">
+                        <VisualState.StateTriggers>
+                            <AdaptiveTrigger MinWindowWidth="0"/>
+                        </VisualState.StateTriggers>
+                        <VisualState.Setters>
+                            <Setter Target="SupporterCard.(Grid.ColumnSpan)" Value="3"/>
+                            <Setter Target="PatronCard.(Grid.Row)" Value="1"/>
+                            <Setter Target="PatronCard.(Grid.Column)" Value="0"/>
+                            <Setter Target="PatronCard.(Grid.ColumnSpan)" Value="3"/>
+                            <Setter Target="PatronCard.Margin" Value="0,16,0,0"/>
+                            <Setter Target="FounderCard.(Grid.Row)" Value="2"/>
+                            <Setter Target="FounderCard.(Grid.Column)" Value="0"/>
+                            <Setter Target="FounderCard.(Grid.ColumnSpan)" Value="3"/>
+                            <Setter Target="FounderCard.Margin" Value="0,16,0,0"/>
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="WideTiers">
+                        <VisualState.StateTriggers>
+                            <AdaptiveTrigger MinWindowWidth="1000"/>
+                        </VisualState.StateTriggers>
+                        <!-- Default markup already puts the three tiers in one row. -->
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
             <!-- Intro -->
-            <StackPanel Spacing="12">
+            <StackPanel Spacing="8">
                 <TextBlock Text="Donate"
                            Style="{StaticResource TitleTextBlockStyle}"
                            AutomationProperties.HeadingLevel="Level1"/>
                 <TextBlock TextWrapping="Wrap"
-                           Text="SaveOver's software is free for everyone and stays that way. Donating funds covers the time spent building editors for more games, keeping the existing ones working when a patch changes a save format, and helping people whose saves won't open."/>
-                <TextBlock TextWrapping="Wrap"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                           Text="Memberships and the perks that come with them are available through Buy Me a Coffee. To join, visit the SaveOver page on Buy Me a Coffee, select your preferred membership tier, and sign up there. Once you've joined, you’ll be able to access your perks directly on the platform, including early builds, voting, and credit listings. Everything else below is a one-off thank-you."/>
+                           Text="SaveOver is free, and stays that way. Donations pay for the time behind new editors, for keeping the existing ones working when a patch changes a save format, and for helping people whose saves won't open."/>
             </StackPanel>
 
-            <!-- Buy Me a Coffee -->
-            <Border Style="{StaticResource DonateCardStyle}">
-                <StackPanel Spacing="16">
-                    <TextBlock Text="Buy Me a Coffee"
+            <!-- Memberships -->
+            <StackPanel Spacing="16">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Memberships"
                                Style="{StaticResource SubtitleTextBlockStyle}"
                                AutomationProperties.HeadingLevel="Level2"/>
-
                     <TextBlock TextWrapping="Wrap"
-                               Text="A one-off coffee, or a monthly membership. Members get early builds and their name in the release credits. The Patron and Founder tiers also propose and vote on which game gets an editor next."/>
-
-                    <InfoBar IsOpen="True"
-                             IsClosable="False"
-                             Severity="Informational"
-                             Title="Perks are granted here"
-                             Message="Memberships are available only through Buy Me a Coffee. Roles, votes, early access, and credits are all handled from here, so this is the option to pick if you want them."/>
-
-                    <HyperlinkButton NavigateUri="https://buymeacoffee.com/saveover"
-                                     AutomationProperties.Name="Support on Buy Me a Coffee (opens in your browser)">
-                        <Image Height="50"
-                               Source="ms-appx:///Assets/Donation/bmc.svg"
-                               AutomationProperties.AccessibilityView="Raw"/>
-                    </HyperlinkButton>
+                               Text="Monthly support, with a few tiers. Each tier includes the rewards before it."/>
                 </StackPanel>
-            </Border>
 
-            <!-- Other platforms -->
-            <Border Style="{StaticResource DonateCardStyle}">
-                <StackPanel Spacing="16">
-                    <TextBlock Text="Other platforms"
-                               Style="{StaticResource SubtitleTextBlockStyle}"
-                               AutomationProperties.HeadingLevel="Level2"/>
+                <Grid x:Name="TierGrid" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                    <TextBlock TextWrapping="Wrap"
-                               Text="Already have a Ko-fi, Patreon, or Liberapay account? Donations are just as welcome there."/>
+                    <!-- Supporter -->
+                    <Border x:Name="SupporterCard"
+                            Grid.Row="0" Grid.Column="0"
+                            Style="{StaticResource TierCardStyle}">
+                        <StackPanel Spacing="12">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="Supporter"
+                                           Style="{StaticResource BodyStrongTextBlockStyle}"
+                                           AutomationProperties.HeadingLevel="Level3"/>
+                                <TextBlock Text="$5 / month"
+                                           Style="{StaticResource TierPriceStyle}"/>
+                            </StackPanel>
 
-                    <InfoBar IsOpen="True"
-                             IsClosable="False"
-                             Severity="Warning"
-                             Title="No perks attached"
-                             Message="The project doesn't run memberships on Ko-fi, Patreon, or Liberapay, so anything sent there is treated as a one-off thank-you. It can't unlock roles, votes, early builds, or credits. If you want to receive membership perks, you can switch to Buy Me a Coffee at any time. Sign up there with your preferred tier, and future support will unlock the full range of platform perks."/>
+                            <TextBlock TextWrapping="Wrap"
+                                       Text="Keeps the editors free for everyone."/>
 
-                    <StackPanel x:Name="PlatformLinks"
-                                Orientation="Horizontal"
-                                Spacing="12">
-                        <HyperlinkButton NavigateUri="https://ko-fi.com/saveover"
-                                         Content="Ko-fi"
-                                         ContentTemplate="{StaticResource ExternalLinkTemplate}"
-                                         AutomationProperties.Name="Donate on Ko-fi (opens in your browser)"/>
+                            <Border Height="1" HorizontalAlignment="Stretch"
+                                    Background="{ThemeResource DividerStrokeColorDefaultBrush}"/>
 
-                        <HyperlinkButton NavigateUri="https://patreon.com/saveover"
-                                         Content="Patreon"
-                                         ContentTemplate="{StaticResource ExternalLinkTemplate}"
-                                         AutomationProperties.Name="Donate on Patreon (opens in your browser)"/>
+                            <StackPanel Spacing="8">
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <FontIcon Glyph="&#xE73E;" FontSize="12" Margin="0,3,0,0"
+                                              VerticalAlignment="Top"
+                                              Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                              AutomationProperties.AccessibilityView="Raw"/>
+                                    <TextBlock Grid.Column="1"
+                                               Style="{StaticResource PerkTextStyle}"
+                                               Text="Early access to new editors before they go public"/>
+                                </Grid>
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <FontIcon Glyph="&#xE73E;" FontSize="12" Margin="0,3,0,0"
+                                              VerticalAlignment="Top"
+                                              Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                              AutomationProperties.AccessibilityView="Raw"/>
+                                    <TextBlock Grid.Column="1"
+                                               Style="{StaticResource PerkTextStyle}"
+                                               Text="Your name or handle in the credits"/>
+                                </Grid>
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <FontIcon Glyph="&#xE73E;" FontSize="12" Margin="0,3,0,0"
+                                              VerticalAlignment="Top"
+                                              Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                              AutomationProperties.AccessibilityView="Raw"/>
+                                    <TextBlock Grid.Column="1"
+                                               Style="{StaticResource PerkTextStyle}"
+                                               Text="Private channels on the Discord"/>
+                                </Grid>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
 
-                        <HyperlinkButton NavigateUri="https://liberapay.com/saveover/"
-                                         Content="Liberapay"
-                                         ContentTemplate="{StaticResource ExternalLinkTemplate}"
-                                         AutomationProperties.Name="Donate on Liberapay (opens in your browser)"/>
+                    <!-- Patron -->
+                    <Border x:Name="PatronCard"
+                            Grid.Row="0" Grid.Column="1"
+                            Style="{StaticResource TierCardStyle}">
+                        <StackPanel Spacing="12">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="Patron"
+                                           Style="{StaticResource BodyStrongTextBlockStyle}"
+                                           AutomationProperties.HeadingLevel="Level3"/>
+                                <TextBlock Text="$10 / month"
+                                           Style="{StaticResource TierPriceStyle}"/>
+                            </StackPanel>
+
+                            <TextBlock TextWrapping="Wrap"
+                                       Text="A say in what game gets an editor next."/>
+
+                            <Border Height="1" HorizontalAlignment="Stretch"
+                                    Background="{ThemeResource DividerStrokeColorDefaultBrush}"/>
+
+                            <StackPanel Spacing="8">
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <FontIcon Glyph="&#xE73E;" FontSize="12" Margin="0,3,0,0"
+                                              VerticalAlignment="Top"
+                                              Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                              AutomationProperties.AccessibilityView="Raw"/>
+                                    <TextBlock Grid.Column="1"
+                                               Style="{StaticResource PerkTextStyle}"
+                                               Text="Everything in Supporter"/>
+                                </Grid>
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <FontIcon Glyph="&#xE73E;" FontSize="12" Margin="0,3,0,0"
+                                              VerticalAlignment="Top"
+                                              Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                              AutomationProperties.AccessibilityView="Raw"/>
+                                    <TextBlock Grid.Column="1"
+                                               Style="{StaticResource PerkTextStyle}"
+                                               Text="Propose and vote on which game gets an editor next"/>
+                                </Grid>
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <FontIcon Glyph="&#xE73E;" FontSize="12" Margin="0,3,0,0"
+                                              VerticalAlignment="Top"
+                                              Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                              AutomationProperties.AccessibilityView="Raw"/>
+                                    <TextBlock Grid.Column="1"
+                                               Style="{StaticResource PerkTextStyle}"
+                                               Text="Behind-the-scenes notes while an editor is being built"/>
+                                </Grid>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Founder -->
+                    <Border x:Name="FounderCard"
+                            Grid.Row="0" Grid.Column="2"
+                            Style="{StaticResource TierCardStyle}">
+                        <StackPanel Spacing="12">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="Founder"
+                                           Style="{StaticResource BodyStrongTextBlockStyle}"
+                                           AutomationProperties.HeadingLevel="Level3"/>
+                                <TextBlock Text="$25 / month"
+                                           Style="{StaticResource TierPriceStyle}"/>
+                            </StackPanel>
+
+                            <TextBlock TextWrapping="Wrap"
+                                       Text="A say in what features an editor gets next."/>
+
+                            <Border Height="1" HorizontalAlignment="Stretch"
+                                    Background="{ThemeResource DividerStrokeColorDefaultBrush}"/>
+
+                            <StackPanel Spacing="8">
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <FontIcon Glyph="&#xE73E;" FontSize="12" Margin="0,3,0,0"
+                                              VerticalAlignment="Top"
+                                              Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                              AutomationProperties.AccessibilityView="Raw"/>
+                                    <TextBlock Grid.Column="1"
+                                               Style="{StaticResource PerkTextStyle}"
+                                               Text="Everything in Patron"/>
+                                </Grid>
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <FontIcon Glyph="&#xE73E;" FontSize="12" Margin="0,3,0,0"
+                                              VerticalAlignment="Top"
+                                              Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                              AutomationProperties.AccessibilityView="Raw"/>
+                                    <TextBlock Grid.Column="1"
+                                               Style="{StaticResource PerkTextStyle}"
+                                               Text="Influence the features shipped with an editor"/>
+                                </Grid>
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <FontIcon Glyph="&#xE73E;" FontSize="12" Margin="0,3,0,0"
+                                              VerticalAlignment="Top"
+                                              Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                              AutomationProperties.AccessibilityView="Raw"/>
+                                    <TextBlock Grid.Column="1"
+                                               Style="{StaticResource PerkTextStyle}"
+                                               Text="Your name in the Founders section, at the top of the credits"/>
+                                </Grid>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <InfoBar IsOpen="True"
+                         IsClosable="False"
+                         Severity="Informational"
+                         Title="DISCLAIMER"
+                         Message="Credits ship with every release as a CREDITS file, listing everyone under the years they supported. Nothing is removed once it's there, so your name stays whether or not you're still a member. Votes set priority, not promises: some save formats turn out to be locked tight, and ballots run on Discord or by email."/>
+
+                <!-- Join -->
+                <Border Style="{StaticResource DonateCardStyle}" Padding="24,20">
+                    <StackPanel Spacing="16">
+                        <TextBlock TextWrapping="Wrap"
+                                   Text="Join on whichever you already use. Same tiers, same perks, same Discord roles on all three. One-off tips are welcome there too."/>
+
+                        <!-- Logo plates don't wrap, so scroll instead of clipping. -->
+                        <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                                      HorizontalScrollMode="Auto"
+                                      VerticalScrollBarVisibility="Disabled"
+                                      VerticalScrollMode="Disabled">
+                            <StackPanel x:Name="PlatformLinks"
+                                        Orientation="Horizontal"
+                                        Spacing="16">
+                                <HyperlinkButton NavigateUri="https://buymeacoffee.com/saveover"
+                                                 Padding="4"
+                                                 CornerRadius="10"
+                                                 AutomationProperties.Name="Support on Buy Me a Coffee (opens in your browser)"
+                                                 ToolTipService.ToolTip="Buy Me a Coffee">
+                                    <Border Style="{StaticResource BrandPlateStyle}">
+                                        <Image Height="32"
+                                               Source="ms-appx:///Assets/Donation/bmc.svg"
+                                               AutomationProperties.AccessibilityView="Raw"/>
+                                    </Border>
+                                </HyperlinkButton>
+
+                                <HyperlinkButton NavigateUri="https://ko-fi.com/saveover"
+                                                 Padding="4"
+                                                 CornerRadius="10"
+                                                 AutomationProperties.Name="Support on Ko-fi (opens in your browser)"
+                                                 ToolTipService.ToolTip="Ko-fi">
+                                    <Border Style="{StaticResource BrandPlateStyle}">
+                                        <Image Height="32"
+                                               Source="ms-appx:///Assets/Donation/kofi.svg"
+                                               AutomationProperties.AccessibilityView="Raw"/>
+                                    </Border>
+                                </HyperlinkButton>
+
+                                <HyperlinkButton NavigateUri="https://www.patreon.com/cw/saveover"
+                                                 Padding="4"
+                                                 CornerRadius="10"
+                                                 AutomationProperties.Name="Support on Patreon (opens in your browser)"
+                                                 ToolTipService.ToolTip="Patreon">
+                                    <Border Style="{StaticResource BrandPlateStyle}">
+                                        <Image Height="32"
+                                               Source="ms-appx:///Assets/Donation/patreon.svg"
+                                               AutomationProperties.AccessibilityView="Raw"/>
+                                    </Border>
+                                </HyperlinkButton>
+                            </StackPanel>
+                        </ScrollViewer>
                     </StackPanel>
-                </StackPanel>
-            </Border>
+                </Border>
+            </StackPanel>
 
             <!-- Cryptocurrency -->
             <Border Style="{StaticResource DonateCardStyle}">
@@ -125,17 +409,17 @@
                                AutomationProperties.HeadingLevel="Level2"/>
 
                     <TextBlock TextWrapping="Wrap"
-                               Text="Send straight to one of the wallets below. Nothing to sign up for and no account needed."/>
+                               Text="Prefer crypto? You are welcome to send a donation to one of the wallet addresses below."/>
 
                     <InfoBar IsOpen="True"
                              IsClosable="False"
                              Severity="Warning"
-                             Title="No perks attached, and no refunds"
-                             Message="Crypto transfers are pseudonymous, making it difficult to identify the sender or link transactions to a Discord account. Therefore, cryptocurrency donations will not unlock roles, votes, early builds, or credits. All transfers are final and cannot be reversed. Please ensure you send only the intended amount."/>
+                             Title="No perks, and no refunds"
+                             Message="A cryptocurrency donation cannot be tied back to a Discord account, so crypto doesn't unlock roles, votes, early builds, or credits. Transfers are final, so check the amount before you send."/>
 
                     <TextBlock TextWrapping="Wrap"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               Text="Copy an address below. For your security, always double-check wallet addresses before sending, use a trusted wallet application, and verify the first and last characters of the destination address after copying and pasting. Be cautious of clipboard hijackers or phishing scams."/>
+                               Text="Copy an address below, then check its first and last characters against what landed in your wallet app. Clipboard hijackers might swap addresses out."/>
 
                     <!-- One row per wallet: the name sits above the address so a long address
                          gets the full card width instead of being squeezed into a column. -->
@@ -210,7 +494,7 @@
                                AutomationProperties.HeadingLevel="Level2"/>
 
                     <TextBlock TextWrapping="Wrap"
-                               Text="Donating is only one kind of contribution. A precise bug report, a save file that reproduces something odd, or a pull request all move the project along just as much. To share bug reports or save files, please post them on our issue tracker or in the community Discord, including steps to reproduce the issue and any helpful details. If you want to contribute code, visit our GitHub repository to open a pull request by forking the project, making your changes, and submitting the request. Clear steps are always appreciated and help us address your contribution more quickly."/>
+                               Text="Donating is only one way to chip in. A precise bug report, a save file that reproduces something odd, or a pull request all move the project along just as much!"/>
 
                     <StackPanel x:Name="HelpLinks"
                                 Orientation="Horizontal"
@@ -224,6 +508,11 @@
                                          Content="Report an issue"
                                          ContentTemplate="{StaticResource ExternalLinkTemplate}"
                                          AutomationProperties.Name="Report an issue on GitHub (opens in your browser)"/>
+
+                        <HyperlinkButton NavigateUri="https://github.com/saveover/Sheltered2"
+                                         Content="Browse the code"
+                                         ContentTemplate="{StaticResource ExternalLinkTemplate}"
+                                         AutomationProperties.Name="Browse the source on GitHub (opens in your browser)"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
