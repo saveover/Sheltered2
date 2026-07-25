@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Copyright (C) 2026 SaveOver -->
 <Page
@@ -8,358 +7,216 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:pages="using:SaveOver.Sheltered2.Pages"
     mc:Ignorable="d"
     NavigationCacheMode="Enabled">
 
+    <Page.Resources>
+        <!-- Every section on this page is the same card. -->
+        <Style x:Key="DonateCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{StaticResource OverlayCornerRadius}"/>
+            <Setter Property="Padding" Value="24"/>
+        </Style>
+
+        <!-- Label plus the "leaves the app" glyph, shared by every off-app link.
+             The bound value is the button's own Content. -->
+        <DataTemplate x:Key="ExternalLinkTemplate">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="{Binding}"/>
+                <FontIcon Glyph="&#xE8A7;" FontSize="12"
+                          AutomationProperties.AccessibilityView="Raw"/>
+            </StackPanel>
+        </DataTemplate>
+    </Page.Resources>
+
     <ScrollViewer>
-        <StackPanel Margin="36,40,36,36" Spacing="32">
+        <StackPanel x:Name="RootPanel"
+                    Margin="36,40,36,36"
+                    Spacing="32">
+
             <!-- Intro -->
-            <StackPanel Spacing="8">
+            <StackPanel Spacing="12">
                 <TextBlock Text="Donate"
                            Style="{StaticResource TitleTextBlockStyle}"
                            AutomationProperties.HeadingLevel="Level1"/>
                 <TextBlock TextWrapping="Wrap"
-                           Text="SaveOver is free and stays free, for everyone. Supporting here funds the time that goes into it, most of which is spent on the unglamorous part: pulling a save format apart byte by byte until it gives up."/>
+                           Text="SaveOver's software is free for everyone and stays that way. Donating pays for the time that goes into building editors for more games, keeping the existing ones working when a patch changes a save format, and helping people whose saves won't open."/>
+                <TextBlock TextWrapping="Wrap"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           Text="Memberships and the perks that come with them live on Buy Me a Coffee. Everything else below is a one-off thank-you."/>
             </StackPanel>
 
             <!-- Buy Me a Coffee -->
-            <Border BorderThickness="1"
-                    CornerRadius="{StaticResource OverlayCornerRadius}"
-                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    Padding="24">
+            <Border Style="{StaticResource DonateCardStyle}">
                 <StackPanel Spacing="16">
                     <TextBlock Text="Buy Me a Coffee"
                                Style="{StaticResource SubtitleTextBlockStyle}"
                                AutomationProperties.HeadingLevel="Level2"/>
 
                     <TextBlock TextWrapping="Wrap"
-                               Text="A one-off coffee, or a monthly membership. Members get early builds and their name in the release credits. Patrons and Founders also propose and vote on which game gets an editor next."/>
+                               Text="A one-off coffee, or a monthly membership. Members get early builds and their name in the release credits. The Patron and Founder tiers also propose and vote on which game gets an editor next."/>
 
-                    <TextBlock TextWrapping="Wrap"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               Text="This is the only place the memberships live. Roles, votes and early access are all handled here."/>
+                    <InfoBar IsOpen="True"
+                             IsClosable="False"
+                             Severity="Informational"
+                             Title="Perks are granted here"
+                             Message="Memberships run through Buy Me a Coffee only. Roles, votes, early access and credits are all handled from here, so this is the option to pick if you want them."/>
 
-                    <StackPanel>
-                        <HyperlinkButton NavigateUri="https://buymeacoffee.com/saveover"
-                                         AutomationProperties.Name="Buy me a coffee (opens buymeacoffee.com in browser)">
-                            <Image Height="60">
-                                <Image.Source>
-                                    <SvgImageSource UriSource="ms-appx:///Assets/Donation/bmc.svg"/>
-                                </Image.Source>
-                            </Image>
-                        </HyperlinkButton>
-                    </StackPanel>
+                    <HyperlinkButton NavigateUri="https://buymeacoffee.com/saveover"
+                                     HorizontalAlignment="Left"
+                                     AutomationProperties.Name="Support on Buy Me a Coffee (opens in your browser)">
+                        <Image Height="60"
+                               Source="ms-appx:///Assets/Donation/bmc.svg"
+                               AutomationProperties.AccessibilityView="Raw"/>
+                    </HyperlinkButton>
                 </StackPanel>
             </Border>
 
             <!-- Other platforms -->
-            <Border BorderThickness="1"
-                    CornerRadius="{StaticResource OverlayCornerRadius}"
-                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    Padding="24">
+            <Border Style="{StaticResource DonateCardStyle}">
                 <StackPanel Spacing="16">
                     <TextBlock Text="Other platforms"
                                Style="{StaticResource SubtitleTextBlockStyle}"
                                AutomationProperties.HeadingLevel="Level2"/>
 
                     <TextBlock TextWrapping="Wrap"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               Text="Already use one of these? One-off tips are welcome there too. Memberships and their perks are handled through Buy Me a Coffee only. All links open in your browser."/>
+                               Text="Already have an account on Ko-fi or Patreon? A one-off donation is just as welcome there."/>
 
-                    <StackPanel Orientation="Horizontal" Spacing="12">
+                    <InfoBar IsOpen="True"
+                             IsClosable="False"
+                             Severity="Informational"
+                             Title="No perks attached"
+                             Message="The project doesn't run memberships on Ko-fi or Patreon, so anything sent there is treated as a one-off thank-you. It can't unlock roles, votes, early builds or credits."/>
+
+                    <StackPanel x:Name="PlatformLinks"
+                                Orientation="Horizontal"
+                                Spacing="12"
+                                HorizontalAlignment="Left">
                         <HyperlinkButton NavigateUri="https://ko-fi.com/saveover"
-                                         AutomationProperties.Name="Tip on Ko-fi (opens in browser)">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <TextBlock Text="Ko-fi"/>
-                                <FontIcon Glyph="&#xE8A7;" FontSize="12"
-                                          AutomationProperties.AccessibilityView="Raw"/>
-                            </StackPanel>
-                        </HyperlinkButton>
+                                         Content="Ko-fi"
+                                         ContentTemplate="{StaticResource ExternalLinkTemplate}"
+                                         AutomationProperties.Name="Donate on Ko-fi (opens in your browser)"/>
 
                         <HyperlinkButton NavigateUri="https://patreon.com/saveover"
-                                         AutomationProperties.Name="Tip on Patreon (opens in browser)">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <TextBlock Text="Patreon"/>
-                                <FontIcon Glyph="&#xE8A7;" FontSize="12"
-                                          AutomationProperties.AccessibilityView="Raw"/>
-                            </StackPanel>
-                        </HyperlinkButton>
+                                         Content="Patreon"
+                                         ContentTemplate="{StaticResource ExternalLinkTemplate}"
+                                         AutomationProperties.Name="Donate on Patreon (opens in your browser)"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
 
-            <!-- Crypto -->
-            <Border BorderThickness="1"
-                    CornerRadius="{StaticResource OverlayCornerRadius}"
-                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    Padding="24">
+            <!-- Cryptocurrency -->
+            <Border Style="{StaticResource DonateCardStyle}">
                 <StackPanel Spacing="16">
                     <TextBlock Text="Cryptocurrency"
                                Style="{StaticResource SubtitleTextBlockStyle}"
                                AutomationProperties.HeadingLevel="Level2"/>
 
+                    <TextBlock TextWrapping="Wrap"
+                               Text="Send straight to one of the wallets below. Nothing to sign up for and no account needed."/>
+
                     <InfoBar IsOpen="True"
                              IsClosable="False"
                              Severity="Warning"
-                             Title="No perks attached"
-                             Message="Crypto transfers are anonymous, so there's no way to tell who sent one or link it to a Discord account. They can't unlock roles, votes, early builds, or credits. They are strictly treated as a one-way thank-you. For the membership perks, use Buy Me a Coffee above."/>
+                             Title="No perks attached, and no refunds"
+                             Message="Crypto transfers are anonymous, so there's no way to tell who sent one or tie it to a Discord account. It can't unlock roles, votes, early builds or credits. Transfers are also final and can't be reversed, so send only what you mean to."/>
 
                     <TextBlock TextWrapping="Wrap"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               Text="Copy an address below. Always double-check the first and last characters after pasting; clipboard hijackers exist. Transfers are irreversible and can't be refunded."/>
+                               Text="Copy an address below, then check the first and last characters after pasting. Clipboard hijackers exist."/>
 
-                    <Grid RowSpacing="12" ColumnSpacing="12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
+                    <!-- One row per wallet: the name sits above the address so a long address
+                         gets the full card width instead of being squeezed into a column. -->
+                    <ItemsRepeater ItemsSource="{x:Bind Wallets}">
+                        <ItemsRepeater.Layout>
+                            <StackLayout Spacing="8"/>
+                        </ItemsRepeater.Layout>
+                        <ItemsRepeater.ItemTemplate>
+                            <DataTemplate x:DataType="pages:CryptoWallet">
+                                <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
+                                        BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="4"
+                                        Padding="12,8">
+                                    <Grid ColumnSpacing="12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
 
-                        <!-- Bitcoin -->
-                        <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <Image Width="24" Height="24"
-                                   Source="ms-appx:///Assets/Donation/bitcoin.svg"
-                                   AutomationProperties.AccessibilityView="Raw"/>
-                            <TextBlock Text="Bitcoin" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        </StackPanel>
-                        <TextBlock x:Name="BitcoinAddressText"
-                                   Grid.Row="0" Grid.Column="1"
-                                   FontFamily="Consolas"
-                                   TextWrapping="Wrap"
-                                   IsTextSelectionEnabled="True"
-                                   VerticalAlignment="Center"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   Text="bc1qqf3sdgc3l2hqmx0uw0xgul9cmnuanekmwk3ad3"/>
-                        <Button Grid.Row="0" Grid.Column="2"
-                                VerticalAlignment="Center"
-                                Click="CopyAddressButton_Click"
-                                Tag="bc1qqf3sdgc3l2hqmx0uw0xgul9cmnuanekmwk3ad3"
-                                AutomationProperties.Name="Copy Bitcoin address"
-                                ToolTipService.ToolTip="Copy Bitcoin address">
-                            <Grid>
-                                <FontIcon Glyph="&#xE8C8;" FontSize="14" RenderTransformOrigin="0.5,0.5"
-                                          AutomationProperties.AccessibilityView="Raw">
-                                    <FontIcon.RenderTransform>
-                                        <CompositeTransform/>
-                                    </FontIcon.RenderTransform>
-                                </FontIcon>
-                                <FontIcon Glyph="&#xE73E;" FontSize="14" Opacity="0"
-                                          Foreground="{ThemeResource SystemFillColorSuccessBrush}"
-                                          RenderTransformOrigin="0.5,0.5"
-                                          AutomationProperties.AccessibilityView="Raw">
-                                    <FontIcon.RenderTransform>
-                                        <CompositeTransform/>
-                                    </FontIcon.RenderTransform>
-                                </FontIcon>
-                            </Grid>
-                        </Button>
+                                        <StackPanel Spacing="4">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <Image Width="20" Height="20"
+                                                       Source="{x:Bind Icon}"
+                                                       AutomationProperties.AccessibilityView="Raw"/>
+                                                <TextBlock Text="{x:Bind Name}" FontWeight="SemiBold"/>
+                                            </StackPanel>
+                                            <TextBlock Text="{x:Bind Address}"
+                                                       FontFamily="Consolas"
+                                                       TextWrapping="Wrap"
+                                                       IsTextSelectionEnabled="True"
+                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                        </StackPanel>
 
-                        <!-- Ethereum -->
-                        <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <Image Width="24" Height="24"
-                                   Source="ms-appx:///Assets/Donation/ethereum.svg"
-                                   AutomationProperties.AccessibilityView="Raw"/>
-                            <TextBlock Text="Ethereum" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        </StackPanel>
-                        <TextBlock x:Name="EthereumAddressText"
-                                   Grid.Row="1" Grid.Column="1"
-                                   FontFamily="Consolas"
-                                   TextWrapping="Wrap"
-                                   IsTextSelectionEnabled="True"
-                                   VerticalAlignment="Center"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   Text="0x895A4ce67b3F1641A441f88db9Ac5201205720C7"/>
-                        <Button Grid.Row="1" Grid.Column="2"
-                                VerticalAlignment="Center"
-                                Click="CopyAddressButton_Click"
-                                Tag="0x895A4ce67b3F1641A441f88db9Ac5201205720C7"
-                                AutomationProperties.Name="Copy Ethereum address"
-                                ToolTipService.ToolTip="Copy Ethereum address">
-                            <Grid>
-                                <FontIcon Glyph="&#xE8C8;" FontSize="14" RenderTransformOrigin="0.5,0.5"
-                                          AutomationProperties.AccessibilityView="Raw">
-                                    <FontIcon.RenderTransform>
-                                        <CompositeTransform/>
-                                    </FontIcon.RenderTransform>
-                                </FontIcon>
-                                <FontIcon Glyph="&#xE73E;" FontSize="14" Opacity="0"
-                                          Foreground="{ThemeResource SystemFillColorSuccessBrush}"
-                                          RenderTransformOrigin="0.5,0.5"
-                                          AutomationProperties.AccessibilityView="Raw">
-                                    <FontIcon.RenderTransform>
-                                        <CompositeTransform/>
-                                    </FontIcon.RenderTransform>
-                                </FontIcon>
-                            </Grid>
-                        </Button>
-
-                        <!-- Cardano -->
-                        <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <Image Width="24" Height="24"
-                                   Source="ms-appx:///Assets/Donation/cardano.svg"
-                                   AutomationProperties.AccessibilityView="Raw"/>
-                            <TextBlock Text="Cardano" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        </StackPanel>
-                        <TextBlock x:Name="CardanoAddressText"
-                                   Grid.Row="2" Grid.Column="1"
-                                   FontFamily="Consolas"
-                                   TextWrapping="Wrap"
-                                   IsTextSelectionEnabled="True"
-                                   VerticalAlignment="Center"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   Text="addr1qxpqzlfvg3zsywycy9aztuydr4skr78g7krffkl55cjpvrryq72xda08ngqwt65y7wrq8hw50s2hvzynp8aw2m737mzssektzj"/>
-                        <Button Grid.Row="2" Grid.Column="2"
-                                VerticalAlignment="Center"
-                                Click="CopyAddressButton_Click"
-                                Tag="addr1qxpqzlfvg3zsywycy9aztuydr4skr78g7krffkl55cjpvrryq72xda08ngqwt65y7wrq8hw50s2hvzynp8aw2m737mzssektzj"
-                                AutomationProperties.Name="Copy Cardano address"
-                                ToolTipService.ToolTip="Copy Cardano address">
-                            <Grid>
-                                <FontIcon Glyph="&#xE8C8;" FontSize="14" RenderTransformOrigin="0.5,0.5"
-                                          AutomationProperties.AccessibilityView="Raw">
-                                    <FontIcon.RenderTransform>
-                                        <CompositeTransform/>
-                                    </FontIcon.RenderTransform>
-                                </FontIcon>
-                                <FontIcon Glyph="&#xE73E;" FontSize="14" Opacity="0"
-                                          Foreground="{ThemeResource SystemFillColorSuccessBrush}"
-                                          RenderTransformOrigin="0.5,0.5"
-                                          AutomationProperties.AccessibilityView="Raw">
-                                    <FontIcon.RenderTransform>
-                                        <CompositeTransform/>
-                                    </FontIcon.RenderTransform>
-                                </FontIcon>
-                            </Grid>
-                        </Button>
-
-                        <!-- Solana -->
-                        <StackPanel Grid.Row="3" Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <Image Width="24" Height="24"
-                                   Source="ms-appx:///Assets/Donation/solana.svg"
-                                   AutomationProperties.AccessibilityView="Raw"/>
-                            <TextBlock Text="Solana" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        </StackPanel>
-                        <TextBlock x:Name="SolanaAddressText"
-                                   Grid.Row="3" Grid.Column="1"
-                                   FontFamily="Consolas"
-                                   TextWrapping="Wrap"
-                                   IsTextSelectionEnabled="True"
-                                   VerticalAlignment="Center"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   Text="8KomFrmvShJ5oCNbwZZXmz4K7ahzuLGURNJ8Wo8tEwzP"/>
-                        <Button Grid.Row="3" Grid.Column="2"
-                                VerticalAlignment="Center"
-                                Click="CopyAddressButton_Click"
-                                Tag="8KomFrmvShJ5oCNbwZZXmz4K7ahzuLGURNJ8Wo8tEwzP"
-                                AutomationProperties.Name="Copy Solana address"
-                                ToolTipService.ToolTip="Copy Solana address">
-                            <Grid>
-                                <FontIcon Glyph="&#xE8C8;" FontSize="14" RenderTransformOrigin="0.5,0.5"
-                                          AutomationProperties.AccessibilityView="Raw">
-                                    <FontIcon.RenderTransform>
-                                        <CompositeTransform/>
-                                    </FontIcon.RenderTransform>
-                                </FontIcon>
-                                <FontIcon Glyph="&#xE73E;" FontSize="14" Opacity="0"
-                                          Foreground="{ThemeResource SystemFillColorSuccessBrush}"
-                                          RenderTransformOrigin="0.5,0.5"
-                                          AutomationProperties.AccessibilityView="Raw">
-                                    <FontIcon.RenderTransform>
-                                        <CompositeTransform/>
-                                    </FontIcon.RenderTransform>
-                                </FontIcon>
-                            </Grid>
-                        </Button>
-
-                        <!-- Litecoin -->
-                        <StackPanel Grid.Row="4" Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <Image Width="24" Height="24"
-                                   Source="ms-appx:///Assets/Donation/litecoin.svg"
-                                   AutomationProperties.AccessibilityView="Raw"/>
-                            <TextBlock Text="Litecoin" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        </StackPanel>
-                        <TextBlock x:Name="LitecoinAddressText"
-                                   Grid.Row="4" Grid.Column="1"
-                                   FontFamily="Consolas"
-                                   TextWrapping="Wrap"
-                                   IsTextSelectionEnabled="True"
-                                   VerticalAlignment="Center"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   Text="ltc1q7amegshwzavg7vgqvd7nhx4u4xl3sw70j24chn"/>
-                        <Button Grid.Row="4" Grid.Column="2"
-                                VerticalAlignment="Center"
-                                Click="CopyAddressButton_Click"
-                                Tag="ltc1q7amegshwzavg7vgqvd7nhx4u4xl3sw70j24chn"
-                                AutomationProperties.Name="Copy Litecoin address"
-                                ToolTipService.ToolTip="Copy Litecoin address">
-                            <Grid>
-                                <FontIcon Glyph="&#xE8C8;" FontSize="14" RenderTransformOrigin="0.5,0.5"
-                                          AutomationProperties.AccessibilityView="Raw">
-                                    <FontIcon.RenderTransform>
-                                        <CompositeTransform/>
-                                    </FontIcon.RenderTransform>
-                                </FontIcon>
-                                <FontIcon Glyph="&#xE73E;" FontSize="14" Opacity="0"
-                                          Foreground="{ThemeResource SystemFillColorSuccessBrush}"
-                                          RenderTransformOrigin="0.5,0.5"
-                                          AutomationProperties.AccessibilityView="Raw">
-                                    <FontIcon.RenderTransform>
-                                        <CompositeTransform/>
-                                    </FontIcon.RenderTransform>
-                                </FontIcon>
-                            </Grid>
-                        </Button>
-                    </Grid>
+                                        <!-- The two icons overlap and cross-fade on copy; the
+                                             code-behind expects copy first, checkmark second. -->
+                                        <Button Grid.Column="1"
+                                                VerticalAlignment="Center"
+                                                Padding="8"
+                                                Background="Transparent"
+                                                BorderThickness="0"
+                                                Click="CopyAddressButton_Click"
+                                                Tag="{x:Bind Address}"
+                                                AutomationProperties.Name="{x:Bind CopyLabel}"
+                                                ToolTipService.ToolTip="{x:Bind CopyLabel}">
+                                            <Grid>
+                                                <FontIcon Glyph="&#xE8C8;" FontSize="14"
+                                                          Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                          AutomationProperties.AccessibilityView="Raw"/>
+                                                <FontIcon Glyph="&#xE73E;" FontSize="14" Opacity="0"
+                                                          Foreground="{ThemeResource SystemFillColorSuccessBrush}"
+                                                          AutomationProperties.AccessibilityView="Raw"/>
+                                            </Grid>
+                                        </Button>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsRepeater.ItemTemplate>
+                    </ItemsRepeater>
 
                     <!-- Announced by screen readers when the copy feedback changes. -->
                     <TextBlock x:Name="CopyFeedbackTextBlock"
-                               Foreground="{ThemeResource SystemFillColorSuccessBrush}"
+                               TextWrapping="Wrap"
                                AutomationProperties.LiveSetting="Polite"/>
                 </StackPanel>
             </Border>
 
             <!-- Other ways to help -->
-            <Border BorderThickness="1"
-                    CornerRadius="{StaticResource OverlayCornerRadius}"
-                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    Padding="24">
-                <StackPanel Spacing="12">
+            <Border Style="{StaticResource DonateCardStyle}">
+                <StackPanel Spacing="16">
                     <TextBlock Text="Other ways to help"
                                Style="{StaticResource SubtitleTextBlockStyle}"
                                AutomationProperties.HeadingLevel="Level2"/>
 
                     <TextBlock TextWrapping="Wrap"
-                               Text="Money is only one kind of contribution. A precise bug report, a save file that reproduces something odd, or an answer to someone stuck in #support all move the project along just as much."/>
+                               Text="Donating is only one kind of contribution. A precise bug report, a save file that reproduces something odd, or a pull request all move the project along just as much."/>
 
-                    <StackPanel Orientation="Horizontal" Spacing="12">
+                    <StackPanel x:Name="HelpLinks"
+                                Orientation="Horizontal"
+                                Spacing="12"
+                                HorizontalAlignment="Left">
                         <HyperlinkButton NavigateUri="https://discord.gg/nzQSeGcta8"
-                                         AutomationProperties.Name="Join the SaveOver Discord (opens in browser)">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <TextBlock Text="Join the Discord"/>
-                                <FontIcon Glyph="&#xE8A7;" FontSize="12"
-                                          AutomationProperties.AccessibilityView="Raw"/>
-                            </StackPanel>
-                        </HyperlinkButton>
+                                         Content="Join the Discord"
+                                         ContentTemplate="{StaticResource ExternalLinkTemplate}"
+                                         AutomationProperties.Name="Join the SaveOver Discord (opens in your browser)"/>
 
                         <HyperlinkButton NavigateUri="https://github.com/saveover/Sheltered2/issues"
-                                         AutomationProperties.Name="Report an issue on GitHub (opens in browser)">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <TextBlock Text="Report an issue"/>
-                                <FontIcon Glyph="&#xE8A7;" FontSize="12"
-                                          AutomationProperties.AccessibilityView="Raw"/>
-                            </StackPanel>
-                        </HyperlinkButton>
+                                         Content="Report an issue"
+                                         ContentTemplate="{StaticResource ExternalLinkTemplate}"
+                                         AutomationProperties.Name="Report an issue on GitHub (opens in your browser)"/>
                     </StackPanel>
                 </StackPanel>
             </Border>

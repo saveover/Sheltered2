@@ -6,17 +6,46 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
+using Microsoft.UI.Xaml.Media.Imaging;
 using System;
+using System.Collections.Generic;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Foundation;
 
 namespace SaveOver.Sheltered2.Pages;
 
 /// <summary>
+/// One wallet in the donate page's Cryptocurrency card.
+/// </summary>
+/// <param name="Name">Coin name shown above the address, e.g. "Bitcoin".</param>
+/// <param name="Address">Receiving address, copied to the clipboard verbatim.</param>
+/// <param name="Icon">Coin logo from Assets/Donation.</param>
+public sealed record CryptoWallet(string Name, string Address, ImageSource Icon)
+{
+    /// <summary>
+    /// Accessible name and tooltip for the row's copy button. <see cref="DonatePage"/> strips
+    /// the leading "Copy " off it to build the screen-reader confirmation.
+    /// </summary>
+    public string CopyLabel => $"Copy {Name} address";
+}
+
+/// <summary>
 /// Lists the ways to support the project: donation platforms and crypto addresses.
 /// </summary>
 public sealed partial class DonatePage : Page
 {
+    /// <summary>Wallets bound to the Cryptocurrency card's repeater, in display order.</summary>
+    public IReadOnlyList<CryptoWallet> Wallets { get; } =
+    [
+        new("Bitcoin", "bc1qqf3sdgc3l2hqmx0uw0xgul9cmnuanekmwk3ad3", Logo("bitcoin")),
+        new("Ethereum", "0x895A4ce67b3F1641A441f88db9Ac5201205720C7", Logo("ethereum")),
+        new("Cardano", "addr1qxpqzlfvg3zsywycy9aztuydr4skr78g7krffkl55cjpvrryq72xda08ngqwt65y7wrq8hw50s2hvzynp8aw2m737mzssektzj", Logo("cardano")),
+        new("Solana", "8KomFrmvShJ5oCNbwZZXmz4K7ahzuLGURNJ8Wo8tEwzP", Logo("solana")),
+        new("Litecoin", "ltc1q7amegshwzavg7vgqvd7nhx4u4xl3sw70j24chn", Logo("litecoin")),
+    ];
+
+    private static SvgImageSource Logo(string coin) => new(new Uri($"ms-appx:///Assets/Donation/{coin}.svg"));
+
     public DonatePage() => InitializeComponent();
 
     /// <summary>
@@ -40,14 +69,30 @@ public sealed partial class DonatePage : Page
             // The automation name is e.g. "Copy Bitcoin address"; reuse it for the feedback
             // line, which is a polite live region so screen readers announce the copy.
             string what = AutomationProperties.GetName(button).Replace("Copy ", string.Empty);
-            CopyFeedbackTextBlock.Text = $"{what} copied to clipboard.";
+            SetFeedback($"{what} copied to clipboard.", "SystemFillColorSuccessBrush");
 
             ShowCopySuccessFeedback(button);
         }
         catch (Exception ex)
         {
-            CopyFeedbackTextBlock.Text = "Could not copy the address. Please select and copy it manually.";
+            SetFeedback(
+                "Could not copy the address. Please select and copy it manually.",
+                "SystemFillColorCriticalBrush");
             System.Diagnostics.Debug.WriteLine($"Copy address error: {ex}");
+        }
+    }
+
+    /// <summary>
+    /// Writes the live-region feedback line and colours it for the outcome, so a failure
+    /// doesn't get reported in the success green.
+    /// </summary>
+    private void SetFeedback(string message, string brushKey)
+    {
+        CopyFeedbackTextBlock.Text = message;
+
+        if (Application.Current.Resources.TryGetValue(brushKey, out object? resource) && resource is Brush brush)
+        {
+            CopyFeedbackTextBlock.Foreground = brush;
         }
     }
 
