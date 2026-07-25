@@ -46,10 +46,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@main
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@main
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -58,6 +58,12 @@ jobs:
           dotnet restore $env:PROJECT
           -r ${{ matrix.rid }}
           -p:Platform=${{ matrix.platform }}
+          -p:SelfContained=true
+          -p:WindowsPackageType=None
+          -p:WindowsAppSDKSelfContained=true
+          -p:AppxPackage=false
+          -p:ProjectPriFileName=resources.pri
+          -p:WindowsAppSdkDeploymentManagerInitialize=false
           -p:PublishReadyToRun=true
 
       - name: Build
@@ -66,6 +72,12 @@ jobs:
           -c Release
           -r ${{ matrix.rid }}
           -p:Platform=${{ matrix.platform }}
+          -p:SelfContained=true
+          -p:WindowsPackageType=None
+          -p:WindowsAppSDKSelfContained=true
+          -p:AppxPackage=false
+          -p:ProjectPriFileName=resources.pri
+          -p:WindowsAppSdkDeploymentManagerInitialize=false
           -p:PublishReadyToRun=true
           --no-restore
 
@@ -80,14 +92,31 @@ jobs:
           -p:Platform=${{ matrix.platform }}
           -p:WindowsPackageType=None
           -p:WindowsAppSDKSelfContained=true
+          -p:SelfContained=true
+          -p:AppxPackage=false
+          -p:ProjectPriFileName=resources.pri
+          -p:WindowsAppSdkDeploymentManagerInitialize=false
           -p:PublishTrimmed=false
           -p:PublishReadyToRun=true
-          --self-contained true
           --no-restore
           -o publish/${{ matrix.rid }}
+
+      # A WinUI app missing either of these builds fine and then exits silently
+      # on launch, which is expensive to debug from a user bug report.
+      - name: Verify publish output
+        shell: pwsh
+        run: |
+          $dir = "publish/${{ matrix.rid }}"
+          foreach ($f in 'SaveOver.Sheltered2.exe', 'resources.pri',
+                         'Microsoft.WindowsAppRuntime.Bootstrap.dll') {
+            if (-not (Test-Path (Join-Path $dir $f))) {
+              throw "Missing $f in $dir - the app will not start"
+            }
+          }
+          Write-Host "Publish output looks complete."
  
       - name: Upload portable artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@main
         with:
           name: portable-${{ matrix.rid }}
           path: publish/${{ matrix.rid }}
@@ -107,10 +136,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@main
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@main
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -147,10 +176,10 @@ jobs:
           /p:PublishReadyToRun=false
  
       - name: Upload MSIX artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@main
         with:
           name: msix-${{ matrix.platform }}
-          path: AppPackages/**
+          path: AppPackages/*.msixupload
           if-no-files-found: error
           retention-days: 14
 
@@ -166,7 +195,7 @@ jobs:
  
     steps:
       - name: Download portable builds
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@main
         with:
           pattern: portable-*
           path: artifacts
@@ -199,7 +228,7 @@ jobs:
  
     steps:
       - name: Download MSIX packages
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@main
         with:
           pattern: msix-*
           path: AppPackages
