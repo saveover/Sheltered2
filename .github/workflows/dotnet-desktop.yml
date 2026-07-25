@@ -1,0 +1,217 @@
+# .github/workflows/build.yml
+#
+# Two distribution paths from one build:
+#   1. Portable self-contained zips  -> GitHub Releases (what the README points at)
+#   2. MSIX packages                 -> Microsoft Store via Partner Center
+#
+# The MSIX packages are deliberately UNSIGNED. The Store re-signs with its own
+# certificate; signing them yourself causes a publisher mismatch and fails
+# certification. Only sign if you also want to distribute MSIX outside the Store.
+
+name: Build
+
+on:
+  push:
+    branches: [master]
+    tags: ["v*"]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PROJECT: SaveOver.Sheltered2.csproj
+  DOTNET_VERSION: "10.0.x"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Portable build, self-contained, no runtime install.
+  # This is what most users download from Releases.
+  # ---------------------------------------------------------------------------
+  portable:
+    runs-on: windows-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: x64
+            rid: win-x64
+          - platform: ARM64
+            rid: win-arm64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: >
+          dotnet restore $env:PROJECT
+          -r ${{ matrix.rid }}
+          -p:Platform=${{ matrix.platform }}
+
+      - name: Build
+        run: >
+          dotnet build $env:PROJECT
+          -c Release
+          -r ${{ matrix.rid }}
+          -p:Platform=${{ matrix.platform }}
+          --no-restore
+
+      # PublishTrimmed is forced off: the trimmer cannot see types that XAML
+      # resolves by name at runtime, so a trimmed build compiles clean and then
+      # throws on page navigation. CI never launches the UI, so it can't catch it.
+      - name: Publish
+        run: >
+          dotnet publish $env:PROJECT
+          -c Release
+          -r ${{ matrix.rid }}
+          -p:Platform=${{ matrix.platform }}
+          -p:WindowsPackageType=None
+          -p:WindowsAppSDKSelfContained=true
+          -p:PublishTrimmed=false
+          -p:PublishReadyToRun=true
+          --self-contained true
+          -o publish/${{ matrix.rid }}
+
+      - name: Upload portable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: portable-${{ matrix.rid }}
+          path: publish/${{ matrix.rid }}
+          if-no-files-found: error
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # MSIX build for the Store.
+  # ---------------------------------------------------------------------------
+  msix:
+    runs-on: windows-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [x64, ARM64]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      # Every Store submission needs a unique version higher than the last.
+      # The 4th component must stay 0 (the Store reserves it).
+      - name: Stamp version from tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}" -replace '^v', ''
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Tag '${{ github.ref_name }}' is not vMAJOR.MINOR.PATCH"
+          }
+          [xml]$xml = Get-Content Package.appxmanifest
+          $xml.Package.Identity.Version = "$version.0"
+          $xml.Save((Resolve-Path Package.appxmanifest))
+          Write-Host "Package version set to $version.0"
+
+      - name: Build MSIX
+        run: >
+          msbuild $env:PROJECT
+          /restore
+          /p:Configuration=Release
+          /p:Platform=${{ matrix.platform }}
+          /p:GenerateAppxPackageOnBuild=true
+          /p:AppxPackageDir="${{ github.workspace }}\AppPackages\\"
+          /p:UapAppxPackageBuildMode=StoreUpload
+          /p:AppxBundle=Never
+          /p:AppxPackageSigningEnabled=false
+          /p:PublishTrimmed=false
+
+      - name: Upload MSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: msix-${{ matrix.platform }}
+          path: AppPackages/**
+          if-no-files-found: error
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # GitHub Release.
+  # ---------------------------------------------------------------------------
+  release:
+    needs: [portable, msix]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download portable builds
+        uses: actions/download-artifact@v4
+        with:
+          pattern: portable-*
+          path: artifacts
+
+      - name: Zip each architecture
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Get-ChildItem artifacts -Directory | ForEach-Object {
+            $arch = $_.Name -replace '^portable-', ''
+            $out  = "dist/SaveOver-Sheltered2-$arch-${{ github.ref_name }}.zip"
+            Compress-Archive -Path "$($_.FullName)/*" -DestinationPath $out
+          }
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem dist/*.zip | ForEach-Object { $_.FullName }
+          gh release create "${{ github.ref_name }}" $files --generate-notes --verify-tag
+
+  # ---------------------------------------------------------------------------
+  # Store submission. Disabled until the app is live in the Store.
+  # ---------------------------------------------------------------------------
+  store:
+    needs: msix
+    if: false && startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-latest
+
+    steps:
+      - name: Download MSIX packages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: msix-*
+          path: AppPackages
+
+      - name: Configure Microsoft Store CLI
+        uses: microsoft/microsoft-store-apppublisher@v1.1
+
+      - name: Authenticate
+        run: >
+          msstore reconfigure
+          --tenantId ${{ secrets.AZURE_AD_TENANT_ID }}
+          --sellerId ${{ secrets.SELLER_ID }}
+          --clientId ${{ secrets.AZURE_AD_APPLICATION_CLIENT_ID }}
+          --clientSecret ${{ secrets.AZURE_AD_APPLICATION_SECRET }}
+
+      - name: Publish to Store
+        shell: pwsh
+        run: |
+          $pkg = Get-ChildItem AppPackages -Recurse -Include *.msixupload |
+                 Select-Object -First 1
+          msstore publish $pkg.FullName -id ${{ secrets.STORE_PRODUCT_ID }}
