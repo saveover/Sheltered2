@@ -3,10 +3,6 @@
 # Two distribution paths from one build:
 #   1. Portable self-contained zips  -> GitHub Releases (what the README points at)
 #   2. MSIX packages                 -> Microsoft Store via Partner Center
-#
-# The MSIX packages are deliberately UNSIGNED. The Store re-signs with its own
-# certificate; signing them yourself causes a publisher mismatch and fails
-# certification. Only sign if you also want to distribute MSIX outside the Store.
 
 name: Build
 
@@ -53,6 +49,16 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
+      # Without this every build reports 1.0.0.0 in its file properties.
+      - name: Resolve version
+        shell: pwsh
+        run: |
+          $v = if ("${{ github.ref_type }}" -eq 'tag') {
+                 "${{ github.ref_name }}" -replace '^v', ''
+               } else { '0.0.0' }
+          "APP_VERSION=$v" | Out-File $env:GITHUB_ENV -Append
+          Write-Host "Building version $v"
+
       - name: Restore
         run: >
           dotnet restore $env:PROJECT
@@ -63,9 +69,9 @@ jobs:
           -p:WindowsAppSDKSelfContained=true
           -p:AppxPackage=false
           -p:ProjectPriFileName=resources.pri
-          -p:WindowsAppSdkDeploymentManagerInitialize=false
           -p:PublishReadyToRun=true
-
+          -p:PublishTrimmed=true
+ 
       - name: Build
         run: >
           dotnet build $env:PROJECT
@@ -77,13 +83,12 @@ jobs:
           -p:WindowsAppSDKSelfContained=true
           -p:AppxPackage=false
           -p:ProjectPriFileName=resources.pri
-          -p:WindowsAppSdkDeploymentManagerInitialize=false
           -p:PublishReadyToRun=true
+          -p:PublishTrimmed=true
+          -p:Version=${{ env.APP_VERSION }}
+          -p:ContinuousIntegrationBuild=true
           --no-restore
 
-      # PublishTrimmed is forced off: the trimmer cannot see types that XAML
-      # resolves by name at runtime, so a trimmed build compiles clean and then
-      # throws on page navigation. CI never launches the UI, so it can't catch it.
       - name: Publish
         run: >
           dotnet publish $env:PROJECT
@@ -95,9 +100,10 @@ jobs:
           -p:SelfContained=true
           -p:AppxPackage=false
           -p:ProjectPriFileName=resources.pri
-          -p:WindowsAppSdkDeploymentManagerInitialize=false
-          -p:PublishTrimmed=false
+          -p:PublishTrimmed=true
           -p:PublishReadyToRun=true
+          -p:Version=${{ env.APP_VERSION }}
+          -p:ContinuousIntegrationBuild=true
           --no-restore
           -o publish/${{ matrix.rid }}
 
@@ -113,7 +119,18 @@ jobs:
               throw "Missing $f in $dir - the app will not start"
             }
           }
-          Write-Host "Publish output looks complete."
+ 
+          # Content items only reach an unpackaged publish if they are marked
+          # CopyToOutputDirectory. Without this check a missing Assets folder
+          # ships as blank images rather than as a build failure.
+          $assets = Join-Path $dir 'Assets'
+          if (-not (Test-Path $assets)) {
+            throw "Missing Assets folder in $dir - images will not render"
+          }
+          $count = (Get-ChildItem $assets -Recurse -File).Count
+          if ($count -lt 1) { throw "Assets folder in $dir is empty" }
+ 
+          Write-Host "Publish output looks complete ($count asset files)."
  
       - name: Upload portable artifact
         uses: actions/upload-artifact@main
@@ -174,6 +191,7 @@ jobs:
           /p:AppxPackageSigningEnabled=false
           /p:PublishTrimmed=false
           /p:PublishReadyToRun=false
+          /p:ContinuousIntegrationBuild=true
  
       - name: Upload MSIX artifact
         uses: actions/upload-artifact@main
