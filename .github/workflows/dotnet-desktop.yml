@@ -46,10 +46,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@main
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@main
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -87,7 +87,7 @@ jobs:
           -o publish/${{ matrix.rid }}
  
       - name: Upload portable artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@main
         with:
           name: portable-${{ matrix.rid }}
           path: publish/${{ matrix.rid }}
@@ -110,12 +110,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@main
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Set up MSBuild
-        uses: microsoft/setup-msbuild@v2
+        uses: microsoft/setup-msbuild@main
 
       # Every Store submission needs a unique version higher than the last.
       # The 4th component must stay 0 (the Store reserves it).
@@ -147,7 +147,7 @@ jobs:
           /p:PublishReadyToRun=false
  
       - name: Upload MSIX artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@main
         with:
           name: msix-${{ matrix.platform }}
           path: AppPackages/**
@@ -166,7 +166,7 @@ jobs:
  
     steps:
       - name: Download portable builds
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@main
         with:
           pattern: portable-*
           path: artifacts
@@ -199,13 +199,13 @@ jobs:
  
     steps:
       - name: Download MSIX packages
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@main
         with:
           pattern: msix-*
           path: AppPackages
  
       - name: Configure Microsoft Store CLI
-        uses: microsoft/microsoft-store-apppublisher@v1.1
+        uses: microsoft/microsoft-store-apppublisher@main
  
       - name: Authenticate
         run: >
