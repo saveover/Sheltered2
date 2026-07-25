@@ -37,6 +37,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - platform: x86
+            rid: win-x86
           - platform: x64
             rid: win-x64
           - platform: ARM64
@@ -56,6 +58,7 @@ jobs:
           dotnet restore $env:PROJECT
           -r ${{ matrix.rid }}
           -p:Platform=${{ matrix.platform }}
+          -p:PublishReadyToRun=true
 
       - name: Build
         run: >
@@ -63,6 +66,7 @@ jobs:
           -c Release
           -r ${{ matrix.rid }}
           -p:Platform=${{ matrix.platform }}
+          -p:PublishReadyToRun=true
           --no-restore
 
       # PublishTrimmed is forced off: the trimmer cannot see types that XAML
@@ -79,8 +83,9 @@ jobs:
           -p:PublishTrimmed=false
           -p:PublishReadyToRun=true
           --self-contained true
+          --no-restore
           -o publish/${{ matrix.rid }}
-
+ 
       - name: Upload portable artifact
         uses: actions/upload-artifact@v4
         with:
@@ -98,7 +103,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [x64, ARM64]
+        platform: [x86, x64, ARM64]
 
     steps:
       - name: Checkout
@@ -139,7 +144,8 @@ jobs:
           /p:AppxBundle=Never
           /p:AppxPackageSigningEnabled=false
           /p:PublishTrimmed=false
-
+          /p:PublishReadyToRun=false
+ 
       - name: Upload MSIX artifact
         uses: actions/upload-artifact@v4
         with:
@@ -157,14 +163,14 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: write
-
+ 
     steps:
       - name: Download portable builds
         uses: actions/download-artifact@v4
         with:
           pattern: portable-*
           path: artifacts
-
+ 
       - name: Zip each architecture
         shell: pwsh
         run: |
@@ -174,7 +180,7 @@ jobs:
             $out  = "dist/SaveOver-Sheltered2-$arch-${{ github.ref_name }}.zip"
             Compress-Archive -Path "$($_.FullName)/*" -DestinationPath $out
           }
-
+ 
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -182,7 +188,7 @@ jobs:
         run: |
           $files = Get-ChildItem dist/*.zip | ForEach-Object { $_.FullName }
           gh release create "${{ github.ref_name }}" $files --generate-notes --verify-tag
-
+ 
   # ---------------------------------------------------------------------------
   # Store submission. Disabled until the app is live in the Store.
   # ---------------------------------------------------------------------------
@@ -190,17 +196,17 @@ jobs:
     needs: msix
     if: false && startsWith(github.ref, 'refs/tags/v')
     runs-on: windows-latest
-
+ 
     steps:
       - name: Download MSIX packages
         uses: actions/download-artifact@v4
         with:
           pattern: msix-*
           path: AppPackages
-
+ 
       - name: Configure Microsoft Store CLI
         uses: microsoft/microsoft-store-apppublisher@v1.1
-
+ 
       - name: Authenticate
         run: >
           msstore reconfigure
@@ -208,10 +214,11 @@ jobs:
           --sellerId ${{ secrets.SELLER_ID }}
           --clientId ${{ secrets.AZURE_AD_APPLICATION_CLIENT_ID }}
           --clientSecret ${{ secrets.AZURE_AD_APPLICATION_SECRET }}
-
+ 
       - name: Publish to Store
         shell: pwsh
         run: |
           $pkg = Get-ChildItem AppPackages -Recurse -Include *.msixupload |
                  Select-Object -First 1
           msstore publish $pkg.FullName -id ${{ secrets.STORE_PRODUCT_ID }}
+ 
