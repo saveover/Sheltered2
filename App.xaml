@@ -24,6 +24,37 @@
                 <Setter Property="Padding" Value="16"/>
             </Style>
 
+            <!-- A page section: the standard Fluent card, used to group content on Home and Donate. -->
+            <Style x:Key="CardBorderStyle" TargetType="Border">
+                <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
+                <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="{StaticResource OverlayCornerRadius}"/>
+                <Setter Property="Padding" Value="24"/>
+            </Style>
+
+            <!-- A well inside a card, holding a value the user is meant to copy. -->
+            <Style x:Key="InsetBorderStyle" TargetType="Border">
+                <Setter Property="Background" Value="{ThemeResource LayerFillColorDefaultBrush}"/>
+                <Setter Property="BorderBrush" Value="{ThemeResource DividerStrokeColorDefaultBrush}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="{StaticResource ControlCornerRadius}"/>
+                <Setter Property="Padding" Value="12,8"/>
+            </Style>
+
+            <!-- Verbatim text - a path or a wallet address - shown for copying. -->
+            <Style x:Key="MonospaceTextBlockStyle" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="Consolas"/>
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>
+                <Setter Property="IsTextSelectionEnabled" Value="True"/>
+            </Style>
+
+            <!-- Copy button carrying an icon -->
+            <Style x:Key="IconButtonStyle" TargetType="Button">
+                <Setter Property="Padding" Value="8"/>
+                <Setter Property="CornerRadius" Value="4"/>
+            </Style>
+
         </ResourceDictionary>
     </Application.Resources>
 </Application>

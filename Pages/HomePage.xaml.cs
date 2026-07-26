@@ -17,9 +17,21 @@ namespace SaveOver.Sheltered2.Pages;
 /// </summary>
 public sealed partial class HomePage : Page
 {
+    /// <summary>Where Sheltered 2 keeps its saves, as shown on the page.</summary>
+    private const string SaveFolder = @"%userprofile%\AppData\LocalLow\Unicube\Sheltered2";
+
+    /// <summary>Drives the copy-to-checkmark swap on the copy button.</summary>
+    private readonly CopyIconFeedback _copyFeedback = new();
+
+    /// <summary>The copy button's resting tooltip, taken from the markup so the wording lives in
+    /// one place even though the copy swaps it out for a moment.</summary>
+    private readonly object _copyTooltip;
+
     public HomePage()
     {
         InitializeComponent();
+
+        _copyTooltip = ToolTipService.GetToolTip(CopyPathButton);
 
         // Keep the Save button in step with the shared load state, so it stays enabled even
         // if this page is recreated after a file was already loaded.
@@ -100,52 +112,27 @@ public sealed partial class HomePage : Page
     }
 
     /// <summary>
-    /// Copies the save file path to the clipboard.
+    /// Copies the save folder path to the clipboard, then swaps the button's copy glyph for a
+    /// checkmark until the feedback settles.
     /// </summary>
     private void CopyPathButton_Click(object sender, RoutedEventArgs e)
     {
         try
         {
-            // Expand the environment variable to the actual path
-            string expandedPath = Environment.ExpandEnvironmentVariables(@"%userprofile%\AppData\LocalLow\Unicube\Sheltered2");
-
+            // The page shows the path unexpanded, but the clipboard should carry a real one.
             DataPackage dataPackage = new();
-            dataPackage.SetText(expandedPath);
+            dataPackage.SetText(Environment.ExpandEnvironmentVariables(SaveFolder));
             Clipboard.SetContent(dataPackage);
-
-            // Show checkmark feedback
-            ShowCopySuccessFeedback();
         }
         catch (Exception ex)
         {
             LoadFileTextBlock.Text = $"Failed to copy path: {ex.Message}";
             System.Diagnostics.Debug.WriteLine($"Copy path error: {ex}");
+            return;
         }
-    }
 
-    /// <summary>
-    /// Shows visual feedback when the path is copied by cross-fading the copy icon to a
-    /// checkmark and back. Both icons overlap and are driven by opacity (the checkmark
-    /// starts at Opacity 0), so we run the storyboards rather than toggle Visibility -
-    /// setting Visibility left the checkmark visible-but-transparent, i.e. invisible.
-    /// </summary>
-    private void ShowCopySuccessFeedback()
-    {
-        ShowCheckmarkStoryboard.Begin();
         ToolTipService.SetToolTip(CopyPathButton, "Path copied!");
-
-        // Cross-fade back to the copy icon after 2 seconds.
-        DispatcherTimer timer = new()
-        {
-            Interval = TimeSpan.FromSeconds(2)
-        };
-        timer.Tick += (s, args) =>
-        {
-            ShowCopyIconStoryboard.Begin();
-            ToolTipService.SetToolTip(CopyPathButton, "Copy path to clipboard");
-            timer.Stop();
-        };
-        timer.Start();
+        _copyFeedback.Play(CopyPathButton, () => ToolTipService.SetToolTip(CopyPathButton, _copyTooltip));
     }
 
     /// <summary>

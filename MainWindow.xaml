@@ -38,13 +38,14 @@
                         BackRequested="OnNavigationViewBackRequested"
                         IsBackEnabled="{x:Bind RootFrame.CanGoBack, Mode=OneWay}">
 
-            <!-- Content frame -->
-            <ScrollViewer>
-                <Frame x:Name="RootFrame"
-                       Navigated="OnNavigated"
-                       NavigationFailed="OnNavigationFailed">
-                </Frame>
-            </ScrollViewer>
+            <!-- Content frame. Deliberately not wrapped in a ScrollViewer: one here would be a
+                 single control shared by every page, so its offset would carry from one page to
+                 the next, and it would hand each page infinite height - which stops a page's own
+                 ScrollViewer from ever scrolling. Each page brings its own instead. -->
+            <Frame x:Name="RootFrame"
+                   Navigated="OnNavigated"
+                   NavigationFailed="OnNavigationFailed">
+            </Frame>
 
             <!-- Navigation menu -->
             <NavigationView.MenuItems>

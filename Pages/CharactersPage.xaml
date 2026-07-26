@@ -14,6 +14,7 @@
     <!-- Two groups: Basics/Health/Needs/Relationships left, Stats/Skills right.
          Breakpoints: < 900 everything stacks, >= 900 Basics|Health pair up,
          >= 1400 the two groups sit side by side. Visual states only reflow. -->
+    <ScrollViewer>
     <Grid x:Name="RootGrid" Margin="36" ColumnSpacing="24" RowSpacing="24">
         <VisualStateManager.VisualStateGroups>
             <VisualStateGroup>
@@ -486,4 +487,5 @@
             </Border>
         </StackPanel>
     </Grid>
+    </ScrollViewer>
 </Page>
