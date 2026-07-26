@@ -2,6 +2,7 @@
 // Copyright (C) 2026 SaveOver
 
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -69,33 +70,33 @@ public sealed partial class DonatePage : Page
     public DonationTier Supporter { get; } = new(
         "Supporter",
         "$5 / month",
-        "Keeps the editors free for everyone.",
+        "Keeps the editors free for everyone. This funds the time that goes into building them and gets you a few things back!",
         [
             "Early access to new editors before they go public",
             "Your name or handle in the credits",
-            "Private channels on the Discord",
+            "Exclusive access to private channels on our Discord",
         ]);
 
     /// <inheritdoc cref="Supporter"/>
     public DonationTier Patron { get; } = new(
         "Patron",
         "$10 / month",
-        "A say in what game gets an editor next.",
+        "Members receive all Supporter perks, gain access to behind-the-scenes notes during editor development, and may propose and vote on which game gets an editor next.",
         [
-            "Everything in Supporter",
+            "Everything from previous tier",
             "Propose and vote on which game gets an editor next",
-            "Behind-the-scenes notes while an editor is being built",
+            "Behind-the-scenes posts while an editor is being built",
         ]);
 
     /// <inheritdoc cref="Supporter"/>
     public DonationTier Founder { get; } = new(
         "Founder",
         "$25 / month",
-        "A say in what features an editor gets next.",
+        "Members receive all Patron perks, are acknowledged in a dedicated section of the credits, and may provide input on features for both future and previous editors.",
         [
-            "Everything in Patron",
-            "Influence the features shipped with an editor",
-            "Your name in the Founders section, at the top of the credits",
+            "Everything from previous tier",
+            "Get your name or handle listed in a special credits section",
+            "Share your ideas for new and existing editor features",
         ]);
 
     /// <summary>Platforms bound to the Join card's repeater, in display order.</summary>
@@ -133,8 +134,8 @@ public sealed partial class DonatePage : Page
     public DonatePage() => InitializeComponent();
 
     /// <summary>
-    /// Copies the clicked row's address to the clipboard, announces it through the live-region
-    /// feedback line, and cross-fades the button's copy icon to a checkmark and back.
+    /// Copies the clicked row's address to the clipboard, cross-fades the button's copy icon to a
+    /// checkmark, and announces the outcome to assistive technology.
     /// </summary>
     private void CopyAddressButton_Click(object sender, RoutedEventArgs e)
     {
@@ -151,22 +152,37 @@ public sealed partial class DonatePage : Page
         }
         catch (Exception ex)
         {
-            SetFeedback("Could not copy the address. Please select and copy it manually.", success: false);
+            const string failure = "Could not copy the address. Please select and copy it manually.";
+
+            CopyErrorInfoBar.Message = failure;
+            CopyErrorInfoBar.IsOpen = true;
+            Announce(failure);
             Debug.WriteLine($"Copy address error: {ex}");
             return;
         }
 
-        SetFeedback($"{wallet.Name} address copied to clipboard.", success: true);
+        CopyErrorInfoBar.IsOpen = false;
         _copyFeedback.Play(button);
+        Announce($"{wallet.Name} address copied to clipboard.");
     }
 
     /// <summary>
-    /// Writes the live-region feedback line and colours it for the outcome, so a failure
-    /// isn't reported in the success green.
+    /// Speaks <paramref name="message"/> to a screen reader without putting anything on screen.
     /// </summary>
-    private void SetFeedback(string message, bool success)
+    /// <remarks>
+    /// A notification event rather than a live region: a live region needs a visible element to
+    /// hang off, which meant carrying a line of status text the sighted user never needed - the
+    /// checkmark already tells them. MostRecent means a burst of copies announces only the last.
+    /// </remarks>
+    private void Announce(string message)
     {
-        CopyFeedbackTextBlock.Text = message;
-        CopyFeedbackTextBlock.Foreground = (Brush)Resources[success ? "CopySuccessBrush" : "CopyErrorBrush"];
+        AutomationPeer? peer = FrameworkElementAutomationPeer.FromElement(this)
+            ?? FrameworkElementAutomationPeer.CreatePeerForElement(this);
+
+        peer?.RaiseNotificationEvent(
+            AutomationNotificationKind.ActionCompleted,
+            AutomationNotificationProcessing.MostRecent,
+            message,
+            "SaveOver.CopyAddress");
     }
 }

@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 SaveOver -->
 <Window
     x:Class="SaveOver.Sheltered2.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -12,36 +14,36 @@
     </Window.SystemBackdrop>
 
     <Grid>
-        <!-- Title bar -->
-        <Border x:Name="TitleBarArea"
-                Margin="48,16,0,0"
-                VerticalAlignment="Top"
-                AutomationProperties.AccessibilityView="Raw">
-            <StackPanel Orientation="Horizontal"
-                       Spacing="12">
-                <Image Source="/Assets/AppIcon.ico"
-                       Width="18"
-                       Height="18"
-                       AutomationProperties.Name="Application Icon"
-                       AutomationProperties.AccessibilityView="Raw" />
-                <TextBlock Style="{StaticResource CaptionTextBlockStyle}"
-                          Text="Sheltered 2 Save Editor"
-                          AutomationProperties.AccessibilityView="Raw"
-                          Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
-            </StackPanel>
-        </Border>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-        <!-- Main view -->
+        <!-- The TitleBar control owns the caption strip: it places the icon, title, back button
+             and pane toggle, and keeps clear of the caption buttons on its own. Handing it to
+             Window.SetTitleBar makes the strip draggable except where those buttons sit. -->
+        <TitleBar x:Name="AppTitleBar"
+                  Title="Sheltered 2 Save Editor"
+                  IsBackButtonVisible="False"
+                  IsPaneToggleButtonVisible="True"
+                  BackRequested="OnTitleBarBackRequested"
+                  PaneToggleRequested="OnTitleBarPaneToggleRequested">
+            <TitleBar.IconSource>
+                <ImageIconSource ImageSource="/Assets/AppIcon.ico"/>
+            </TitleBar.IconSource>
+        </TitleBar>
+
+        <!-- Main view. The back and pane buttons come from the TitleBar above, so NavigationView
+             must not draw its own or there would be two of each. -->
         <NavigationView x:Name="NavigationViewControl"
+                        Grid.Row="1"
                         IsTabStop="False"
+                        IsBackButtonVisible="Collapsed"
+                        IsPaneToggleButtonVisible="False"
                         SelectionChanged="OnNavigationViewSelectionChanged"
-                        BackRequested="OnNavigationViewBackRequested"
-                        IsBackEnabled="{x:Bind RootFrame.CanGoBack, Mode=OneWay}">
+                        BackRequested="OnNavigationViewBackRequested">
 
-            <!-- Content frame. Deliberately not wrapped in a ScrollViewer: one here would be a
-                 single control shared by every page, so its offset would carry from one page to
-                 the next, and it would hand each page infinite height - which stops a page's own
-                 ScrollViewer from ever scrolling. Each page brings its own instead. -->
+            <!-- Content frame -->
             <Frame x:Name="RootFrame"
                    Navigated="OnNavigated"
                    NavigationFailed="OnNavigationFailed">

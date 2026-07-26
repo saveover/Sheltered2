@@ -31,6 +31,11 @@ public partial class App : Application
     protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
         StartupWindow = new MainWindow();
+
+        // After the window exists, since the theme is applied to its root element - and before it
+        // is shown, so the app never flashes the wrong theme.
+        ThemeHelper.Initialize();
+
         StartupWindow.Activate();
     }
 }

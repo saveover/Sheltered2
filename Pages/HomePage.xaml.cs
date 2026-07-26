@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using SaveOver.Sheltered2.Helpers;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using Windows.ApplicationModel.DataTransfer;
@@ -13,12 +14,35 @@ using Windows.Storage;
 namespace SaveOver.Sheltered2.Pages;
 
 /// <summary>
+/// One tile in the home page's "What You Can Edit" grid.
+/// </summary>
+/// <param name="Name">Editor name, matching the navigation item it points at.</param>
+/// <param name="Summary">One line on what that editor covers.</param>
+/// <param name="Icon">Glyph shown beside the name. An <see cref="IconSource"/> rather than an
+/// <c>IconElement</c> because a template instantiates it once per item, and an element can only
+/// live at one place in the tree.</param>
+public sealed record EditorFeature(string Name, string Summary, IconSource Icon);
+
+/// <summary>
 /// The home page is displayed when the application starts.
 /// </summary>
 public sealed partial class HomePage : Page
 {
     /// <summary>Where Sheltered 2 keeps its saves, as shown on the page.</summary>
     private const string SaveFolder = @"%userprofile%\AppData\LocalLow\Unicube\Sheltered2";
+
+    /// <summary>Tiles bound to the "What You Can Edit" grid, in navigation order.</summary>
+    public IReadOnlyList<EditorFeature> Features { get; } =
+    [
+        new("Characters", "Stats, skills, traits", new SymbolIconSource { Symbol = Symbol.People }),
+        new("Pets", "Health, happiness, stats", Glyph("")),
+        new("Inventory", "Items, quantities", Glyph("")),
+        new("Crafting", "Materials, recipes", new SymbolIconSource { Symbol = Symbol.Repair }),
+        new("Factions", "Relationships, reputation", new SymbolIconSource { Symbol = Symbol.Flag }),
+    ];
+
+    /// <summary>A Segoe Fluent glyph, sized to match what the SymbolIconSources beside it render at.</summary>
+    private static FontIconSource Glyph(string glyph) => new() { Glyph = glyph, FontSize = 20 };
 
     /// <summary>Drives the copy-to-checkmark swap on the copy button.</summary>
     private readonly CopyIconFeedback _copyFeedback = new();

@@ -1,40 +1,54 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Copyright (C) 2026 SaveOver -->
 <Page
     x:Class="SaveOver.Sheltered2.Pages.PetsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d"
+    xmlns:helpers="using:SaveOver.Sheltered2.Helpers"
     NavigationCacheMode="Enabled">
 
-    <ScrollViewer>
-        <!-- Basics and Training sit side by side from 1000px, stacked below that. -->
-        <Grid x:Name="RootGrid" Margin="36" ColumnSpacing="24" RowSpacing="24"
+    <!-- Basics and Training sit side by side once this page is 950 wide, stacked below that. The
+         breakpoint is the page's width, not the window's, so the navigation pane opening or
+         closing reflows the cards instead of being invisible to them. The groups hang off the
+         page's root element: on an inner element the triggers still fire but nothing applies. -->
+    <Grid x:Name="PageRoot">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup>
+                <VisualState x:Name="NarrowLayout">
+                    <VisualState.StateTriggers>
+                        <helpers:ControlSizeTrigger TargetElement="{x:Bind PageRoot}" MinWidth="0" MaxWidth="950"/>
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="BasicsCard.(Grid.ColumnSpan)" Value="2"/>
+                        <Setter Target="TrainingCard.(Grid.Row)" Value="2"/>
+                        <Setter Target="TrainingCard.(Grid.Column)" Value="0"/>
+                        <Setter Target="TrainingCard.(Grid.ColumnSpan)" Value="2"/>
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="WideLayout">
+                    <VisualState.StateTriggers>
+                        <helpers:ControlSizeTrigger TargetElement="{x:Bind PageRoot}" MinWidth="950"/>
+                    </VisualState.StateTriggers>
+                    <!-- Default markup already has Basics | Training side by side. -->
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Outside the scroller, so it stays put while the cards move under it. -->
+        <TextBlock Margin="36,24,36,0"
+                   Text="Pets"
+                   Style="{StaticResource TitleTextBlockStyle}"
+                   AutomationProperties.HeadingLevel="Level1"/>
+
+        <ScrollView Grid.Row="1">
+        <Grid x:Name="RootGrid" Margin="36,16,36,36" ColumnSpacing="24" RowSpacing="24"
               MaxWidth="1100" HorizontalAlignment="Left">
-            <VisualStateManager.VisualStateGroups>
-                <VisualStateGroup>
-                    <VisualState x:Name="NarrowLayout">
-                        <VisualState.StateTriggers>
-                            <AdaptiveTrigger MinWindowWidth="0"/>
-                        </VisualState.StateTriggers>
-                        <VisualState.Setters>
-                            <Setter Target="BasicsCard.(Grid.ColumnSpan)" Value="2"/>
-                            <Setter Target="TrainingCard.(Grid.Row)" Value="3"/>
-                            <Setter Target="TrainingCard.(Grid.Column)" Value="0"/>
-                            <Setter Target="TrainingCard.(Grid.ColumnSpan)" Value="2"/>
-                        </VisualState.Setters>
-                    </VisualState>
-                    <VisualState x:Name="WideLayout">
-                        <VisualState.StateTriggers>
-                            <AdaptiveTrigger MinWindowWidth="1000"/>
-                        </VisualState.StateTriggers>
-                        <!-- Default markup already has Basics | Training side by side. -->
-                    </VisualState>
-                </VisualStateGroup>
-            </VisualStateManager.VisualStateGroups>
 
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -44,16 +58,10 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <TextBlock Grid.Row="0" Grid.ColumnSpan="2"
-                       Text="Pets"
-                       Style="{StaticResource TitleTextBlockStyle}"
-                       AutomationProperties.HeadingLevel="Level1"/>
-
             <ComboBox x:Name="PetComboBox"
-                      Grid.Row="1" Grid.ColumnSpan="2"
+                      Grid.Row="0" Grid.ColumnSpan="2"
                       Header="Select a pet from the drop-down menu and edit the relevant fields."
                       PlaceholderText="Select a pet"
                       DisplayMemberPath="DisplayName"
@@ -61,9 +69,9 @@
 
             <!-- Basics -->
             <Border x:Name="BasicsCard"
-                    Grid.Row="2" Grid.Column="0"
+                    Grid.Row="1" Grid.Column="0"
                     VerticalAlignment="Top"
-                    Style="{StaticResource CharacterBorderStyle}">
+                    Style="{StaticResource CardBorderStyle}">
                 <StackPanel Spacing="12">
                     <TextBlock Text="Basics"
                                Style="{StaticResource SubtitleTextBlockStyle}"
@@ -110,9 +118,9 @@
 
             <!-- Training -->
             <Border x:Name="TrainingCard"
-                    Grid.Row="2" Grid.Column="1"
+                    Grid.Row="1" Grid.Column="1"
                     VerticalAlignment="Top"
-                    Style="{StaticResource CharacterBorderStyle}">
+                    Style="{StaticResource CardBorderStyle}">
                 <StackPanel Spacing="12">
                     <TextBlock Text="Training"
                                Style="{StaticResource SubtitleTextBlockStyle}"
@@ -129,7 +137,7 @@
                                 Click="MinTrainingButton_Click"/>
                     </StackPanel>
                     <TextBlock x:Name="TrainingFeedbackTextBlock"
-                               Foreground="Gray"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                AutomationProperties.LiveSetting="Polite"/>
                     <Grid RowSpacing="8" ColumnSpacing="16">
                         <Grid.ColumnDefinitions>
@@ -189,5 +197,6 @@
                 </StackPanel>
             </Border>
         </Grid>
-    </ScrollViewer>
+        </ScrollView>
+    </Grid>
 </Page>

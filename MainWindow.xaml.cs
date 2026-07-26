@@ -1,7 +1,9 @@
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
+using SaveOver.Sheltered2.Helpers;
 using SaveOver.Sheltered2.Pages;
 using System;
 using System.Collections.Generic;
@@ -25,8 +27,12 @@ public sealed partial class MainWindow : Window
         ["Inventory"] = typeof(InventoryPage),
         ["Crafting"] = typeof(CraftingPage),
         ["Factions"] = typeof(FactionsPage),
-        ["Donate"] = typeof(DonatePage)
+        ["Donate"] = typeof(DonatePage),
+        [SettingsTag] = typeof(SettingsPage)
     };
+
+    /// <summary>Tag for the settings entry NavigationView provides for us.</summary>
+    private const string SettingsTag = "Settings";
 
     /// <summary>
     /// Tags whose pages are always reachable, even before a save file is loaded.
@@ -37,15 +43,58 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
         ExtendsContentIntoTitleBar = true;
+        SetTitleBar(AppTitleBar);
+
+        // Tall gives the caption buttons the full 48px strip rather than the 32px default, which is
+        // what lets the icon, title and pane toggle sit level with them.
+        AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
+
         InitializeNavigation();
 
         // Editor pages stay locked until a save file has been loaded and decrypted.
         App.CurrentSaveData.SaveDataChanged += OnSaveDataChanged;
         UpdateNavigationEnabledState();
+
+        // The TitleBar control sizes to its content, which here is just an icon and a caption -
+        // about 32px. The caption buttons are 48 under Tall, so left alone the strip ends up
+        // shorter than the buttons drawn over it and the content starts underneath them.
+        AppTitleBar.Loaded += (_, _) =>
+        {
+            if (AppTitleBar.XamlRoot is { } xamlRoot)
+            {
+                xamlRoot.Changed += (_, _) => MatchWindowTitleBarHeight();
+            }
+
+            MatchWindowTitleBarHeight();
+        };
+    }
+
+    /// <summary>
+    /// Grows the title bar strip to whatever height the window has reserved for it. Read from the
+    /// window rather than hard-coded, so it follows <see cref="TitleBarHeightOption"/>; the value
+    /// is in physical pixels, so it is scaled back into the DIPs layout works in.
+    /// </summary>
+    private void MatchWindowTitleBarHeight()
+    {
+        double scale = AppTitleBar.XamlRoot?.RasterizationScale ?? 1;
+
+        AppTitleBar.Height = AppWindow.TitleBar.Height / (scale <= 0 ? 1 : scale);
     }
 
     private void OnSaveDataChanged(object? sender, EventArgs e) => UpdateNavigationEnabledState();
+
+    private void OnTitleBarPaneToggleRequested(TitleBar sender, object args) =>
+        NavigationViewControl.IsPaneOpen = !NavigationViewControl.IsPaneOpen;
+
+    private void OnTitleBarBackRequested(TitleBar sender, object args)
+    {
+        if (RootFrame.CanGoBack)
+        {
+            RootFrame.GoBack();
+        }
+    }
 
     /// <summary>
     /// Enables or disables the editor navigation items based on whether a save is loaded.
@@ -109,7 +158,12 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private void OnNavigationViewSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
-        if (args.SelectedItem is NavigationViewItem { Tag: string pageTag })
+        // The settings entry is built into NavigationView and carries no Tag of its own.
+        if (args.IsSettingsSelected)
+        {
+            NavigateToPage(SettingsTag);
+        }
+        else if (args.SelectedItem is NavigationViewItem { Tag: string pageTag })
         {
             NavigateToPage(pageTag);
         }
@@ -120,7 +174,13 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private void OnNavigated(object sender, NavigationEventArgs e)
     {
-        NavigationViewControl.IsBackEnabled = RootFrame.CanGoBack;
+        AppTitleBar.IsBackButtonVisible = RootFrame.CanGoBack;
+
+        if (e.SourcePageType == typeof(SettingsPage))
+        {
+            NavigationViewControl.SelectedItem = NavigationViewControl.SettingsItem;
+            return;
+        }
 
         string tag = PageMap.FirstOrDefault(p => p.Value == e.SourcePageType).Key;
 

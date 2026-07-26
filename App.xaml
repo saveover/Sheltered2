@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 SaveOver -->
 <Application
     x:Class="SaveOver.Sheltered2.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -11,20 +13,15 @@
                 <!-- Other merged dictionaries here -->
             </ResourceDictionary.MergedDictionaries>
 
-            <Thickness x:Key="NavigationViewContentMargin">0,48,0,0</Thickness>
-            <Thickness x:Key="NavigationViewMinimalContentMargin">0,48,0,0</Thickness>
+            <!-- The TitleBar sits in its own row above the NavigationView rather than overlapping
+                 it, so the content needs no top margin to clear a title bar. -->
+            <Thickness x:Key="NavigationViewContentMargin">0</Thickness>
+            <Thickness x:Key="NavigationViewMinimalContentMargin">0</Thickness>
             <Thickness x:Key="NavigationViewContentGridBorderThickness">1,1,0,0</Thickness>
             <CornerRadius x:Key="NavigationViewContentGridCornerRadius">8,0,0,0</CornerRadius>
 
-            <Style x:Key="CharacterBorderStyle" TargetType="Border">
-                <Setter Property="Background" Value="{ThemeResource SolidBackgroundFillColorBaseBrush}"/>
-                <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
-                <Setter Property="BorderThickness" Value="2"/>
-                <Setter Property="CornerRadius" Value="{StaticResource OverlayCornerRadius}"/>
-                <Setter Property="Padding" Value="16"/>
-            </Style>
-
-            <!-- A page section: the standard Fluent card, used to group content on Home and Donate. -->
+            <!-- A page section: the standard Fluent card. Every card in the app uses this, so the
+                 editor pages and Home/Donate read as one surface. -->
             <Style x:Key="CardBorderStyle" TargetType="Border">
                 <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
                 <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
@@ -53,6 +50,26 @@
             <Style x:Key="IconButtonStyle" TargetType="Button">
                 <Setter Property="Padding" Value="8"/>
                 <Setter Property="CornerRadius" Value="4"/>
+            </Style>
+
+            <!-- One row on the settings page: icon, header and description on the left, the
+                 control that changes the setting on the right. Shaped after the Community
+                 Toolkit's SettingsCard, which we can't take as a dependency: it is built against
+                 Windows App SDK 1.6 and this app is on 2.3. -->
+            <Style x:Key="SettingsCardStyle" TargetType="Border">
+                <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
+                <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="{StaticResource ControlCornerRadius}"/>
+                <Setter Property="Padding" Value="16"/>
+                <Setter Property="MinHeight" Value="68"/>
+            </Style>
+
+            <!-- The heading above a group of settings rows. -->
+            <Style x:Key="SettingsSectionHeaderTextBlockStyle"
+                   BasedOn="{StaticResource BodyStrongTextBlockStyle}"
+                   TargetType="TextBlock">
+                <Setter Property="Margin" Value="1,28,0,4"/>
             </Style>
 
         </ResourceDictionary>
