@@ -18,7 +18,7 @@ public sealed partial class Pet : ObservableObject
         get;
         set
         {
-            if (SetProperty(ref field, value ?? string.Empty))
+            if (SetProperty(ref field, (value ?? string.Empty).Trim()))
             {
                 OnPropertyChanged(nameof(DisplayName));
             }

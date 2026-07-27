@@ -459,6 +459,8 @@ public sealed partial class CharactersPage : Page
                 character.FirstName = FirstNameTextBox.Text;
             }
         };
+        FirstNameTextBox.LostFocus += (_, _) =>
+            FirstNameTextBox.Text = FirstNameTextBox.Text.Trim();
 
         LastNameTextBox.TextChanged += (s, e) =>
         {
@@ -467,6 +469,8 @@ public sealed partial class CharactersPage : Page
                 character.LastName = LastNameTextBox.Text;
             }
         };
+        LastNameTextBox.LostFocus += (_, _) =>
+            LastNameTextBox.Text = LastNameTextBox.Text.Trim();
 
         WireIntegerNumber(CurrentHealthNumberBox, (character, value) => character.CurrentHealth = value);
         WireIntegerNumber(MaxHealthNumberBox, (character, value) => character.MaxHealth = value);

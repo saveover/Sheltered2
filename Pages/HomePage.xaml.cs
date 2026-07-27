@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using Windows.ApplicationModel.DataTransfer;
-using Windows.Storage;
 
 namespace SaveOver.Sheltered2.Pages;
 
@@ -70,21 +69,22 @@ public sealed partial class HomePage : Page
 
         try
         {
-            StorageFile? file = await FileHelper.PickFileAsync(CancellationToken.None);
-            if (file is null)
+            string? filePath = await FileHelper.PickFileAsync(CancellationToken.None);
+            if (filePath is null)
             {
                 LoadFileTextBlock.Text = "No file selected.";
                 return;
             }
 
-            LoadFileTextBlock.Text = $"Loading {file.Name}...";
-            string decryptedContent = await FileHelper.LoadAndDecryptSaveFileAsync(file);
+            string fileName = Path.GetFileName(filePath);
+            LoadFileTextBlock.Text = $"Loading {fileName}...";
+            string decryptedContent = await FileHelper.LoadAndDecryptSaveFileAsync(filePath);
             ParsedSave parsed = SaveParser.Parse(decryptedContent);
 
             // Raises SaveDataChanged, which unlocks navigation and refreshes the editor pages.
-            App.CurrentSaveData.Load(file, decryptedContent, parsed);
+            App.CurrentSaveData.Load(filePath, decryptedContent, parsed);
 
-            LoadFileTextBlock.Text = $"File '{file.Name}' loaded successfully. You can now navigate to other pages to edit your save.";
+            LoadFileTextBlock.Text = $"File '{fileName}' loaded successfully. You can now navigate to other pages to edit your save.";
         }
         catch (Exception ex) when (ex is FileNotFoundException or InvalidDataException)
         {
@@ -105,7 +105,7 @@ public sealed partial class HomePage : Page
     private async void SaveFileButton_Click(object sender, RoutedEventArgs e)
     {
         SaveSession saveData = App.CurrentSaveData;
-        if (!saveData.IsLoaded || saveData.SourceFile is not StorageFile sourceFile)
+        if (!saveData.IsLoaded || saveData.SourceFilePath is not string sourceFilePath)
         {
             LoadFileTextBlock.Text = "Load a save file before saving.";
             return;
@@ -119,11 +119,11 @@ public sealed partial class HomePage : Page
         {
             // A timestamped backup is created first and the write itself is atomic.
             string updatedXml = SaveWriter.ApplyEdits(saveData.DecryptedContent, saveData.Characters, saveData.Pets);
-            await FileHelper.EncryptAndSaveSaveFileAsync(sourceFile, updatedXml);
+            await FileHelper.EncryptAndSaveSaveFileAsync(sourceFilePath, updatedXml);
             saveData.CommitSavedContent(updatedXml);
 
             LoadFileTextBlock.Text =
-                $"Saved '{sourceFile.Name}'. A timestamped backup was created alongside it.";
+                $"Saved '{Path.GetFileName(sourceFilePath)}'. A timestamped backup was created alongside it.";
         }
         catch (Exception ex)
         {

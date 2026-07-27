@@ -30,7 +30,7 @@ public sealed partial class Character : ObservableObject
         get;
         set
         {
-            if (SetProperty(ref field, value ?? string.Empty))
+            if (SetProperty(ref field, (value ?? string.Empty).Trim()))
             {
                 OnPropertyChanged(nameof(FullName));
             }
@@ -42,7 +42,7 @@ public sealed partial class Character : ObservableObject
         get;
         set
         {
-            if (SetProperty(ref field, value ?? string.Empty))
+            if (SetProperty(ref field, (value ?? string.Empty).Trim()))
             {
                 OnPropertyChanged(nameof(FullName));
             }

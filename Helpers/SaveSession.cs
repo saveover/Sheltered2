@@ -4,7 +4,6 @@
 using SaveOver.Sheltered2.Models;
 using System;
 using System.Collections.Generic;
-using Windows.Storage;
 
 namespace SaveOver.Sheltered2.Helpers;
 
@@ -15,7 +14,7 @@ namespace SaveOver.Sheltered2.Helpers;
 /// </summary>
 internal sealed class SaveSession
 {
-    public StorageFile? SourceFile { get; private set; }
+    public string? SourceFilePath { get; private set; }
 
     public string DecryptedContent { get; private set; } = string.Empty;
 
@@ -29,7 +28,7 @@ internal sealed class SaveSession
     /// </summary>
     public Character? SelectedCharacter { get; set; }
 
-    public bool IsLoaded => SourceFile is not null && !string.IsNullOrEmpty(DecryptedContent);
+    public bool IsLoaded => !string.IsNullOrEmpty(SourceFilePath) && !string.IsNullOrEmpty(DecryptedContent);
 
     /// <summary>
     /// Raised when the loaded save data is replaced. Note this also fires when a second
@@ -37,13 +36,13 @@ internal sealed class SaveSession
     /// </summary>
     public event EventHandler? SaveDataChanged;
 
-    public void Load(StorageFile file, string decryptedContent, ParsedSave data)
+    public void Load(string filePath, string decryptedContent, ParsedSave data)
     {
-        ArgumentNullException.ThrowIfNull(file);
+        ArgumentException.ThrowIfNullOrEmpty(filePath);
         ArgumentException.ThrowIfNullOrEmpty(decryptedContent);
         ArgumentNullException.ThrowIfNull(data);
 
-        SourceFile = file;
+        SourceFilePath = filePath;
         DecryptedContent = decryptedContent;
         Characters = data.Characters;
         Pets = data.Pets;

@@ -140,6 +140,8 @@ public sealed partial class PetsPage : Page
                 pet.Name = PetNameTextBox.Text;
             }
         };
+        PetNameTextBox.LostFocus += (_, _) =>
+            PetNameTextBox.Text = PetNameTextBox.Text.Trim();
 
         WireIntegerNumber(PetAgeNumberBox, (p, v) => p.Age = v);
         WireIntegerNumber(PetHealthNumberBox, (p, v) => p.Health = v);

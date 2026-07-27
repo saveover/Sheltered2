@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 SaveOver
 
+using Microsoft.Windows.Storage.Pickers;
 using System;
 using System.Globalization;
 using System.IO;
@@ -8,10 +9,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Windows.Storage;
-using Windows.Storage.FileProperties;
-using Windows.Storage.Pickers;
-using WinRT.Interop;
 
 namespace SaveOver.Sheltered2.Helpers;
 
@@ -22,7 +19,8 @@ internal static class FileHelper
 {
     private const string ExpectedHeader = "<root>";
     private const string ExpectedFooter = "</root>";
-    private const ulong MaxFileSize = 25UL * 1024 * 1024; // 25 MB
+    private const long MaxFileSize = 25L * 1024 * 1024; // 25 MB
+    private const int BackupCopyBufferSize = 80 * 1024;
     private const string BackupFileSuffix = "_backup_";
     private const string BackupDateFormat = "yyyyMMdd_HHmmss";
     private static readonly UTF8Encoding StrictUtf8 = new(
@@ -32,20 +30,20 @@ internal static class FileHelper
     /// <summary>
     /// Opens a file picker so the user can select a save file.
     /// </summary>
-    internal static async Task<StorageFile?> PickFileAsync(CancellationToken cancellationToken = default)
+    internal static async Task<string?> PickFileAsync(CancellationToken cancellationToken = default)
     {
-        FileOpenPicker picker = new()
+        FileOpenPicker picker = new(App.StartupWindow!.AppWindow.Id)
         {
             SuggestedStartLocation = PickerLocationId.ComputerFolder,
             FileTypeFilter = { ".dat" },
         };
 
-        // A WinUI 3 desktop app must associate the picker with the app window's HWND.
-        InitializeWithWindow.Initialize(picker, WindowNative.GetWindowHandle(App.StartupWindow!));
-
         try
         {
-            return await picker.PickSingleFileAsync().AsTask(cancellationToken).ConfigureAwait(false);
+            PickFileResult? result = await picker.PickSingleFileAsync()
+                .AsTask(cancellationToken)
+                .ConfigureAwait(false);
+            return result?.Path;
         }
         catch (Exception ex) when (ex is COMException or InvalidOperationException)
         {
@@ -59,61 +57,61 @@ internal static class FileHelper
     /// <exception cref="InvalidDataException">
     /// Thrown when the file is empty, too large, or is not a valid Sheltered 2 save file.
     /// </exception>
-    internal static async Task<string> LoadAndDecryptSaveFileAsync(StorageFile file, CancellationToken cancellationToken = default)
+    internal static async Task<string> LoadAndDecryptSaveFileAsync(string filePath, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(file);
+        ArgumentException.ThrowIfNullOrEmpty(filePath);
+        cancellationToken.ThrowIfCancellationRequested();
 
-        BasicProperties properties = await file.GetBasicPropertiesAsync()
-            .AsTask(cancellationToken)
-            .ConfigureAwait(false);
-        if (properties.Size is 0 or > MaxFileSize)
+        string fileName = Path.GetFileName(filePath);
+        FileInfo fileInfo = new(filePath);
+        if (fileInfo.Length is 0 or > MaxFileSize)
         {
-            throw new InvalidDataException($"The file '{file.Name}' is not a valid save file.");
+            throw new InvalidDataException($"The file '{fileName}' is not a valid save file.");
         }
 
         try
         {
             // Decrypt exactly once, then validate the resulting text.
-            byte[] decryptedData = await XorCipherHelper.LoadAndDecryptAsync(file.Path, cancellationToken).ConfigureAwait(false);
+            byte[] decryptedData = await XorCipherHelper.LoadAndDecryptAsync(filePath, cancellationToken).ConfigureAwait(false);
             string content = StrictUtf8.GetString(decryptedData);
 
             return !HasValidSignature(content.AsSpan().Trim())
-                ? throw new InvalidDataException($"The file '{file.Name}' is not a valid Sheltered 2 save file.")
+                ? throw new InvalidDataException($"The file '{fileName}' is not a valid Sheltered 2 save file.")
                 : content;
         }
         catch (DecoderFallbackException ex)
         {
-            throw new InvalidDataException($"The file '{file.Name}' is not valid UTF-8.", ex);
+            throw new InvalidDataException($"The file '{fileName}' is not valid UTF-8.", ex);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or COMException)
         {
-            throw new IOException($"An error occurred while loading or decrypting '{file.Path}'.", ex);
+            throw new IOException($"An error occurred while loading or decrypting '{filePath}'.", ex);
         }
     }
 
     /// <summary>
-    /// Encrypts <paramref name="content"/> and writes it back to <paramref name="file"/>,
+    /// Encrypts <paramref name="content"/> and writes it back to <paramref name="filePath"/>,
     /// optionally creating a timestamped backup first. The write is staged to a temporary
     /// file and then swapped into place so a crash mid-write cannot corrupt the save.
     /// </summary>
     internal static async Task EncryptAndSaveSaveFileAsync(
-        StorageFile file,
+        string filePath,
         string content,
         bool createBackup = true,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(file);
+        ArgumentException.ThrowIfNullOrEmpty(filePath);
         ArgumentException.ThrowIfNullOrEmpty(content);
 
         if (createBackup)
         {
-            await CreateBackupAsync(file, cancellationToken).ConfigureAwait(false);
+            await CreateBackupAsync(filePath, cancellationToken).ConfigureAwait(false);
         }
 
         byte[] encryptedBytes = Encoding.UTF8.GetBytes(content);
         XorCipherHelper.Transform(encryptedBytes, encryptedBytes, cancellationToken);
 
-        string destinationPath = file.Path;
+        string destinationPath = filePath;
         string directory = Path.GetDirectoryName(destinationPath)
             ?? throw new IOException($"Could not determine the directory for '{destinationPath}'.");
         string tempPath = Path.Combine(
@@ -143,26 +141,77 @@ internal static class FileHelper
     /// Creates a timestamped backup copy of the specified file in the same directory.
     /// </summary>
     /// <exception cref="IOException">The backup could not be created, so the save was not changed.</exception>
-    internal static async Task CreateBackupAsync(StorageFile file, CancellationToken cancellationToken = default)
+    internal static async Task CreateBackupAsync(string filePath, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(file);
+        ArgumentException.ThrowIfNullOrEmpty(filePath);
+
+        string directory = Path.GetDirectoryName(filePath)
+            ?? throw new IOException($"Could not determine the directory for '{filePath}'.");
+        string timestamp = DateTime.Now.ToString(BackupDateFormat, CultureInfo.InvariantCulture);
+        string backupBaseName = $"{Path.GetFileNameWithoutExtension(filePath)}{BackupFileSuffix}{timestamp}";
+        string extension = Path.GetExtension(filePath);
 
         try
         {
-            StorageFolder folder = await file.GetParentAsync()
-                .AsTask(cancellationToken)
-                .ConfigureAwait(false);
-            string timestamp = DateTime.Now.ToString(BackupDateFormat, CultureInfo.InvariantCulture);
-            string backupFileName =
-                $"{Path.GetFileNameWithoutExtension(file.Name)}{BackupFileSuffix}{timestamp}{Path.GetExtension(file.Name)}";
-
-            _ = await file.CopyAsync(folder, backupFileName, NameCollisionOption.GenerateUniqueName)
-                .AsTask(cancellationToken)
-                .ConfigureAwait(false);
+            for (int copyNumber = 1; ; copyNumber++)
+            {
+                string collisionSuffix = copyNumber == 1 ? string.Empty : $" ({copyNumber})";
+                string backupPath = Path.Combine(directory, $"{backupBaseName}{collisionSuffix}{extension}");
+                if (await TryCreateBackupAsync(filePath, backupPath, cancellationToken).ConfigureAwait(false))
+                {
+                    return;
+                }
+            }
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or COMException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            throw new IOException($"Could not create a backup of '{file.Path}'. The save was not changed.", ex);
+            throw new IOException($"Could not create a backup of '{filePath}'. The save was not changed.", ex);
+        }
+    }
+
+    private static async Task<bool> TryCreateBackupAsync(
+        string sourcePath,
+        string destinationPath,
+        CancellationToken cancellationToken)
+    {
+        bool destinationCreated = false;
+
+        try
+        {
+            await using FileStream destination = new(
+                destinationPath,
+                FileMode.CreateNew,
+                FileAccess.Write,
+                FileShare.None,
+                BackupCopyBufferSize,
+                FileOptions.Asynchronous);
+            destinationCreated = true;
+
+            await using FileStream source = new(
+                sourcePath,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read,
+                BackupCopyBufferSize,
+                FileOptions.Asynchronous | FileOptions.SequentialScan);
+            await source.CopyToAsync(destination, BackupCopyBufferSize, cancellationToken).ConfigureAwait(false);
+            return true;
+        }
+        catch (Exception ex) when (
+            !destinationCreated &&
+            ex is IOException or UnauthorizedAccessException &&
+            (File.Exists(destinationPath) || Directory.Exists(destinationPath)))
+        {
+            return false;
+        }
+        catch
+        {
+            if (destinationCreated)
+            {
+                TryDeleteFile(destinationPath);
+            }
+
+            throw;
         }
     }
 
