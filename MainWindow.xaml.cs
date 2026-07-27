@@ -1,4 +1,4 @@
-using Microsoft.UI.Windowing;
+﻿using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
@@ -175,6 +175,20 @@ public sealed partial class MainWindow : Window
     private void OnNavigated(object sender, NavigationEventArgs e)
     {
         AppTitleBar.IsBackButtonVisible = RootFrame.CanGoBack;
+
+        // A cached page misses any theme switch that happened while it was off the visual tree, so
+        // its InfoBars come back styled for the old theme. Once it is attached and templated, put
+        // them right. The handler removes itself, so re-visiting a page doesn't stack handlers.
+        if (e.Content is FrameworkElement arriving)
+        {
+            void RefreshInfoBars(object sender, RoutedEventArgs args)
+            {
+                arriving.Loaded -= RefreshInfoBars;
+                ThemeHelper.RefreshInfoBars(arriving);
+            }
+
+            arriving.Loaded += RefreshInfoBars;
+        }
 
         if (e.SourcePageType == typeof(SettingsPage))
         {

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 SaveOver
 
-using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Hosting;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using System;
 using System.Diagnostics;
-using System.Numerics;
+using Windows.Foundation;
 
 namespace SaveOver.Sheltered2.Helpers;
 
@@ -19,15 +19,13 @@ namespace SaveOver.Sheltered2.Helpers;
 /// <para>
 /// The button's content must be a panel whose first two children are the copy glyph and then the
 /// checkmark, stacked on top of each other, with the checkmark starting at <c>Opacity="0"</c>.
-/// Nothing else is asked of the markup: the glyphs are found by position rather than by name, so
-/// the same button works inside a <see cref="DataTemplate"/> where no name is addressable.
+/// Nothing else is asked of the markup: the glyphs are found by position rather than by name, and
+/// the storyboard is given the elements themselves rather than names, so the same button works
+/// inside a <see cref="DataTemplate"/> where no name is addressable.
 /// </para>
 /// <para>
-/// The whole cycle is composition animations running on the compositor thread, and the hold is a
-/// pair of flat keyframes rather than a timer - so there is nothing to leak and no second
-/// callback that can race with a later copy. Starting an animation replaces whatever was running
-/// on that property, which is what lets an interrupted cycle pick up mid-flight instead of
-/// snapping.
+/// The hold is a pair of flat keyframes in one timeline rather than a timer, so there is nothing
+/// to leak and no second callback that can race with a later copy.
 /// </para>
 /// <para>
 /// Hold one instance per page. It remembers the row currently showing a checkmark, so copying a
@@ -56,34 +54,26 @@ internal sealed class CopyIconFeedback
     private const double CopyReturnsMs = CheckLeavesMs + OverlapMs;
     private const double CycleMs = CopyReturnsMs + FadeInMs;
 
-    /// <summary>Length of the shortened hand-back played when another row steals the checkmark.</summary>
-    private const double ReturnMs = OverlapMs + FadeInMs;
-
     /// <summary>Scale a glyph shrinks to when it steps aside.</summary>
-    private const float TuckedScale = 0.8f;
+    private const double TuckedScale = 0.8;
 
     /// <summary>Scale the checkmark enters from, pulled in past <see cref="TuckedScale"/> so the
     /// overshoot has something to travel.</summary>
-    private const float EnteringScale = 0.6f;
+    private const double EnteringScale = 0.6;
 
-    /// <summary>Reads the property's live value, so a keyframe can pin it rather than retarget it.</summary>
-    private const string LiveValue = "this.StartingValue";
+    private static readonly Point Centre = new(0.5, 0.5);
 
-    /// <summary>The glyphs of the button currently showing a checkmark, if any.</summary>
-    private (FrameworkElement Copy, FrameworkElement Check, Action? OnSettled)? _shown;
-
-    /// <summary>Bumped whenever a cycle is superseded, so a stale completion can't settle the row
-    /// a later copy now owns.</summary>
-    private int _generation;
+    /// <summary>The row currently showing a checkmark, and the timeline driving it.</summary>
+    private (Storyboard Storyboard, Action? OnSettled)? _shown;
 
     /// <summary>
     /// Swaps <paramref name="button"/>'s copy glyph for a checkmark, holds it, and brings the copy
     /// glyph back. Does nothing if the button's content isn't shaped as described on the class.
     /// </summary>
     /// <param name="button">The icon button that was just clicked.</param>
-    /// <param name="onSettled">Raised once the checkmark is on its way out, whether the cycle ran
-    /// its course or a later copy cut it short. Use it to undo anything set alongside the copy,
-    /// such as a "copied!" tooltip.</param>
+    /// <param name="onSettled">Raised once the checkmark is gone, whether the cycle ran its course
+    /// or a later copy cut it short. Use it to undo anything set alongside the copy, such as a
+    /// "copied!" tooltip.</param>
     public void Play(Button button, Action? onSettled = null)
     {
         if (button.Content is not Panel { Children: [FrameworkElement copyIcon, FrameworkElement checkIcon, ..] })
@@ -99,49 +89,40 @@ internal sealed class CopyIconFeedback
         // here, so a failure to animate is not worth taking the app down for.
         try
         {
-            // A XAML Opacity and its visual's Opacity are separate values that multiply, so the
-            // markup's Opacity="0" would pin the checkmark at nothing however hard we animated the
-            // visual. Open the XAML shutter and let composition own the glyph from here. Nothing
-            // below writes the XAML property back, so re-opening it on every copy is a no-op.
-            checkIcon.Opacity = 1;
+            CompositeTransform copyScale = CentreForScaling(copyIcon);
+            CompositeTransform checkScale = CentreForScaling(checkIcon);
 
-            Visual copy = Prepare(copyIcon);
-            Visual check = Prepare(checkIcon);
-            Compositor compositor = copy.Compositor;
+            CubicEase ease = new() { EasingMode = EasingMode.EaseOut };
+            BackEase bounce = new() { EasingMode = EasingMode.EaseOut, Amplitude = 0.3 };
 
-            CompositionEasingFunction ease = EaseOut(compositor);
-            CompositionEasingFunction bounce = CompositionEasingFunction.CreateBackEasingFunction(
-                compositor, CompositionEasingFunctionMode.Out, amplitude: 0.3f);
+            Storyboard storyboard = new();
 
-            int generation = ++_generation;
-            CompositionScopedBatch batch = compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
+            // The copy glyph has no keyframe at 0, so it leaves from wherever it currently sits and
+            // an interrupted cycle resumes rather than jumps. The flat middle keyframe is the hold.
+            Add(storyboard, copyIcon, OpacityPath, (FadeOutMs, 0, ease), (CopyReturnsMs, 0, null), (CycleMs, 1, ease));
+            Add(storyboard, copyScale, ScaleXPath, (FadeOutMs, TuckedScale, ease), (CopyReturnsMs, TuckedScale, null), (CycleMs, 1, ease));
+            Add(storyboard, copyScale, ScaleYPath, (FadeOutMs, TuckedScale, ease), (CopyReturnsMs, TuckedScale, null), (CycleMs, 1, ease));
 
-            // The copy glyph has no keyframe at progress 0, so it leaves from wherever it
-            // currently sits and an interrupted cycle resumes rather than jumps.
-            Fade(copy, CycleMs, (FadeOutMs, 0f, ease), (CopyReturnsMs, 0f, ease), (CycleMs, 1f, ease));
-            Scale(copy, CycleMs, (FadeOutMs, TuckedScale, ease), (CopyReturnsMs, TuckedScale, ease), (CycleMs, 1f, ease));
+            // The checkmark does pin 0, so the bounce always travels the same distance.
+            Add(storyboard, checkIcon, OpacityPath, (0, 0, null), (OverlapMs, 0, null), (CheckUpMs, 1, bounce), (CheckLeavesMs, 1, null), (CheckGoneMs, 0, ease));
+            Add(storyboard, checkScale, ScaleXPath, (0, EnteringScale, null), (OverlapMs, EnteringScale, null), (CheckUpMs, 1, bounce), (CheckLeavesMs, 1, null), (CheckGoneMs, TuckedScale, ease));
+            Add(storyboard, checkScale, ScaleYPath, (0, EnteringScale, null), (OverlapMs, EnteringScale, null), (CheckUpMs, 1, bounce), (CheckLeavesMs, 1, null), (CheckGoneMs, TuckedScale, ease));
 
-            // The checkmark does pin progress 0, both because the shutter above may just have
-            // opened on a glyph the compositor still holds at full opacity, and so the bounce
-            // always travels the same distance.
-            Fade(check, CycleMs, (0, 0f, ease), (OverlapMs, 0f, ease), (CheckUpMs, 1f, bounce), (CheckLeavesMs, 1f, ease), (CheckGoneMs, 0f, ease));
-            Scale(check, CycleMs, (0, EnteringScale, ease), (OverlapMs, EnteringScale, ease), (CheckUpMs, 1f, bounce), (CheckLeavesMs, 1f, ease), (CheckGoneMs, TuckedScale, ease));
-
-            batch.Completed += (_, _) =>
+            storyboard.Completed += (_, _) =>
             {
-                // Replacing an animation also completes its batch, so ignore a batch that a later
-                // copy has already superseded - that copy owns the row now.
-                if (_generation != generation)
+                // Stopping hands every animated property back to its markup value, which by now is
+                // where the cycle has already left them: the copy glyph up, the checkmark gone.
+                storyboard.Stop();
+
+                if (_shown?.Storyboard == storyboard)
                 {
-                    return;
+                    _shown = null;
+                    onSettled?.Invoke();
                 }
-
-                _shown = null;
-                onSettled?.Invoke();
             };
-            batch.End();
 
-            _shown = (copyIcon, checkIcon, onSettled);
+            storyboard.Begin();
+            _shown = (storyboard, onSettled);
         }
         catch (Exception ex)
         {
@@ -151,97 +132,67 @@ internal sealed class CopyIconFeedback
     }
 
     /// <summary>
-    /// Hands the row that is showing a checkmark back to its copy glyph, on the same overlap the
-    /// tail of a full cycle uses.
+    /// Hands the row that is showing a checkmark straight back to its copy glyph.
     /// </summary>
+    /// <remarks>
+    /// Stopping a storyboard reverts what it animated to the value in the markup - copy glyph
+    /// visible at full size, checkmark at <c>Opacity="0"</c> - which is exactly the resting state,
+    /// so no return leg has to be animated. It lands at once rather than fading, which is what we
+    /// want here: attention has already moved to the row that was just copied.
+    /// </remarks>
     private void Settle()
     {
-        if (_shown is not (FrameworkElement copyIcon, FrameworkElement checkIcon, var onSettled))
+        if (_shown is not (Storyboard storyboard, var onSettled))
         {
             return;
         }
 
         _shown = null;
-        _generation++;
-
-        try
-        {
-            Visual copy = Prepare(copyIcon);
-            Visual check = Prepare(checkIcon);
-            CompositionEasingFunction ease = EaseOut(copy.Compositor);
-
-            Fade(check, ReturnMs, (FadeOutMs, 0f, ease));
-            Scale(check, ReturnMs, (FadeOutMs, TuckedScale, ease));
-
-            // The copy glyph holds its live value through the overlap rather than a literal 0, so
-            // settling a row that already finished on its own is a no-op instead of a flicker.
-            Fade(copy, ReturnMs, (OverlapMs, null, ease), (ReturnMs, 1f, ease));
-            Scale(copy, ReturnMs, (OverlapMs, null, ease), (ReturnMs, 1f, ease));
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Copy feedback animation error: {ex}");
-        }
-
+        storyboard.Stop();
         onSettled?.Invoke();
     }
 
-    /// <summary>The everyday easing, matching the <c>CubicEase</c> the page styles use elsewhere:
-    /// a cubic is a power curve of 3.</summary>
-    private static CompositionEasingFunction EaseOut(Compositor compositor) =>
-        CompositionEasingFunction.CreatePowerEasingFunction(compositor, CompositionEasingFunctionMode.Out, power: 3f);
+    /// <summary>Gives the element a <see cref="CompositeTransform"/> that scales about its centre.</summary>
+    private static CompositeTransform CentreForScaling(FrameworkElement element)
+    {
+        if (element.RenderTransform is not CompositeTransform transform)
+        {
+            transform = new CompositeTransform();
+            element.RenderTransform = transform;
+        }
+
+        element.RenderTransformOrigin = Centre;
+        return transform;
+    }
+
+    private const string OpacityPath = "Opacity";
+    private const string ScaleXPath = "ScaleX";
+    private const string ScaleYPath = "ScaleY";
 
     /// <summary>
-    /// Hands back the element's composition visual, scaling about its centre. The centre is taken
-    /// afresh each time so a font-size or scaling change is picked up.
+    /// Adds one property's whole timeline, as offsets in milliseconds from the click. A null easing
+    /// interpolates linearly, which is all a flat hold segment needs.
     /// </summary>
-    private static Visual Prepare(FrameworkElement element)
+    private static void Add(
+        Storyboard storyboard,
+        DependencyObject target,
+        string property,
+        params (double AtMs, double To, EasingFunctionBase? Easing)[] frames)
     {
-        Visual visual = ElementCompositionPreview.GetElementVisual(element);
-        visual.CenterPoint = new Vector3(element.ActualSize / 2f, 0f);
-        return visual;
-    }
+        DoubleAnimationUsingKeyFrames animation = new();
 
-    /// <summary>Animates opacity across <paramref name="frames"/>, timed as offsets in milliseconds
-    /// from the start of a <paramref name="lengthMs"/> timeline. A null value holds the live one.</summary>
-    private static void Fade(Visual visual, double lengthMs, params (double AtMs, float? To, CompositionEasingFunction Ease)[] frames)
-    {
-        ScalarKeyFrameAnimation animation = visual.Compositor.CreateScalarKeyFrameAnimation();
-        animation.Duration = TimeSpan.FromMilliseconds(lengthMs);
-
-        foreach ((double atMs, float? to, CompositionEasingFunction ease) in frames)
+        foreach ((double atMs, double to, EasingFunctionBase? easing) in frames)
         {
-            if (to is float opacity)
+            animation.KeyFrames.Add(new EasingDoubleKeyFrame
             {
-                animation.InsertKeyFrame((float)(atMs / lengthMs), opacity, ease);
-            }
-            else
-            {
-                animation.InsertExpressionKeyFrame((float)(atMs / lengthMs), LiveValue);
-            }
+                KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(atMs)),
+                Value = to,
+                EasingFunction = easing,
+            });
         }
 
-        visual.StartAnimation("Opacity", animation);
-    }
-
-    /// <inheritdoc cref="Fade"/>
-    private static void Scale(Visual visual, double lengthMs, params (double AtMs, float? To, CompositionEasingFunction Ease)[] frames)
-    {
-        Vector3KeyFrameAnimation animation = visual.Compositor.CreateVector3KeyFrameAnimation();
-        animation.Duration = TimeSpan.FromMilliseconds(lengthMs);
-
-        foreach ((double atMs, float? to, CompositionEasingFunction ease) in frames)
-        {
-            if (to is float scale)
-            {
-                animation.InsertKeyFrame((float)(atMs / lengthMs), new Vector3(scale, scale, 1f), ease);
-            }
-            else
-            {
-                animation.InsertExpressionKeyFrame((float)(atMs / lengthMs), LiveValue);
-            }
-        }
-
-        visual.StartAnimation("Scale", animation);
+        Storyboard.SetTarget(animation, target);
+        Storyboard.SetTargetProperty(animation, property);
+        storyboard.Children.Add(animation);
     }
 }

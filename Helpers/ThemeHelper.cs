@@ -2,8 +2,12 @@
 // Copyright (C) 2026 SaveOver
 
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Windows.Storage;
 
 namespace SaveOver.Sheltered2.Helpers;
@@ -45,6 +49,47 @@ internal static class ThemeHelper
         if (RootElement is { } root)
         {
             root.RequestedTheme = Restore();
+        }
+    }
+
+    /// <summary>
+    /// Re-applies the severity colouring of every <see cref="InfoBar"/> under <paramref name="root"/>
+    /// against the theme now in force.
+    /// </summary>
+    /// <remarks>
+    /// InfoBar paints its severity background from a <see cref="VisualState"/> setter, and a
+    /// ThemeResource inside a setter resolves when the state is entered rather than re-resolving
+    /// when the theme changes. A cached page sits off the visual tree while the theme is switched,
+    /// so it misses the change and comes back with the old theme's colour baked in - a light-mode
+    /// warning strip on a dark page. Nudging Severity re-enters the state and resolves the brush
+    /// again. The intermediate value never reaches the screen: both writes land in one tick.
+    /// </remarks>
+    internal static void RefreshInfoBars(DependencyObject root)
+    {
+        foreach (InfoBar bar in Descendants(root).OfType<InfoBar>())
+        {
+            InfoBarSeverity severity = bar.Severity;
+
+            bar.Severity = severity == InfoBarSeverity.Informational
+                ? InfoBarSeverity.Success
+                : InfoBarSeverity.Informational;
+            bar.Severity = severity;
+        }
+    }
+
+    private static IEnumerable<DependencyObject> Descendants(DependencyObject root)
+    {
+        int count = VisualTreeHelper.GetChildrenCount(root);
+
+        for (int i = 0; i < count; i++)
+        {
+            DependencyObject child = VisualTreeHelper.GetChild(root, i);
+            yield return child;
+
+            foreach (DependencyObject nested in Descendants(child))
+            {
+                yield return nested;
+            }
         }
     }
 

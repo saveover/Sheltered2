@@ -14,7 +14,10 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
+        <!-- Title and rows share a MaxWidth and stretch, so the pair centres as one block on a wide
+             window and the title stays lined up with the cards under it. -->
         <TextBlock Margin="36,24,36,0"
+                   MaxWidth="1064"
                    Text="Settings"
                    Style="{StaticResource TitleTextBlockStyle}"
                    AutomationProperties.HeadingLevel="Level1"/>
@@ -22,7 +25,7 @@
         <!-- The inset goes on the content, not on the ScrollView: ScrollView.Padding shrinks the
              viewport instead, which clips the content short of the edges and leaves dead bands. -->
         <ScrollView Grid.Row="1">
-            <StackPanel Margin="36,0,36,36" MaxWidth="1064" HorizontalAlignment="Left" Spacing="4">
+            <StackPanel Margin="36,0,36,36" MaxWidth="1064" Spacing="4">
 
                 <TextBlock Text="Appearance"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
@@ -65,33 +68,124 @@
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
                            AutomationProperties.HeadingLevel="Level2"/>
 
-                <Border Style="{StaticResource SettingsCardStyle}">
-                    <Grid ColumnSpacing="16">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
+                <!-- Collapsed this reads as one more settings row; expanded it carries the detail
+                     anyone filing a bug gets asked for. Padding is zeroed so the rows inside can
+                     run edge to edge with their own, the way the header row does. -->
+                <Expander HorizontalAlignment="Stretch"
+                          HorizontalContentAlignment="Stretch"
+                          Padding="0"
+                          IsExpanded="False"
+                          ExpandDirection="Down"
+                          AutomationProperties.Name="About SaveOver for Sheltered 2">
+                    <Expander.Header>
+                        <Grid ColumnSpacing="16" MinHeight="52">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
 
-                        <Image Source="/Assets/AppIcon.ico" Width="24" Height="24"
-                               VerticalAlignment="Center"
-                               AutomationProperties.AccessibilityView="Raw"/>
+                            <Image Source="ms-appx:///Assets/AppIcon.ico" Width="24" Height="24"
+                                   VerticalAlignment="Center"
+                                   AutomationProperties.AccessibilityView="Raw"/>
 
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock Text="SaveOver for Sheltered 2"/>
-                            <TextBlock x:Name="CopyrightTextBlock"
-                                       Style="{StaticResource CaptionTextBlockStyle}"
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="SaveOver for Sheltered 2"/>
+                                <TextBlock x:Name="CopyrightTextBlock"
+                                           Style="{StaticResource CaptionTextBlockStyle}"
+                                           TextWrapping="Wrap"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            </StackPanel>
+
+                            <TextBlock x:Name="VersionTextBlock"
+                                       Grid.Column="2"
+                                       VerticalAlignment="Center"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       IsTextSelectionEnabled="True"/>
+                        </Grid>
+                    </Expander.Header>
+
+                    <StackPanel>
+                        <!-- Clone command -->
+                        <Grid Padding="16,12" ColumnSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="To clone this repository" VerticalAlignment="Center"/>
+
+                            <TextBlock x:Name="CloneCommandTextBlock"
+                                       Grid.Column="1"
+                                       Text="git clone https://github.com/saveover/sheltered2"
+                                       Style="{StaticResource MonospaceTextBlockStyle}"
                                        TextWrapping="Wrap"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Center"/>
+
+                            <!-- Same two-glyph shape CopyIconFeedback expects: copy first,
+                                 checkmark second, the checkmark starting invisible. -->
+                            <Button Grid.Column="2"
+                                    Style="{StaticResource IconButtonStyle}"
+                                    VerticalAlignment="Center"
+                                    Click="CopyCloneCommandButton_Click"
+                                    AutomationProperties.Name="Copy the clone command"
+                                    ToolTipService.ToolTip="Copy the clone command">
+                                <Grid>
+                                    <FontIcon Glyph="&#xE8C8;" FontSize="14"
+                                              Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                              AutomationProperties.AccessibilityView="Raw"/>
+                                    <FontIcon Glyph="&#xE73E;" FontSize="14" Opacity="0"
+                                              Foreground="{ThemeResource SystemFillColorSuccessBrush}"
+                                              AutomationProperties.AccessibilityView="Raw"/>
+                                </Grid>
+                            </Button>
+                        </Grid>
+
+                        <Border Height="1" Background="{ThemeResource DividerStrokeColorDefaultBrush}"/>
+
+                        <!-- Report an issue -->
+                        <Grid Padding="16,12" ColumnSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="Report a bug or request a feature" VerticalAlignment="Center"/>
+
+                            <HyperlinkButton Grid.Column="1"
+                                             NavigateUri="https://github.com/saveover/Sheltered2/issues"
+                                             AutomationProperties.Name="Report an issue on GitHub (opens in your browser)">
+                                <FontIcon Glyph="&#xE8A7;" FontSize="14"
+                                          AutomationProperties.AccessibilityView="Raw"/>
+                            </HyperlinkButton>
+                        </Grid>
+
+                        <Border Height="1" Background="{ThemeResource DividerStrokeColorDefaultBrush}"/>
+
+                        <!-- Dependencies -->
+                        <StackPanel Padding="16,12" Spacing="4">
+                            <TextBlock Text="Dependencies and references"/>
+                            <StackPanel>
+                                <HyperlinkButton Content="Windows App SDK 2.3, Windows App Runtime 2.3.1" NavigateUri="https://aka.ms/windowsappsdk"/>
+                                <HyperlinkButton Content="WinUI 3" NavigateUri="https://aka.ms/winui"/>
+                            </StackPanel>
                         </StackPanel>
 
-                        <TextBlock x:Name="VersionTextBlock"
-                                   Grid.Column="2"
-                                   VerticalAlignment="Center"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   IsTextSelectionEnabled="True"/>
-                    </Grid>
-                </Border>
+                        <Border Height="1" Background="{ThemeResource DividerStrokeColorDefaultBrush}"/>
+
+                        <!-- Licence -->
+                        <StackPanel Padding="16,12" Spacing="4">
+                            <TextBlock TextWrapping="Wrap"
+                                       Text="Free software under the GNU General Public License, version 3 or later. It comes with no warranty: always keep a backup of a save before editing it."/>
+                            <StackPanel>
+                                <HyperlinkButton Content="Read the licence" NavigateUri="https://github.com/saveover/Sheltered2/blob/master/LICENSE.txt"/>
+                                <HyperlinkButton Content="Browse the source" NavigateUri="https://github.com/saveover/Sheltered2"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Expander>
             </StackPanel>
         </ScrollView>
     </Grid>

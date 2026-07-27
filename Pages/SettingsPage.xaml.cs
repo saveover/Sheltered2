@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 using SaveOver.Sheltered2.Helpers;
 using System;
 using System.Reflection;
+using Windows.ApplicationModel.DataTransfer;
 
 namespace SaveOver.Sheltered2.Pages;
 
@@ -15,6 +16,9 @@ namespace SaveOver.Sheltered2.Pages;
 /// </summary>
 public sealed partial class SettingsPage : Page
 {
+    /// <summary>Drives the copy-to-checkmark swap on the clone command's copy button.</summary>
+    private readonly CopyIconFeedback _copyFeedback = new();
+
     public SettingsPage()
     {
         InitializeComponent();
@@ -22,10 +26,51 @@ public sealed partial class SettingsPage : Page
         SelectStoredTheme();
 
         Assembly assembly = Assembly.GetExecutingAssembly();
-        VersionTextBlock.Text = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
-            ?? assembly.GetName().Version?.ToString()
-            ?? string.Empty;
+        VersionTextBlock.Text = ReadableVersion(assembly);
         CopyrightTextBlock.Text = assembly.GetCustomAttribute<AssemblyCopyrightAttribute>()?.Copyright ?? string.Empty;
+    }
+
+    /// <summary>
+    /// The version as a person would quote it. The informational version is preferred because it
+    /// carries the release number rather than the assembly's four-part one, but a source-linked
+    /// build appends "+" and the full commit hash, which is not something to put in a header.
+    /// </summary>
+    private static string ReadableVersion(Assembly assembly)
+    {
+        string? informational = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+
+        if (informational is null)
+        {
+            return assembly.GetName().Version?.ToString() ?? string.Empty;
+        }
+
+        int buildMetadata = informational.IndexOf('+');
+        return buildMetadata < 0 ? informational : informational[..buildMetadata];
+    }
+
+    /// <summary>
+    /// Copies the clone command, reading it from the markup so the two can't drift apart.
+    /// </summary>
+    private void CopyCloneCommandButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button)
+        {
+            return;
+        }
+
+        try
+        {
+            DataPackage package = new();
+            package.SetText(CloneCommandTextBlock.Text);
+            Clipboard.SetContent(package);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Copy clone command error: {ex}");
+            return;
+        }
+
+        _copyFeedback.Play(button);
     }
 
     /// <summary>

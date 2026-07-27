@@ -29,7 +29,7 @@
                   BackRequested="OnTitleBarBackRequested"
                   PaneToggleRequested="OnTitleBarPaneToggleRequested">
             <TitleBar.IconSource>
-                <ImageIconSource ImageSource="/Assets/AppIcon.ico"/>
+                <ImageIconSource ImageSource="ms-appx:///Assets/AppIcon.ico"/>
             </TitleBar.IconSource>
         </TitleBar>
 
