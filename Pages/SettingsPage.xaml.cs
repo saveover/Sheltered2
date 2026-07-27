@@ -7,6 +7,7 @@ using SaveOver.Sheltered2.Helpers;
 using System;
 using System.Reflection;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.System;
 
 namespace SaveOver.Sheltered2.Pages;
 
@@ -25,10 +26,34 @@ public sealed partial class SettingsPage : Page
 
         SelectStoredTheme();
 
+        // Straight to the fields, so seeding them doesn't read as the user changing anything.
+        NavigationStyleComboBox.SelectedIndex = NavigationStyleHelper.IsTopStyle ? 1 : 0;
+        SoundToggleSwitch.IsOn = SoundHelper.IsSoundEnabled;
+        SpatialAudioToggleSwitch.IsOn = SoundHelper.IsSpatialAudioEnabled;
+        SpatialAudioCard.IsEnabled = SoundHelper.IsSoundEnabled;
+
         Assembly assembly = Assembly.GetExecutingAssembly();
         VersionTextBlock.Text = ReadableVersion(assembly);
-        CopyrightTextBlock.Text = assembly.GetCustomAttribute<AssemblyCopyrightAttribute>()?.Copyright ?? string.Empty;
+        AboutExpander.Description = assembly.GetCustomAttribute<AssemblyCopyrightAttribute>()?.Copyright ?? string.Empty;
     }
+
+    private async void ReportIssueCard_Click(object sender, RoutedEventArgs e) =>
+        await Launcher.LaunchUriAsync(new Uri("https://github.com/saveover/Sheltered2/issues"));
+
+    private void NavigationStyleComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
+        NavigationStyleHelper.IsTopStyle = NavigationStyleComboBox.SelectedIndex == 1;
+
+    private void SoundToggleSwitch_Toggled(object sender, RoutedEventArgs e)
+    {
+        SoundHelper.IsSoundEnabled = SoundToggleSwitch.IsOn;
+
+        // Turning sound off takes spatial audio with it, so the row has to follow.
+        SpatialAudioCard.IsEnabled = SoundToggleSwitch.IsOn;
+        SpatialAudioToggleSwitch.IsOn = SoundHelper.IsSpatialAudioEnabled;
+    }
+
+    private void SpatialAudioToggleSwitch_Toggled(object sender, RoutedEventArgs e) =>
+        SoundHelper.IsSpatialAudioEnabled = SpatialAudioToggleSwitch.IsOn;
 
     /// <summary>
     /// The version as a person would quote it. The informational version is preferred because it

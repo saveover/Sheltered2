@@ -32,9 +32,11 @@ public partial class App : Application
     {
         StartupWindow = new MainWindow();
 
-        // After the window exists, since the theme is applied to its root element - and before it
-        // is shown, so the app never flashes the wrong theme.
+        // After the window exists, since the theme and the navigation style are applied to it -
+        // and before it is shown, so the app never flashes the wrong theme or moves its own menu.
         ThemeHelper.Initialize();
+        NavigationStyleHelper.Initialize();
+        SoundHelper.Initialize();
 
         StartupWindow.Activate();
     }

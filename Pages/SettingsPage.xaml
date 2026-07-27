@@ -5,6 +5,7 @@
     x:Class="SaveOver.Sheltered2.Pages.SettingsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:toolkit="using:CommunityToolkit.WinUI.Controls"
     NavigationCacheMode="Enabled">
 
     <!-- The title lives outside the scroller so it stays put while the rows move under it. -->
@@ -27,165 +28,135 @@
         <ScrollView Grid.Row="1">
             <StackPanel Margin="36,0,36,36" MaxWidth="1064" Spacing="4">
 
-                <TextBlock Text="Appearance"
+                <TextBlock Text="Appearance and behaviour"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
                            AutomationProperties.HeadingLevel="Level2"/>
 
-                <Border Style="{StaticResource SettingsCardStyle}">
-                    <Grid ColumnSpacing="16">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
+                <toolkit:SettingsCard Header="App theme"
+                                      Description="Select which app theme to display">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE790;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <!-- Tags are ElementTheme names, parsed back on selection. -->
+                    <ComboBox x:Name="ThemeComboBox"
+                              AutomationProperties.Name="App theme"
+                              SelectionChanged="ThemeComboBox_SelectionChanged">
+                        <ComboBoxItem Content="Light" Tag="Light"/>
+                        <ComboBoxItem Content="Dark" Tag="Dark"/>
+                        <ComboBoxItem Content="Use system setting" Tag="Default"/>
+                    </ComboBox>
+                </toolkit:SettingsCard>
 
-                        <FontIcon Glyph="&#xE790;" FontSize="16"
-                                  VerticalAlignment="Center"
-                                  AutomationProperties.AccessibilityView="Raw"/>
+                <toolkit:SettingsCard Header="Navigation style"
+                                      Description="Where the navigation items sit">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xF594;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <ComboBox x:Name="NavigationStyleComboBox"
+                              AutomationProperties.Name="Navigation style"
+                              SelectionChanged="NavigationStyleComboBox_SelectionChanged">
+                        <ComboBoxItem Content="Left"/>
+                        <ComboBoxItem Content="Top"/>
+                    </ComboBox>
+                </toolkit:SettingsCard>
 
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock Text="App theme"/>
-                            <TextBlock Text="Select which app theme to display"
-                                       Style="{StaticResource CaptionTextBlockStyle}"
-                                       TextWrapping="Wrap"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                        </StackPanel>
-
-                        <!-- Tags are ElementTheme names, parsed back on selection. -->
-                        <ComboBox x:Name="ThemeComboBox"
-                                  Grid.Column="2"
-                                  VerticalAlignment="Center"
-                                  AutomationProperties.Name="App theme"
-                                  SelectionChanged="ThemeComboBox_SelectionChanged">
-                            <ComboBoxItem Content="Light" Tag="Light"/>
-                            <ComboBoxItem Content="Dark" Tag="Dark"/>
-                            <ComboBoxItem Content="Use system setting" Tag="Default"/>
-                        </ComboBox>
-                    </Grid>
-                </Border>
+                <!-- Spatial audio only means anything while the sounds are on, so it lives inside
+                     the row that switches them rather than beside it. -->
+                <toolkit:SettingsExpander Header="Sound"
+                                          Description="Controls provide audible feedback">
+                    <toolkit:SettingsExpander.HeaderIcon>
+                        <FontIcon Glyph="&#xEC4F;"/>
+                    </toolkit:SettingsExpander.HeaderIcon>
+                    <ToggleSwitch x:Name="SoundToggleSwitch"
+                                  AutomationProperties.Name="Sound"
+                                  Toggled="SoundToggleSwitch_Toggled"/>
+                    <toolkit:SettingsExpander.Items>
+                        <toolkit:SettingsCard x:Name="SpatialAudioCard"
+                                              Header="Enable Spatial Audio"
+                                              IsEnabled="False">
+                            <toolkit:SettingsCard.Description>
+                                <HyperlinkButton Content="How to turn on spatial sound in Windows"
+                                                 NavigateUri="https://support.microsoft.com/en-US/Windows/Hardware/Drivers/how-to-turn-on-spatial-sound-in-windows"
+                                                 AutomationProperties.Name="How to turn on spatial sound in Windows (opens in your browser)"/>
+                            </toolkit:SettingsCard.Description>
+                            <ToggleSwitch x:Name="SpatialAudioToggleSwitch"
+                                          AutomationProperties.Name="Spatial audio"
+                                          Toggled="SpatialAudioToggleSwitch_Toggled"/>
+                        </toolkit:SettingsCard>
+                    </toolkit:SettingsExpander.Items>
+                </toolkit:SettingsExpander>
 
                 <TextBlock Text="About"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
                            AutomationProperties.HeadingLevel="Level2"/>
 
                 <!-- Collapsed this reads as one more settings row; expanded it carries the detail
-                     anyone filing a bug gets asked for. Padding is zeroed so the rows inside can
-                     run edge to edge with their own, the way the header row does. -->
-                <Expander HorizontalAlignment="Stretch"
-                          HorizontalContentAlignment="Stretch"
-                          Padding="0"
-                          IsExpanded="False"
-                          ExpandDirection="Down"
-                          AutomationProperties.Name="About SaveOver for Sheltered 2">
-                    <Expander.Header>
-                        <Grid ColumnSpacing="16" MinHeight="52">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
+                     anyone filing a bug gets asked for. -->
+                <toolkit:SettingsExpander x:Name="AboutExpander"
+                                          Header="SaveOver for Sheltered 2">
+                    <toolkit:SettingsExpander.HeaderIcon>
+                        <ImageIcon Source="ms-appx:///Assets/AppIcon.ico"/>
+                    </toolkit:SettingsExpander.HeaderIcon>
+                    <TextBlock x:Name="VersionTextBlock"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               IsTextSelectionEnabled="True"/>
 
-                            <Image Source="ms-appx:///Assets/AppIcon.ico" Width="24" Height="24"
-                                   VerticalAlignment="Center"
-                                   AutomationProperties.AccessibilityView="Raw"/>
+                    <toolkit:SettingsExpander.Items>
+                        <toolkit:SettingsCard Header="To clone this repository">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock x:Name="CloneCommandTextBlock"
+                                           Text="git clone https://github.com/saveover/Sheltered2"
+                                           Style="{StaticResource MonospaceTextBlockStyle}"
+                                           VerticalAlignment="Center"/>
 
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                <TextBlock Text="SaveOver for Sheltered 2"/>
-                                <TextBlock x:Name="CopyrightTextBlock"
-                                           Style="{StaticResource CaptionTextBlockStyle}"
-                                           TextWrapping="Wrap"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                <!-- Same two-glyph shape CopyIconFeedback expects: copy first,
+                                     checkmark second, the checkmark starting invisible. -->
+                                <Button Style="{StaticResource IconButtonStyle}"
+                                        VerticalAlignment="Center"
+                                        Click="CopyCloneCommandButton_Click"
+                                        AutomationProperties.Name="Copy the clone command"
+                                        ToolTipService.ToolTip="Copy the clone command">
+                                    <Grid>
+                                        <FontIcon Glyph="&#xE8C8;" FontSize="14"
+                                                  Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                  AutomationProperties.AccessibilityView="Raw"/>
+                                        <FontIcon Glyph="&#xE73E;" FontSize="14" Opacity="0"
+                                                  Foreground="{ThemeResource SystemFillColorSuccessBrush}"
+                                                  AutomationProperties.AccessibilityView="Raw"/>
+                                    </Grid>
+                                </Button>
                             </StackPanel>
+                        </toolkit:SettingsCard>
 
-                            <TextBlock x:Name="VersionTextBlock"
-                                       Grid.Column="2"
-                                       VerticalAlignment="Center"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                       IsTextSelectionEnabled="True"/>
-                        </Grid>
-                    </Expander.Header>
+                        <toolkit:SettingsCard Header="Report a bug or request a feature"
+                                              IsClickEnabled="True"
+                                              Click="ReportIssueCard_Click">
+                            <toolkit:SettingsCard.ActionIcon>
+                                <FontIcon Glyph="&#xE8A7;" FontSize="14"/>
+                            </toolkit:SettingsCard.ActionIcon>
+                        </toolkit:SettingsCard>
 
-                    <StackPanel>
-                        <!-- Clone command -->
-                        <Grid Padding="16,12" ColumnSpacing="16">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <TextBlock Text="To clone this repository" VerticalAlignment="Center"/>
-
-                            <TextBlock x:Name="CloneCommandTextBlock"
-                                       Grid.Column="1"
-                                       Text="git clone https://github.com/saveover/sheltered2"
-                                       Style="{StaticResource MonospaceTextBlockStyle}"
-                                       TextWrapping="Wrap"
-                                       HorizontalAlignment="Right"
-                                       VerticalAlignment="Center"/>
-
-                            <!-- Same two-glyph shape CopyIconFeedback expects: copy first,
-                                 checkmark second, the checkmark starting invisible. -->
-                            <Button Grid.Column="2"
-                                    Style="{StaticResource IconButtonStyle}"
-                                    VerticalAlignment="Center"
-                                    Click="CopyCloneCommandButton_Click"
-                                    AutomationProperties.Name="Copy the clone command"
-                                    ToolTipService.ToolTip="Copy the clone command">
-                                <Grid>
-                                    <FontIcon Glyph="&#xE8C8;" FontSize="14"
-                                              Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                              AutomationProperties.AccessibilityView="Raw"/>
-                                    <FontIcon Glyph="&#xE73E;" FontSize="14" Opacity="0"
-                                              Foreground="{ThemeResource SystemFillColorSuccessBrush}"
-                                              AutomationProperties.AccessibilityView="Raw"/>
-                                </Grid>
-                            </Button>
-                        </Grid>
-
-                        <Border Height="1" Background="{ThemeResource DividerStrokeColorDefaultBrush}"/>
-
-                        <!-- Report an issue -->
-                        <Grid Padding="16,12" ColumnSpacing="16">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <TextBlock Text="Report a bug or request a feature" VerticalAlignment="Center"/>
-
-                            <HyperlinkButton Grid.Column="1"
-                                             NavigateUri="https://github.com/saveover/Sheltered2/issues"
-                                             AutomationProperties.Name="Report an issue on GitHub (opens in your browser)">
-                                <FontIcon Glyph="&#xE8A7;" FontSize="14"
-                                          AutomationProperties.AccessibilityView="Raw"/>
-                            </HyperlinkButton>
-                        </Grid>
-
-                        <Border Height="1" Background="{ThemeResource DividerStrokeColorDefaultBrush}"/>
-
-                        <!-- Dependencies -->
-                        <StackPanel Padding="16,12" Spacing="4">
-                            <TextBlock Text="Dependencies and references"/>
-                            <StackPanel>
-                                <HyperlinkButton Content="Windows App SDK 2.3, Windows App Runtime 2.3.1" NavigateUri="https://aka.ms/windowsappsdk"/>
+                        <toolkit:SettingsCard Header="Dependencies and references"
+                                              HorizontalContentAlignment="Left"
+                                              ContentAlignment="Vertical">
+                            <StackPanel Margin="-12,0,0,0">
+                                <HyperlinkButton Content="Windows App SDK 2.3" NavigateUri="https://aka.ms/windowsappsdk"/>
                                 <HyperlinkButton Content="WinUI 3" NavigateUri="https://aka.ms/winui"/>
+                                <HyperlinkButton Content="Windows Community Toolkit" NavigateUri="https://aka.ms/windowstoolkitdocs"/>
+                                <HyperlinkButton Content=".NET 10" NavigateUri="https://dotnet.microsoft.com/"/>
                             </StackPanel>
-                        </StackPanel>
+                        </toolkit:SettingsCard>
 
-                        <Border Height="1" Background="{ThemeResource DividerStrokeColorDefaultBrush}"/>
-
-                        <!-- Licence -->
-                        <StackPanel Padding="16,12" Spacing="4">
-                            <TextBlock TextWrapping="Wrap"
-                                       Text="Free software under the GNU General Public License, version 3 or later. It comes with no warranty: always keep a backup of a save before editing it."/>
-                            <StackPanel>
+                        <toolkit:SettingsCard Header="Free software under the GNU General Public License, version 3 or later. It comes with no warranty: always keep a backup of a save before editing it."
+                                              HorizontalContentAlignment="Left"
+                                              ContentAlignment="Vertical">
+                            <StackPanel Margin="-12,0,0,0">
                                 <HyperlinkButton Content="Read the licence" NavigateUri="https://github.com/saveover/Sheltered2/blob/master/LICENSE.txt"/>
                                 <HyperlinkButton Content="Browse the source" NavigateUri="https://github.com/saveover/Sheltered2"/>
                             </StackPanel>
-                        </StackPanel>
-                    </StackPanel>
-                </Expander>
+                        </toolkit:SettingsCard>
+                    </toolkit:SettingsExpander.Items>
+                </toolkit:SettingsExpander>
             </StackPanel>
         </ScrollView>
     </Grid>

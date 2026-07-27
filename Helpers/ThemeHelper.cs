@@ -52,6 +52,13 @@ internal static class ThemeHelper
         }
     }
 
+    private static void Store(ElementTheme theme) => UserSettings.Write(ThemeSettingKey, theme.ToString());
+
+    private static ElementTheme Restore() =>
+        Enum.TryParse(UserSettings.ReadString(ThemeSettingKey), out ElementTheme theme)
+            ? theme
+            : ElementTheme.Default;
+
     /// <summary>
     /// Re-applies the severity colouring of every <see cref="InfoBar"/> under <paramref name="root"/>
     /// against the theme now in force.
@@ -95,36 +102,4 @@ internal static class ThemeHelper
 
     private static FrameworkElement? RootElement => App.StartupWindow?.Content as FrameworkElement;
 
-    /// <summary>
-    /// Local settings needs package identity, which an unpackaged run doesn't have. Losing the
-    /// preference is not worth failing a theme switch over, so both directions shrug it off.
-    /// </summary>
-    private static void Store(ElementTheme theme)
-    {
-        try
-        {
-            ApplicationData.Current.LocalSettings.Values[ThemeSettingKey] = theme.ToString();
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Could not store the theme preference: {ex}");
-        }
-    }
-
-    /// <inheritdoc cref="Store"/>
-    private static ElementTheme Restore()
-    {
-        try
-        {
-            return ApplicationData.Current.LocalSettings.Values[ThemeSettingKey] is string stored
-                && Enum.TryParse(stored, out ElementTheme theme)
-                    ? theme
-                    : ElementTheme.Default;
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Could not read the theme preference: {ex}");
-            return ElementTheme.Default;
-        }
-    }
 }

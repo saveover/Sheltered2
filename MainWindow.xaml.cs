@@ -85,6 +85,24 @@ public sealed partial class MainWindow : Window
 
     private void OnSaveDataChanged(object? sender, EventArgs e) => UpdateNavigationEnabledState();
 
+    /// <summary>
+    /// Moves the navigation items to the top of the window or back down the left edge.
+    /// </summary>
+    /// <remarks>
+    /// Left is <see cref="NavigationViewPaneDisplayMode.Auto"/> rather than
+    /// <see cref="NavigationViewPaneDisplayMode.Left"/>, so a narrow window still collapses the
+    /// pane to icons and then to the flyout. Top has no pane at all, so the title bar's toggle
+    /// button goes with it - it would otherwise sit there doing nothing.
+    /// </remarks>
+    internal void ApplyNavigationStyle(bool isTopStyle)
+    {
+        NavigationViewControl.PaneDisplayMode = isTopStyle
+            ? NavigationViewPaneDisplayMode.Top
+            : NavigationViewPaneDisplayMode.Auto;
+
+        AppTitleBar.IsPaneToggleButtonVisible = !isTopStyle;
+    }
+
     private void OnTitleBarPaneToggleRequested(TitleBar sender, object args) =>
         NavigationViewControl.IsPaneOpen = !NavigationViewControl.IsPaneOpen;
 

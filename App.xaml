@@ -52,19 +52,6 @@
                 <Setter Property="CornerRadius" Value="4"/>
             </Style>
 
-            <!-- One row on the settings page: icon, header and description on the left, the
-                 control that changes the setting on the right. Shaped after the Community
-                 Toolkit's SettingsCard, which we can't take as a dependency: it is built against
-                 Windows App SDK 1.6 and this app is on 2.3. -->
-            <Style x:Key="SettingsCardStyle" TargetType="Border">
-                <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
-                <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
-                <Setter Property="BorderThickness" Value="1"/>
-                <Setter Property="CornerRadius" Value="{StaticResource ControlCornerRadius}"/>
-                <Setter Property="Padding" Value="16"/>
-                <Setter Property="MinHeight" Value="68"/>
-            </Style>
-
             <!-- The heading above a group of settings rows. -->
             <Style x:Key="SettingsSectionHeaderTextBlockStyle"
                    BasedOn="{StaticResource BodyStrongTextBlockStyle}"
