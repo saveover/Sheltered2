@@ -51,4 +51,11 @@ internal sealed class SaveSession
 
         SaveDataChanged?.Invoke(this, EventArgs.Empty);
     }
+
+    /// <summary>Updates the XML baseline after the current session has been saved successfully.</summary>
+    public void CommitSavedContent(string decryptedContent)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(decryptedContent);
+        DecryptedContent = decryptedContent;
+    }
 }

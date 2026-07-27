@@ -1,14 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 SaveOver
 
+using CommunityToolkit.WinUI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using Windows.Storage;
 
 namespace SaveOver.Sheltered2.Helpers;
 
@@ -73,7 +70,7 @@ internal static class ThemeHelper
     /// </remarks>
     internal static void RefreshInfoBars(DependencyObject root)
     {
-        foreach (InfoBar bar in Descendants(root).OfType<InfoBar>())
+        foreach (InfoBar bar in root.FindDescendants().OfType<InfoBar>())
         {
             InfoBarSeverity severity = bar.Severity;
 
@@ -81,22 +78,6 @@ internal static class ThemeHelper
                 ? InfoBarSeverity.Success
                 : InfoBarSeverity.Informational;
             bar.Severity = severity;
-        }
-    }
-
-    private static IEnumerable<DependencyObject> Descendants(DependencyObject root)
-    {
-        int count = VisualTreeHelper.GetChildrenCount(root);
-
-        for (int i = 0; i < count; i++)
-        {
-            DependencyObject child = VisualTreeHelper.GetChild(root, i);
-            yield return child;
-
-            foreach (DependencyObject nested in Descendants(child))
-            {
-                yield return nested;
-            }
         }
     }
 

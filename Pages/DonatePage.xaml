@@ -5,7 +5,7 @@
     x:Class="SaveOver.Sheltered2.Pages.DonatePage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:helpers="using:SaveOver.Sheltered2.Helpers"
+    xmlns:toolkit="using:CommunityToolkit.WinUI"
     xmlns:pages="using:SaveOver.Sheltered2.Pages"
     NavigationCacheMode="Enabled">
 
@@ -173,7 +173,7 @@
             <VisualStateGroup>
                 <VisualState x:Name="NarrowTiers">
                     <VisualState.StateTriggers>
-                        <helpers:ControlSizeTrigger TargetElement="{x:Bind PageRoot}" MinWidth="0" MaxWidth="950"/>
+                        <toolkit:ControlSizeTrigger TargetElement="{x:Bind PageRoot}" MinWidth="0" MaxWidth="950"/>
                     </VisualState.StateTriggers>
                     <VisualState.Setters>
                         <Setter Target="SupporterCard.(Grid.ColumnSpan)" Value="3"/>
@@ -189,7 +189,7 @@
                 </VisualState>
                 <VisualState x:Name="WideTiers">
                     <VisualState.StateTriggers>
-                        <helpers:ControlSizeTrigger TargetElement="{x:Bind PageRoot}" MinWidth="950"/>
+                        <toolkit:ControlSizeTrigger TargetElement="{x:Bind PageRoot}" MinWidth="950"/>
                     </VisualState.StateTriggers>
                     <!-- Default markup already puts the three tiers in one row. -->
                 </VisualState>

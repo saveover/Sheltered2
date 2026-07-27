@@ -65,6 +65,7 @@ public sealed partial class HomePage : Page
     private async void LoadFileButton_Click(object sender, RoutedEventArgs e)
     {
         LoadFileButton.IsEnabled = false;
+        SaveFileButton.IsEnabled = false;
         LoadFileTextBlock.Text = "Selecting a file...";
 
         try
@@ -84,7 +85,6 @@ public sealed partial class HomePage : Page
             App.CurrentSaveData.Load(file, decryptedContent, parsed);
 
             LoadFileTextBlock.Text = $"File '{file.Name}' loaded successfully. You can now navigate to other pages to edit your save.";
-            SaveFileButton.IsEnabled = true;
         }
         catch (Exception ex) when (ex is FileNotFoundException or InvalidDataException)
         {
@@ -98,6 +98,7 @@ public sealed partial class HomePage : Page
         finally
         {
             LoadFileButton.IsEnabled = true;
+            SaveFileButton.IsEnabled = App.CurrentSaveData.IsLoaded;
         }
     }
 
@@ -119,6 +120,7 @@ public sealed partial class HomePage : Page
             // A timestamped backup is created first and the write itself is atomic.
             string updatedXml = SaveWriter.ApplyEdits(saveData.DecryptedContent, saveData.Characters, saveData.Pets);
             await FileHelper.EncryptAndSaveSaveFileAsync(sourceFile, updatedXml);
+            saveData.CommitSavedContent(updatedXml);
 
             LoadFileTextBlock.Text =
                 $"Saved '{sourceFile.Name}'. A timestamped backup was created alongside it.";

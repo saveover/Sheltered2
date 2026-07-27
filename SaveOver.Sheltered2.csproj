@@ -11,6 +11,12 @@
 		<!-- <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon> -->
 	</PropertyGroup>
 
+	<!-- The MSIX app host cannot be architecture-neutral. Keep explicit platform builds intact,
+	     while making a project-direct build use the supported x64 profile by default. -->
+	<PropertyGroup Condition="'$(Platform)' == 'AnyCPU'">
+		<Platform>x64</Platform>
+	</PropertyGroup>
+
 	<!-- Compilation -->
 	<PropertyGroup>
 		<Nullable>enable</Nullable>
@@ -50,7 +56,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
 		<PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.251219" />
+		<PackageReference Include="CommunityToolkit.WinUI.Extensions" Version="8.2.251219" />
+		<PackageReference Include="CommunityToolkit.WinUI.Triggers" Version="8.2.251219" />
 		<PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2526" />
 		<PackageReference Include="Microsoft.WindowsAppSDK" Version="2.3.1" />
 	</ItemGroup>

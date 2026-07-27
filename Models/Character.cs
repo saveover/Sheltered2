@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 SaveOver
 
+using CommunityToolkit.Mvvm.ComponentModel;
 using System;
 using System.Collections.ObjectModel;
 
@@ -10,7 +11,7 @@ namespace SaveOver.Sheltered2.Models;
 /// A family member parsed from a save file. Members are public so WinUI bindings
 /// (<c>DisplayMemberPath</c>, <c>x:Bind</c> in templates) can see them.
 /// </summary>
-public sealed partial class Character : ObservableModel
+public sealed partial class Character : ObservableObject
 {
     /// <summary>
     /// Id taken from the <c>Member_N</c> element name. Keys this member's entry in
@@ -175,7 +176,7 @@ public sealed partial class Character : ObservableModel
 /// A character stat with a current level and a cap derived from it: twice the level up to
 /// level 5, then always 20.
 /// </summary>
-public sealed partial class Stat : ObservableModel
+public sealed partial class Stat : ObservableObject
 {
     public const int MinLevel = 1;
     public const int MaxLevel = 20;
@@ -204,7 +205,7 @@ public sealed partial class Stat : ObservableModel
 /// A relationship entry: the other member's unique id and how this character feels about
 /// them (-100 hostile to 100 best friends).
 /// </summary>
-public sealed partial class Relationship(int memberId, int level) : ObservableModel
+public sealed partial class Relationship(int memberId, int level) : ObservableObject
 {
     public int MemberId { get; } = memberId;
 
@@ -218,7 +219,7 @@ public sealed partial class Relationship(int memberId, int level) : ObservableMo
 /// <summary>
 /// A skill entry as stored in the save: the numeric key and the trained level.
 /// </summary>
-public sealed partial class SkillInstance(int key, int level) : ObservableModel
+public sealed partial class SkillInstance(int key, int level) : ObservableObject
 {
     public int Key { get; } = key;
 

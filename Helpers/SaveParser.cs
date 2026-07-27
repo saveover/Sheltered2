@@ -125,7 +125,7 @@ internal static class SaveParser
         {
             XElement? idElement = entry.Element("uniqueId");
             XElement? isPsychoElement = entry.Element("Psycho")?.Element("isPsycho");
-            if (idElement is not null && int.TryParse(idElement.Value, out int id))
+            if (idElement is not null && TryParseInt(idElement.Value, out int id))
             {
                 psychoById[id] = ParseBool(isPsychoElement);
             }
@@ -210,7 +210,7 @@ internal static class SaveParser
         {
             XElement? memberIdElement = entry.Element("memberID");
             XElement? levelElement = entry.Element("relationshipLevel");
-            if (memberIdElement is not null && int.TryParse(memberIdElement.Value, out int memberId))
+            if (memberIdElement is not null && TryParseInt(memberIdElement.Value, out int memberId))
             {
                 character.Relationships.Add(new Relationship(memberId, ParseInt(levelElement, 0)));
             }
@@ -222,10 +222,10 @@ internal static class SaveParser
         Pet pet = new()
         {
             PetId = ParseIdSuffix(petElement.Name.LocalName, "Pet_"),
-            Name = petElement.Element("name")?.Value.Trim() ?? string.Empty,
+            Name = petElement.Element("name")?.Value ?? string.Empty,
             Age = ParseInt(petElement.Element("age"), 0),
             Health = ParseInt(petElement.Element("health"), 0),
-            Hunger = ParseDouble(petElement.Element("hunger"), 0),
+            Hunger = ParsePercentage(petElement.Element("hunger")),
             Starving = ParseBool(petElement.Element("starving")),
             Poisoned = ParseBool(petElement.Element("poisoned")),
             Immune = ParseBool(petElement.Element("immune")),
@@ -249,7 +249,7 @@ internal static class SaveParser
     }
 
     private static double ParseNeedValue(XElement needsElement, string needName) =>
-        ParseDouble(needsElement.Element(needName)?.Element("value"), 0);
+        ParsePercentage(needsElement.Element(needName)?.Element("value"));
 
     private static Stat GetStat(Character character, string statName) => statName switch
     {
@@ -265,15 +265,25 @@ internal static class SaveParser
     // Extracts the numeric suffix of names like Member_2 or Pet_0.
     private static int ParseIdSuffix(string elementName, string prefix) =>
         elementName.StartsWith(prefix, StringComparison.Ordinal)
-            && int.TryParse(elementName.AsSpan(prefix.Length), out int id)
+            && TryParseInt(elementName.AsSpan(prefix.Length), out int id)
             ? id
             : -1;
 
     private static int ParseInt(XElement? element, int fallback) =>
-        int.TryParse(element?.Value, out int value) ? value : fallback;
+        TryParseInt(element?.Value, out int value) ? value : fallback;
+
+    private static bool TryParseInt(string? value, out int result) =>
+        int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+
+    private static bool TryParseInt(ReadOnlySpan<char> value, out int result) =>
+        int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+
+    private static double ParsePercentage(XElement? element) =>
+        Math.Clamp(ParseDouble(element, 0), 0, 100);
 
     private static double ParseDouble(XElement? element, double fallback) =>
         double.TryParse(element?.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out double value)
+            && double.IsFinite(value)
             ? value
             : fallback;
 

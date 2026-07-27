@@ -468,21 +468,8 @@ public sealed partial class CharactersPage : Page
             }
         };
 
-        CurrentHealthNumberBox.ValueChanged += (s, e) =>
-        {
-            if (!isPopulating && CharacterComboBox.SelectedItem is Character character && !double.IsNaN(e.NewValue))
-            {
-                character.CurrentHealth = (int)e.NewValue;
-            }
-        };
-
-        MaxHealthNumberBox.ValueChanged += (s, e) =>
-        {
-            if (!isPopulating && CharacterComboBox.SelectedItem is Character character && !double.IsNaN(e.NewValue))
-            {
-                character.MaxHealth = (int)e.NewValue;
-            }
-        };
+        WireIntegerNumber(CurrentHealthNumberBox, (character, value) => character.CurrentHealth = value);
+        WireIntegerNumber(MaxHealthNumberBox, (character, value) => character.MaxHealth = value);
 
         WireStatLevel(StrengthLevelBox, StrengthCapBox, c => c.Strength);
         WireStatLevel(DexterityLevelBox, DexterityCapBox, c => c.Dexterity);
@@ -523,19 +510,34 @@ public sealed partial class CharactersPage : Page
         }
     };
 
+    private void WireIntegerNumber(NumberBox box, Action<Character, int> apply) => box.ValueChanged += (s, e) =>
+    {
+        if (isPopulating || CharacterComboBox.SelectedItem is not Character character || double.IsNaN(e.NewValue))
+        {
+            return;
+        }
+
+        int value = (int)e.NewValue;
+        apply(character, value);
+        if (box.Value != value)
+        {
+            box.Value = value;
+        }
+    };
+
     /// <summary>Rounds a raw 0-100 need to the nearest whole number for display/editing.</summary>
     private static double RoundNeed(double value) =>
         Math.Round(Math.Clamp(value, 0, 100), MidpointRounding.AwayFromZero);
 
     private void WireStatLevel(NumberBox levelBox, NumberBox capBox, Func<Character, Stat> selectStat) => levelBox.ValueChanged += (s, e) =>
     {
-        if (isPopulating || CharacterComboBox.SelectedItem is not Character character)
+        if (isPopulating || CharacterComboBox.SelectedItem is not Character character || double.IsNaN(e.NewValue))
         {
             return;
         }
 
         Stat stat = selectStat(character);
-        stat.Level = double.IsNaN(e.NewValue) ? Stat.MinLevel : (int)e.NewValue;
+        stat.Level = (int)e.NewValue;
         capBox.Value = stat.Cap; // Keep the derived cap in sync as the level changes.
     };
 

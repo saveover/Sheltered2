@@ -141,32 +141,39 @@ public sealed partial class PetsPage : Page
             }
         };
 
-        WireNumber(PetAgeNumberBox, (p, v) => p.Age = (int)v);
-        WireNumber(PetHealthNumberBox, (p, v) => p.Health = (int)v);
+        WireIntegerNumber(PetAgeNumberBox, (p, v) => p.Age = v);
+        WireIntegerNumber(PetHealthNumberBox, (p, v) => p.Health = v);
         WireHunger();
 
         WireCheckBox(PetStarvingCheckBox, (p, v) => p.Starving = v);
         WireCheckBox(PetPoisonedCheckBox, (p, v) => p.Poisoned = v);
         WireCheckBox(PetImmuneCheckBox, (p, v) => p.Immune = v);
 
-        WireNumber(PreyDriveLevelBox, (p, v) => p.PreyDrive.Level = (int)v);
-        WireNumber(PreyDriveCapBox, (p, v) => p.PreyDrive.LevelCap = (int)v);
-        WireNumber(PreyDriveXpBox, (p, v) => p.PreyDrive.Experience = (int)v);
+        WireIntegerNumber(PreyDriveLevelBox, (p, v) => p.PreyDrive.Level = v);
+        WireIntegerNumber(PreyDriveCapBox, (p, v) => p.PreyDrive.LevelCap = v);
+        WireIntegerNumber(PreyDriveXpBox, (p, v) => p.PreyDrive.Experience = v);
 
-        WireNumber(ScavengingLevelBox, (p, v) => p.Scavenging.Level = (int)v);
-        WireNumber(ScavengingCapBox, (p, v) => p.Scavenging.LevelCap = (int)v);
-        WireNumber(ScavengingXpBox, (p, v) => p.Scavenging.Experience = (int)v);
+        WireIntegerNumber(ScavengingLevelBox, (p, v) => p.Scavenging.Level = v);
+        WireIntegerNumber(ScavengingCapBox, (p, v) => p.Scavenging.LevelCap = v);
+        WireIntegerNumber(ScavengingXpBox, (p, v) => p.Scavenging.Experience = v);
 
-        WireNumber(AffectionLevelBox, (p, v) => p.Affection.Level = (int)v);
-        WireNumber(AffectionCapBox, (p, v) => p.Affection.LevelCap = (int)v);
-        WireNumber(AffectionXpBox, (p, v) => p.Affection.Experience = (int)v);
+        WireIntegerNumber(AffectionLevelBox, (p, v) => p.Affection.Level = v);
+        WireIntegerNumber(AffectionCapBox, (p, v) => p.Affection.LevelCap = v);
+        WireIntegerNumber(AffectionXpBox, (p, v) => p.Affection.Experience = v);
     }
 
-    private void WireNumber(NumberBox box, Action<Pet, double> apply) => box.ValueChanged += (s, e) =>
+    private void WireIntegerNumber(NumberBox box, Action<Pet, int> apply) => box.ValueChanged += (s, e) =>
     {
-        if (!isPopulating && PetComboBox.SelectedItem is Pet pet && !double.IsNaN(e.NewValue))
+        if (isPopulating || PetComboBox.SelectedItem is not Pet pet || double.IsNaN(e.NewValue))
         {
-            apply(pet, e.NewValue);
+            return;
+        }
+
+        int value = (int)e.NewValue;
+        apply(pet, value);
+        if (box.Value != value)
+        {
+            box.Value = value;
         }
     };
 

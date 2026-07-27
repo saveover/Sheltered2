@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 SaveOver
 
+using CommunityToolkit.Mvvm.ComponentModel;
 using SaveOver.Sheltered2.Models;
 using System;
 
@@ -11,7 +12,7 @@ namespace SaveOver.Sheltered2.ViewModels;
 /// a <c>NumberBox</c>. Wraps the model's <see cref="Relationship"/> directly so edits land
 /// on the right entry.
 /// </summary>
-public sealed partial class RelationshipRowViewModel(Relationship relationship, string name) : ObservableModel
+public sealed partial class RelationshipRowViewModel(Relationship relationship, string name) : ObservableObject
 {
     public const int MinLevel = -100;
     public const int MaxLevel = 100;

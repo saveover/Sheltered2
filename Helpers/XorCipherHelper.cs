@@ -41,11 +41,6 @@ internal static class XorCipherHelper
     {
         ArgumentException.ThrowIfNullOrEmpty(filePath);
 
-        if (!File.Exists(filePath))
-        {
-            throw new FileNotFoundException($"The file '{filePath}' was not found.", filePath);
-        }
-
         byte[] fileBytes = await File.ReadAllBytesAsync(filePath, cancellationToken).ConfigureAwait(false);
 
         // XOR is symmetric, so we can transform the buffer we just read in place.

@@ -1,12 +1,14 @@
 ﻿// SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 SaveOver
 
+using CommunityToolkit.Mvvm.ComponentModel;
+
 namespace SaveOver.Sheltered2.Models;
 
 /// <summary>
 /// A pet parsed from a save file (a root-level <c>Pet_N</c> element).
 /// </summary>
-public sealed partial class Pet : ObservableModel
+public sealed partial class Pet : ObservableObject
 {
     /// <summary>Index taken from the <c>Pet_N</c> element name.</summary>
     public int PetId { get; set; } = -1;
@@ -78,7 +80,7 @@ public sealed partial class Pet : ObservableModel
 /// <summary>
 /// A pet training skill: level, level cap and accumulated experience, as stored in the save.
 /// </summary>
-public sealed partial class PetSkill : ObservableModel
+public sealed partial class PetSkill : ObservableObject
 {
     public int Level
     {

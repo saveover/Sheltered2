@@ -25,6 +25,9 @@ internal static class FileHelper
     private const ulong MaxFileSize = 25UL * 1024 * 1024; // 25 MB
     private const string BackupFileSuffix = "_backup_";
     private const string BackupDateFormat = "yyyyMMdd_HHmmss";
+    private static readonly UTF8Encoding StrictUtf8 = new(
+        encoderShouldEmitUTF8Identifier: false,
+        throwOnInvalidBytes: true);
 
     /// <summary>
     /// Opens a file picker so the user can select a save file.
@@ -60,7 +63,9 @@ internal static class FileHelper
     {
         ArgumentNullException.ThrowIfNull(file);
 
-        BasicProperties properties = await file.GetBasicPropertiesAsync();
+        BasicProperties properties = await file.GetBasicPropertiesAsync()
+            .AsTask(cancellationToken)
+            .ConfigureAwait(false);
         if (properties.Size is 0 or > MaxFileSize)
         {
             throw new InvalidDataException($"The file '{file.Name}' is not a valid save file.");
@@ -70,11 +75,15 @@ internal static class FileHelper
         {
             // Decrypt exactly once, then validate the resulting text.
             byte[] decryptedData = await XorCipherHelper.LoadAndDecryptAsync(file.Path, cancellationToken).ConfigureAwait(false);
-            string content = Encoding.UTF8.GetString(decryptedData);
+            string content = StrictUtf8.GetString(decryptedData);
 
             return !HasValidSignature(content.AsSpan().Trim())
                 ? throw new InvalidDataException($"The file '{file.Name}' is not a valid Sheltered 2 save file.")
                 : content;
+        }
+        catch (DecoderFallbackException ex)
+        {
+            throw new InvalidDataException($"The file '{file.Name}' is not valid UTF-8.", ex);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or COMException)
         {
@@ -98,50 +107,62 @@ internal static class FileHelper
 
         if (createBackup)
         {
-            _ = await CreateBackupAsync(file, cancellationToken).ConfigureAwait(false);
+            await CreateBackupAsync(file, cancellationToken).ConfigureAwait(false);
         }
 
-        byte[] encryptedBytes = XorCipherHelper.Transform(Encoding.UTF8.GetBytes(content), cancellationToken);
+        byte[] encryptedBytes = Encoding.UTF8.GetBytes(content);
+        XorCipherHelper.Transform(encryptedBytes, encryptedBytes, cancellationToken);
 
         string destinationPath = file.Path;
-        string tempPath = destinationPath + ".tmp";
+        string directory = Path.GetDirectoryName(destinationPath)
+            ?? throw new IOException($"Could not determine the directory for '{destinationPath}'.");
+        string tempPath = Path.Combine(
+            directory,
+            $".{Path.GetFileName(destinationPath)}.{Guid.NewGuid():N}.tmp");
 
         try
         {
             await File.WriteAllBytesAsync(tempPath, encryptedBytes, cancellationToken).ConfigureAwait(false);
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             // Replace the destination with the fully written temp file in a single move.
             File.Move(tempPath, destinationPath, overwrite: true);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            TryDeleteFile(tempPath);
             throw new IOException($"An error occurred while encrypting or saving '{destinationPath}'.", ex);
+        }
+        finally
+        {
+            TryDeleteFile(tempPath);
         }
     }
 
     /// <summary>
     /// Creates a timestamped backup copy of the specified file in the same directory.
-    /// Returns the backup file, or <see langword="null"/> if the backup could not be made.
     /// </summary>
-    internal static async Task<StorageFile?> CreateBackupAsync(StorageFile file, CancellationToken cancellationToken = default)
+    /// <exception cref="IOException">The backup could not be created, so the save was not changed.</exception>
+    internal static async Task CreateBackupAsync(StorageFile file, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(file);
 
         try
         {
-            StorageFolder folder = await file.GetParentAsync();
+            StorageFolder folder = await file.GetParentAsync()
+                .AsTask(cancellationToken)
+                .ConfigureAwait(false);
             string timestamp = DateTime.Now.ToString(BackupDateFormat, CultureInfo.InvariantCulture);
             string backupFileName =
                 $"{Path.GetFileNameWithoutExtension(file.Name)}{BackupFileSuffix}{timestamp}{Path.GetExtension(file.Name)}";
 
-            return await file.CopyAsync(folder, backupFileName, NameCollisionOption.GenerateUniqueName)
+            _ = await file.CopyAsync(folder, backupFileName, NameCollisionOption.GenerateUniqueName)
                 .AsTask(cancellationToken)
                 .ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or COMException)
         {
-            return null;
+            throw new IOException($"Could not create a backup of '{file.Path}'. The save was not changed.", ex);
         }
     }
 
@@ -153,19 +174,16 @@ internal static class FileHelper
         decryptedContent.EndsWith(ExpectedFooter, StringComparison.Ordinal);
 
     /// <summary>
-    /// Attempts to delete the temporary staging file from <see cref="EncryptAndSaveSaveFileAsync"/> 
-    /// at the given <paramref name="path"/> as a best-effort cleanup. 
-    /// Any IO- or permission-related failures are caught and ignored so callers do not fail if 
-    /// the removal cannot be performed (for example, if the file is deadlocked).
+    /// Attempts to delete the temporary staging file from <see cref="EncryptAndSaveSaveFileAsync"/>
+    /// at the given <paramref name="path"/> as a best-effort cleanup.
+    /// Any IO- or permission-related failures are caught and ignored so callers do not fail if
+    /// the removal cannot be performed (for example, if the file is locked).
     /// </summary>
     private static void TryDeleteFile(string path)
     {
         try
         {
-            if (File.Exists(path))
-            {
-                File.Delete(path);
-            }
+            File.Delete(path);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

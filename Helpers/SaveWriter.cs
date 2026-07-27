@@ -165,7 +165,7 @@ internal static class SaveWriter
         {
             XElement? isPsychoElement = entry.Element("Psycho")?.Element("isPsycho");
             if (isPsychoElement is not null
-                && int.TryParse(entry.Element("uniqueId")?.Value, out int id)
+                && TryParseInt(entry.Element("uniqueId")?.Value, out int id)
                 && charactersById.TryGetValue(id, out Character? character))
             {
                 isPsychoElement.Value = Bool(character.IsPsycho);
@@ -206,7 +206,7 @@ internal static class SaveWriter
         {
             XElement? levelElement = entry.Element("relationshipLevel");
             if (levelElement is not null
-                && int.TryParse(entry.Element("memberID")?.Value, out int memberId)
+                && TryParseInt(entry.Element("memberID")?.Value, out int memberId)
                 && byMemberId.TryGetValue(memberId, out Relationship? relationship))
             {
                 levelElement.Value = Int(relationship.Level);
@@ -231,7 +231,7 @@ internal static class SaveWriter
         {
             string name = petElement.Name.LocalName;
             if (!name.StartsWith("Pet_", StringComparison.Ordinal)
-                || !int.TryParse(name.AsSpan(4), out int petId)
+                || !TryParseInt(name.AsSpan(4), out int petId)
                 || !petsById.TryGetValue(petId, out Pet? pet))
             {
                 continue;
@@ -240,7 +240,7 @@ internal static class SaveWriter
             SetValue(petElement, "name", pet.Name);
             SetValue(petElement, "age", Int(pet.Age));
             SetValue(petElement, "health", Int(pet.Health));
-            SetValue(petElement, "hunger", Dbl(pet.Hunger));
+            SetValue(petElement, "hunger", Dbl(NormalizePercentage(pet.Hunger)));
             SetValue(petElement, "starving", Bool(pet.Starving));
             SetValue(petElement, "poisoned", Bool(pet.Poisoned));
             SetValue(petElement, "immune", Bool(pet.Immune));
@@ -284,7 +284,7 @@ internal static class SaveWriter
             Dictionary<int, XElement> existingByKey = [];
             foreach (XElement entry in listElement.Elements())
             {
-                if (int.TryParse(entry.Element("skillKey")?.Value, out int key))
+                if (TryParseInt(entry.Element("skillKey")?.Value, out int key))
                 {
                     existingByKey[key] = entry;
                 }
@@ -341,19 +341,25 @@ internal static class SaveWriter
         }
 
         int required = Math.Max(tierOnePoints, hasTierThree ? 10 : hasTierTwo ? 5 : 0);
-        int current = int.TryParse(counterElement.Value, out int value) ? value : 0;
+        int current = TryParseInt(counterElement.Value, out int value) ? value : 0;
         counterElement.Value = Int(Math.Max(current, required));
     }
 
-    private static XElement BuildSkillEntry(int index, SkillInstance skill, XElement? existing) =>
-        new(
-            $"i{index}",
-            new XElement("skillKey", skill.Key),
-            new XElement("skillLevel", skill.Level),
-            new XElement("accuracyLevel", ChildInt(existing, "accuracyLevel")),
-            new XElement("damageLevel", ChildInt(existing, "damageLevel")),
-            new XElement("staminaLevel", ChildInt(existing, "staminaLevel")),
-            new XElement("chanceLevel", ChildInt(existing, "chanceLevel")));
+    private static XElement BuildSkillEntry(int index, SkillInstance skill, XElement? existing)
+    {
+        XElement entry = existing is null
+            ? new XElement($"i{index}")
+            : new XElement(existing);
+
+        entry.Name = $"i{index}";
+        SetOrAddValue(entry, "skillKey", Int(skill.Key));
+        SetOrAddValue(entry, "skillLevel", Int(skill.Level));
+        SetOrAddValue(entry, "accuracyLevel", Int(ChildInt(existing, "accuracyLevel")));
+        SetOrAddValue(entry, "damageLevel", Int(ChildInt(existing, "damageLevel")));
+        SetOrAddValue(entry, "staminaLevel", Int(ChildInt(existing, "staminaLevel")));
+        SetOrAddValue(entry, "chanceLevel", Int(ChildInt(existing, "chanceLevel")));
+        return entry;
+    }
 
     private static void SetValue(XElement parent, string childName, string value)
     {
@@ -361,11 +367,27 @@ internal static class SaveWriter
         child?.Value = value;
     }
 
+    private static void SetOrAddValue(XElement parent, string childName, string value)
+    {
+        XElement? child = parent.Element(childName);
+        if (child is null)
+        {
+            parent.Add(new XElement(childName, value));
+        }
+        else
+        {
+            child.Value = value;
+        }
+    }
+
     private static void SetNeedValue(XElement needsElement, string needName, double value)
     {
         XElement? valueElement = needsElement.Element(needName)?.Element("value");
-        valueElement?.Value = Dbl(Math.Clamp(value, 0, 100));
+        valueElement?.Value = Dbl(NormalizePercentage(value));
     }
+
+    private static double NormalizePercentage(double value) =>
+        double.IsFinite(value) ? Math.Clamp(value, 0, 100) : 0;
 
     private static Stat GetStat(Character character, string statName) => statName switch
     {
@@ -379,7 +401,13 @@ internal static class SaveWriter
     };
 
     private static int ChildInt(XElement? parent, string childName) =>
-        int.TryParse(parent?.Element(childName)?.Value, out int value) ? value : 0;
+        TryParseInt(parent?.Element(childName)?.Value, out int value) ? value : 0;
+
+    private static bool TryParseInt(string? value, out int result) =>
+        int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+
+    private static bool TryParseInt(ReadOnlySpan<char> value, out int result) =>
+        int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
 
     // The game writes booleans capitalised (<isSlave>False</isSlave>).
     private static string Bool(bool value) => value ? "True" : "False";

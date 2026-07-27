@@ -5,7 +5,7 @@
     x:Class="SaveOver.Sheltered2.Pages.CharactersPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:helpers="using:SaveOver.Sheltered2.Helpers"
+    xmlns:toolkit="using:CommunityToolkit.WinUI"
     xmlns:vm="using:SaveOver.Sheltered2.ViewModels"
     NavigationCacheMode="Enabled">
 
@@ -18,7 +18,7 @@
             <VisualStateGroup>
                 <VisualState x:Name="NarrowLayout">
                     <VisualState.StateTriggers>
-                        <helpers:ControlSizeTrigger TargetElement="{x:Bind PageRoot}" MinWidth="0" MaxWidth="850"/>
+                        <toolkit:ControlSizeTrigger TargetElement="{x:Bind PageRoot}" MinWidth="0" MaxWidth="850"/>
                     </VisualState.StateTriggers>
                     <VisualState.Setters>
                         <Setter Target="LeftColumn.(Grid.ColumnSpan)" Value="2"/>
@@ -33,7 +33,7 @@
                 </VisualState>
                 <VisualState x:Name="MediumLayout">
                     <VisualState.StateTriggers>
-                        <helpers:ControlSizeTrigger TargetElement="{x:Bind PageRoot}" MinWidth="850" MaxWidth="1080"/>
+                        <toolkit:ControlSizeTrigger TargetElement="{x:Bind PageRoot}" MinWidth="850" MaxWidth="1080"/>
                     </VisualState.StateTriggers>
                     <VisualState.Setters>
                         <!-- Single column, but Basics | Health side by side (InfoGrid default). -->
@@ -45,7 +45,7 @@
                 </VisualState>
                 <VisualState x:Name="WideLayout">
                     <VisualState.StateTriggers>
-                        <helpers:ControlSizeTrigger TargetElement="{x:Bind PageRoot}" MinWidth="1080"/>
+                        <toolkit:ControlSizeTrigger TargetElement="{x:Bind PageRoot}" MinWidth="1080"/>
                     </VisualState.StateTriggers>
                     <!-- Default markup already places the two groups in two columns. -->
                 </VisualState>
