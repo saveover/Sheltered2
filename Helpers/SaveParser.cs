@@ -12,8 +12,11 @@ using System.Xml.Linq;
 
 namespace SaveOver.Sheltered2.Helpers;
 
-/// <summary>The characters and pets extracted from one save file.</summary>
-internal sealed record ParsedSave(IReadOnlyList<Character> Characters, IReadOnlyList<Pet> Pets);
+/// <summary>The editable data extracted from one save file.</summary>
+internal sealed record ParsedSave(
+    IReadOnlyList<Character> Characters,
+    IReadOnlyList<Pet> Pets,
+    ShelterInventory? Inventory);
 
 /// <summary>
 /// Parses the decrypted save-file XML into model objects.
@@ -44,8 +47,11 @@ internal static class SaveParser
         }
 
         return document.Root is null
-            ? new ParsedSave([], [])
-            : new ParsedSave(ParseCharacters(document.Root), ParsePets(document.Root));
+            ? new ParsedSave([], [], null)
+            : new ParsedSave(
+                ParseCharacters(document.Root),
+                ParsePets(document.Root),
+                ParseShelterInventory(document.Root));
     }
 
     private static IReadOnlyList<Character> ParseCharacters(XElement root)
@@ -86,6 +92,61 @@ internal static class SaveParser
         }
 
         return pets;
+    }
+
+    /// <summary>
+    /// Parses shelter-owned water and both inventory containers. Entries remain in their XML
+    /// order because neither <c>defKey</c> nor <c>id</c> identifies a stack uniquely.
+    /// </summary>
+    private static ShelterInventory? ParseShelterInventory(XElement root)
+    {
+        XElement? storedWaterElement = root.Element("StoredWater");
+        XElement? shelterInventoryElement = root.Element("ShelterInventory");
+        if (storedWaterElement is null && shelterInventoryElement is null)
+        {
+            return null;
+        }
+
+        return new ShelterInventory
+        {
+            HasStoredWater = storedWaterElement is not null,
+            StoredWater = ParseInt(storedWaterElement, 0),
+            Storage = ParseInventoryContainer(
+                shelterInventoryElement?.Element("Storage")?.Element("Inventory"),
+                "Shelter Inventory"),
+            Overflow = ParseInventoryContainer(
+                shelterInventoryElement?.Element("Overflow")?.Element("Inventory"),
+                "Overflow (ItemBin)"),
+        };
+    }
+
+    private static InventoryContainer? ParseInventoryContainer(XElement? inventoryElement, string fallbackName)
+    {
+        if (inventoryElement is null)
+        {
+            return null;
+        }
+
+        List<InventoryItem> items = [];
+        XElement? contents = inventoryElement.Element("InventoryContents");
+        if (contents is not null)
+        {
+            foreach (XElement entry in contents.Elements())
+            {
+                items.Add(new InventoryItem
+                {
+                    DefinitionKey = entry.Element("defKey")?.Value ?? string.Empty,
+                    Amount = ParseInt(entry.Element("amount"), 0),
+                    Integrity = ParseInt(entry.Element("integrity"), 0),
+                    Quality = ParseInt(entry.Element("quality"), 0),
+                });
+            }
+        }
+
+        return new InventoryContainer(
+            inventoryElement.Element("name")?.Value ?? fallbackName,
+            ParseInt(inventoryElement.Element("maxWeight"), 0),
+            items);
     }
 
     private static Character ParseMember(XElement memberElement)

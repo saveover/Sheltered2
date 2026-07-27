@@ -18,7 +18,7 @@ This save editor allows you to edit the following:
 
 - **Characters**: names, health, stats, skill trees, needs, relationships, etc.
 - **Pets**: name, age, health, hunger, and the three training skills
-- **Inventory (WIP)**: add/remove items and quantity
+- **Inventory (partial)**: shelter water and existing stack amount, integrity, and quality
 - **Crafting (WIP)**: unlock crafting recipes
 - **Factions (WIP)**: increase/decrease your standing with the different factions and unlock rewards
 
@@ -61,10 +61,12 @@ GPL-3.0-or-later. See [LICENSE.txt](LICENSE).
 You may use, modify, and redistribute this software. If you distribute a modified
 version, you must release its source under the same license.
 
-**Not covered by that license** — see [NOTICE.txt](NOTICE):
+**Not covered by that license**:
 
 - `Assets/Skills/**` — skill icons belonging to the game's owners, included for
   interoperability
+- `Assets/Inventory/**` — item artwork sourced from the Sheltered 2 Wiki for
+  offline interoperability; see [its attribution](Assets/Inventory/ATTRIBUTION.md)
 - `Assets/Brand/**` — Buy Me a Coffee and SaveOver brand assets
 
 The **SaveOver** name and logo are not licensed under the GPL. Forks are welcome

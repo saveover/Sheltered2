@@ -22,6 +22,9 @@ internal sealed class SaveSession
 
     public IReadOnlyList<Pet> Pets { get; private set; } = [];
 
+    /// <summary>The shelter-owned water and inventory containers, when present in the save.</summary>
+    public ShelterInventory? Inventory { get; private set; }
+
     /// <summary>
     /// The character the user last selected, so pages can restore the selection after
     /// navigating away and back.
@@ -46,6 +49,7 @@ internal sealed class SaveSession
         DecryptedContent = decryptedContent;
         Characters = data.Characters;
         Pets = data.Pets;
+        Inventory = data.Inventory;
         SelectedCharacter = null;
 
         SaveDataChanged?.Invoke(this, EventArgs.Empty);

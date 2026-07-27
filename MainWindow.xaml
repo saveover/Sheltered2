@@ -23,7 +23,7 @@
              and pane toggle, and keeps clear of the caption buttons on its own. Handing it to
              Window.SetTitleBar makes the strip draggable except where those buttons sit. -->
         <TitleBar x:Name="AppTitleBar"
-                  Title="Sheltered 2 Save Editor"
+                  Title="SaveOver for Sheltered 2"
                   IsBackButtonVisible="False"
                   IsPaneToggleButtonVisible="True"
                   BackRequested="OnTitleBarBackRequested"

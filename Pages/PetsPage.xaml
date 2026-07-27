@@ -5,6 +5,7 @@
     x:Class="SaveOver.Sheltered2.Pages.PetsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:models="using:SaveOver.Sheltered2.Models"
     xmlns:toolkit="using:CommunityToolkit.WinUI"
     NavigationCacheMode="Enabled">
 
@@ -64,8 +65,16 @@
                       Grid.Row="0" Grid.ColumnSpan="2"
                       Header="Select a pet from the drop-down menu and edit the relevant fields."
                       PlaceholderText="Select a pet"
-                      DisplayMemberPath="DisplayName"
-                      SelectionChanged="PetComboBox_SelectionChanged"/>
+                      SelectionChanged="PetComboBox_SelectionChanged">
+                <!-- A template rather than DisplayMemberPath: that resolves "DisplayName" by
+                     reflection at run time, which the trimmer and AOT cannot follow (WMC1510).
+                     OneWay so renaming a pet updates the entry you picked it from. -->
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="models:Pet">
+                        <TextBlock Text="{x:Bind DisplayName, Mode=OneWay}"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
 
             <!-- Basics -->
             <Border x:Name="BasicsCard"

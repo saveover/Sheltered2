@@ -9,7 +9,7 @@
   <Identity
     Name="SaveOverApp.SaveOverforSheltered2"
     Publisher="CN=5E538825-40D2-4F7F-BBB8-35A55A95F567"
-    Version="1.0.0.0" />
+    Version="0.1.0.0" />
 
   <Properties>
     <DisplayName>SaveOver for Sheltered 2</DisplayName>

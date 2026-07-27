@@ -24,7 +24,11 @@ internal static class SaveWriter
 
     private static readonly string[] PetSkillNames = ["PreyDrive", "Scavenging", "Affection"];
 
-    internal static string ApplyEdits(string originalXml, IReadOnlyList<Character> characters, IReadOnlyList<Pet> pets)
+    internal static string ApplyEdits(
+        string originalXml,
+        IReadOnlyList<Character> characters,
+        IReadOnlyList<Pet> pets,
+        ShelterInventory? inventory)
     {
         ArgumentException.ThrowIfNullOrEmpty(originalXml);
         ArgumentNullException.ThrowIfNull(characters);
@@ -47,6 +51,7 @@ internal static class SaveWriter
 
         ApplyPsychoStates(document.Root?.Element("FamilyManager"), characters);
         ApplyPets(document.Root, pets);
+        ApplyShelterInventory(document.Root, inventory);
 
         return document.ToString(SaveOptions.DisableFormatting);
     }
@@ -359,6 +364,48 @@ internal static class SaveWriter
         SetOrAddValue(entry, "staminaLevel", Int(ChildInt(existing, "staminaLevel")));
         SetOrAddValue(entry, "chanceLevel", Int(ChildInt(existing, "chanceLevel")));
         return entry;
+    }
+
+    /// <summary>
+    /// Applies only the editable values of existing inventory entries. Containers and entries are
+    /// matched by their original document order so duplicate definition keys remain independent.
+    /// </summary>
+    private static void ApplyShelterInventory(XElement? root, ShelterInventory? inventory)
+    {
+        if (root is null || inventory is null)
+        {
+            return;
+        }
+
+        root.Element("StoredWater")?.SetValue(Int(inventory.StoredWater));
+
+        XElement? shelterInventoryElement = root.Element("ShelterInventory");
+        ApplyInventoryContainer(
+            shelterInventoryElement?.Element("Storage")?.Element("Inventory"),
+            inventory.Storage);
+        ApplyInventoryContainer(
+            shelterInventoryElement?.Element("Overflow")?.Element("Inventory"),
+            inventory.Overflow);
+    }
+
+    private static void ApplyInventoryContainer(XElement? inventoryElement, InventoryContainer? container)
+    {
+        XElement? contents = inventoryElement?.Element("InventoryContents");
+        if (contents is null || container is null)
+        {
+            return;
+        }
+
+        List<XElement> entries = [.. contents.Elements()];
+        int count = Math.Min(entries.Count, container.Items.Count);
+        for (int index = 0; index < count; index++)
+        {
+            InventoryItem item = container.Items[index];
+            XElement entry = entries[index];
+            SetValue(entry, "amount", Int(item.Amount));
+            SetValue(entry, "integrity", Int(item.Integrity));
+            SetValue(entry, "quality", Int(item.Quality));
+        }
     }
 
     private static void SetValue(XElement parent, string childName, string value)

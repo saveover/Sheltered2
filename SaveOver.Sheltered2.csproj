@@ -5,57 +5,64 @@
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
 		<TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+		<UseWinUI>true</UseWinUI>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
 		<Platforms>x86;x64;ARM64</Platforms>
 		<RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
-		<ApplicationManifest>app.manifest</ApplicationManifest>
-		<!-- <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon> -->
+		<Configurations>Debug;Release;Debug-Unpackaged;Release-Unpackaged</Configurations>
+		<Release>true</Release>
+		<Release Condition="'$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Debug-Unpackaged'">false</Release>
+		<Packaged>true</Packaged>
+		<Packaged Condition="'$(Configuration)' == 'Debug-Unpackaged' Or '$(Configuration)' == 'Release-Unpackaged'">false</Packaged>
+		<Optimized>true</Optimized>
+		<Optimized Condition="'$(Configuration)' == 'Debug-Unpackaged' Or '$(Configuration)' == 'Debug'">false</Optimized>
+		<WindowsAppSdkIncludeVersionInfo>true</WindowsAppSdkIncludeVersionInfo>
+		<PublishProfile>win-$(Platform).pubxml</PublishProfile>
+		<PublishSingleFile Condition="'$(PublishSingleFile)' == '' and '$(Packaged)' != 'true'">true</PublishSingleFile>
+		<WindowsAppSdkSelfContained Condition="'$(WindowsAppSdkSelfContained)' == '' and '$(PublishSingleFile)' == 'true'">true</WindowsAppSdkSelfContained>
+		<ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
+		<Nullable>enable</Nullable>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<Company>SaveOver</Company>
+		<IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net10.0'))">true</IsAotCompatible>
 	</PropertyGroup>
 
-	<!-- The MSIX app host cannot be architecture-neutral. Keep explicit platform builds intact,
-	     while making a project-direct build use the supported x64 profile by default. -->
+	<PropertyGroup Condition="'$(Packaged)' != 'true'">
+		<EnableMsixTooling>false</EnableMsixTooling>
+		<EnableMsixTooling Condition="'$(PublishSingleFile)'=='true'">true</EnableMsixTooling>
+		<WindowsPackageType>None</WindowsPackageType>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Packaged)' == 'true'">
+		<WindowsPackageType>MSIX</WindowsPackageType>
+		<AppxBundleNameForOutput>SaveOver.Sheltered2</AppxBundleNameForOutput>
+		<EnableMsixTooling>true</EnableMsixTooling>
+		<SDKIdentifier>Windows</SDKIdentifier>
+		<DefaultLanguage>en-US</DefaultLanguage>
+		<AppxPackage>true</AppxPackage>
+		<AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
+		<GenerateAppInstallerFile>False</GenerateAppInstallerFile>
+		<AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
+		<AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
+		<AppxBundlePlatforms>$(Platform)</AppxBundlePlatforms>
+		<AppxBundlePlatforms Condition="'$(BuildAllAppFlavors)' == 'true'">x86|x64|ARM64</AppxBundlePlatforms>
+		<AppxBundle>Always</AppxBundle>
+		<HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
+		<SDKVersion>10.0</SDKVersion>
+	</PropertyGroup>
+
 	<PropertyGroup Condition="'$(Platform)' == 'AnyCPU'">
 		<Platform>x64</Platform>
 	</PropertyGroup>
 
-	<!-- Compilation -->
-	<PropertyGroup>
-		<Nullable>enable</Nullable>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<NeutralLanguage>en-US</NeutralLanguage>
-		<ProduceReferenceAssembly>false</ProduceReferenceAssembly>
-	</PropertyGroup>
-
-	<!-- WinUI / Windows App SDK -->
-	<PropertyGroup>
-		<UseWinUI>true</UseWinUI>
-		<WinUISDKReferences>false</WinUISDKReferences>
-		<EnableMsixTooling>true</EnableMsixTooling>
-		<WindowsAppSdkDeploymentManagerInitialize>false</WindowsAppSdkDeploymentManagerInitialize>
-	</PropertyGroup>
-
-	<!-- Assembly metadata. Surfaces in the exe's Properties > Details tab. -->
-	<PropertyGroup>
-		<AssemblyTitle>SaveOver for Sheltered 2</AssemblyTitle>
-		<Product>SaveOver for Sheltered 2</Product>
-		<Company>SaveOver</Company>
-		<Description>Free, open-source save editor for Sheltered 2. Edit characters, pets, and more.</Description>
-		<Copyright>© 2026 SaveOver. All rights reserved.</Copyright>
-		<RepositoryUrl>https://github.com/saveover/sheltered2</RepositoryUrl>
-	</PropertyGroup>
-
-	<!-- Publish settings -->
-	<PropertyGroup>
-		<PublishProfile>win-$(Platform).pubxml</PublishProfile>
-		<PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">true</PublishReadyToRun>
-		<PublishTrimmed Condition="'$(Configuration)' != 'Debug'">true</PublishTrimmed>
-		<ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
-	</PropertyGroup>
-
-	<ItemGroup>
-		<Manifest Include="$(ApplicationManifest)" />
+	<ItemGroup Condition="'$(Packaged)' == 'true'">
+		<AppxManifest Include="Package.appxmanifest" Condition="'$(Release)' == 'true'">
+			<SubType>Designer</SubType>
+		</AppxManifest>
 	</ItemGroup>
 
 	<ItemGroup>
+		<Content Update="Assets\**" CopyToOutputDirectory="PreserveNewest" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
 		<PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.251219" />
 		<PackageReference Include="CommunityToolkit.WinUI.Extensions" Version="8.2.251219" />
@@ -64,24 +71,21 @@
 		<PackageReference Include="Microsoft.WindowsAppSDK" Version="2.3.1" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<Content Include="Assets\SplashScreen.scale-200.png" />
-		<Content Include="Assets\LockScreenLogo.scale-200.png" />
-		<Content Include="Assets\Square150x150Logo.scale-200.png" />
-		<Content Include="Assets\Square44x44Logo.scale-200.png" />
-		<Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
-		<Content Include="Assets\Wide310x150Logo.scale-200.png" />
-		<Content Update="Assets\**">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
-	</ItemGroup>
-
-	<ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)' != 'true' and '$(EnableMsixTooling)' == 'true'">
-		<ProjectCapability Include="Msix" />
-	</ItemGroup>
-	
-	<PropertyGroup Condition="'$(DisableHasPackageAndPublishMenuAddedByProject)' != 'true' and '$(EnableMsixTooling)' == 'true'">
-		<HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
+	<!-- Assembly metadata. Surfaces in the exe's Properties > Details tab. -->
+	<PropertyGroup>
+		<Version>0.1.0.0</Version>
+		<AssemblyTitle>SaveOver for Sheltered 2</AssemblyTitle>
+		<AssemblyProduct>SaveOver for Sheltered 2</AssemblyProduct>
+		<AssemblyCopyright>Copyright © SaveOver. All rights reserved.</AssemblyCopyright>
+		<AssemblyVersion>$(Version)</AssemblyVersion>
+		<AssemblyFileVersion>$(Version)</AssemblyFileVersion>
+		<Copyright>Copyright © SaveOver. All rights reserved.</Copyright>
+		<PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
+		<RepositoryUrl>https://github.com/saveover/Sheltered2</RepositoryUrl>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageIcon>AppIcon.png</PackageIcon>
+		<Title>SaveOver for Sheltered 2</Title>
+		<Product>SaveOver for Sheltered 2</Product>
 	</PropertyGroup>
-
+	
 </Project>

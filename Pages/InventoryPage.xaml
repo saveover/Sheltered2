@@ -1,32 +1,282 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Copyright (C) 2026 SaveOver -->
 <Page
     x:Class="SaveOver.Sheltered2.Pages.InventoryPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:toolkit="using:CommunityToolkit.WinUI"
+    xmlns:vm="using:SaveOver.Sheltered2.ViewModels"
     NavigationCacheMode="Enabled">
 
-    <!-- The title sits outside the scroller so it stays put as the page scrolls. -->
-    <Grid>
+    <Grid x:Name="PageRoot">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup>
+                <!-- At narrow widths, move descriptive text below its compact action instead of
+                     retaining a three-column layout that can clip in a narrow app window. -->
+                <VisualState x:Name="NarrowLayout">
+                    <VisualState.StateTriggers>
+                        <toolkit:ControlSizeTrigger TargetElement="{x:Bind PageRoot}" MinWidth="0" MaxWidth="620"/>
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="WaterContentGrid.ColumnSpacing" Value="12"/>
+                        <Setter Target="WaterDetails.(Grid.Row)" Value="1"/>
+                        <Setter Target="WaterDetails.(Grid.Column)" Value="0"/>
+                        <Setter Target="WaterDetails.(Grid.ColumnSpan)" Value="2"/>
+                        <Setter Target="StoredWaterNumberBox.(Grid.Row)" Value="1"/>
+                        <Setter Target="StoredWaterNumberBox.(Grid.Column)" Value="2"/>
+                        <Setter Target="SaveHintTextBlock.(Grid.Row)" Value="1"/>
+                        <Setter Target="SaveHintTextBlock.(Grid.Column)" Value="0"/>
+                        <Setter Target="SaveHintTextBlock.(Grid.ColumnSpan)" Value="2"/>
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="WideLayout">
+                    <VisualState.StateTriggers>
+                        <toolkit:ControlSizeTrigger TargetElement="{x:Bind PageRoot}" MinWidth="620"/>
+                    </VisualState.StateTriggers>
+                    <!-- The markup's default positions are the wide layout. -->
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
+        <!-- Kept outside the scroller so the current editor is always clear. -->
         <TextBlock Margin="36,24,36,0"
                    Text="Inventory"
                    Style="{StaticResource TitleTextBlockStyle}"
                    AutomationProperties.HeadingLevel="Level1"/>
 
         <ScrollView Grid.Row="1">
-            <StackPanel Margin="36,16,36,36" Spacing="24" MaxWidth="1100" HorizontalAlignment="Left">
+            <StackPanel Margin="36,16,36,36"
+                        MaxWidth="1280"
+                        HorizontalAlignment="Left"
+                        Spacing="24">
 
-            <InfoBar IsOpen="True"
-                     IsClosable="False"
-                     Severity="Informational"
-                     Title="Not built yet"
-                     Message="Inventory editing is still being worked on. Your save is loaded and untouched - nothing on this page can change it."/>
+                <InfoBar x:Name="NoInventoryInfoBar"
+                         IsOpen="False"
+                         IsClosable="False"
+                         Severity="Informational"
+                         Title="No shelter inventory found"
+                         Message="This save does not contain editable shelter inventory data."/>
+
+                <!-- Water is a shelter resource, not an item stack. -->
+                <Border x:Name="WaterCard" Style="{StaticResource CardBorderStyle}">
+                    <Grid x:Name="WaterContentGrid" ColumnSpacing="20" RowSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <Border Width="56"
+                                Height="56"
+                                CornerRadius="8"
+                                Background="{ThemeResource LayerFillColorDefaultBrush}">
+                            <FontIcon Glyph="&#xEB42;"
+                                      FontSize="28"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                      AutomationProperties.AccessibilityView="Raw"/>
+                        </Border>
+
+                        <StackPanel x:Name="WaterDetails" Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                            <TextBlock Text="Shelter water"
+                                       Style="{StaticResource SubtitleTextBlockStyle}"
+                                       AutomationProperties.HeadingLevel="Level2"/>
+                            <TextBlock Text="Available water in the shelter. This is saved separately from item stacks."
+                                       TextWrapping="Wrap"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        </StackPanel>
+
+                        <NumberBox x:Name="StoredWaterNumberBox"
+                                   Grid.Column="2"
+                                   Width="150"
+                                   Header="Units"
+                                   SpinButtonPlacementMode="Inline"
+                                   ValueChanged="StoredWaterNumberBox_ValueChanged"
+                                   AutomationProperties.Name="Stored water"/>
+                    </Grid>
+                </Border>
+
+                <Border x:Name="InventoryCard" Style="{StaticResource CardBorderStyle}">
+                    <StackPanel Spacing="16">
+                        <Grid x:Name="InventoryHeaderGrid" ColumnSpacing="16" RowSpacing="4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock x:Name="ContainerNameTextBlock"
+                                           Text="Shelter inventory"
+                                           Style="{StaticResource SubtitleTextBlockStyle}"
+                                           AutomationProperties.HeadingLevel="Level2"/>
+                                <TextBlock x:Name="ContainerSummaryTextBlock"
+                                           TextWrapping="Wrap"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            </StackPanel>
+
+                            <TextBlock x:Name="SaveHintTextBlock"
+                                       Grid.Column="1"
+                                       VerticalAlignment="Center"
+                                       Text="Changes are saved from Home"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        </Grid>
+
+                        <!-- SelectorBar items do not wrap; scrolling keeps all categories usable on a narrow page. -->
+                        <ScrollView ContentOrientation="Horizontal"
+                                    HorizontalScrollBarVisibility="Auto"
+                                    VerticalScrollBarVisibility="Hidden"
+                                    VerticalScrollMode="Disabled">
+                            <SelectorBar x:Name="ContainerSelector"
+                                         SelectionChanged="ContainerSelector_SelectionChanged">
+                                <SelectorBarItem x:Name="StorageSelectorItem"
+                                                 Text="Shelter inventory"
+                                                 Tag="Storage"
+                                                 IsSelected="True"/>
+                                <SelectorBarItem x:Name="OverflowSelectorItem"
+                                                 Text="Overflow"
+                                                 Tag="Overflow"/>
+                            </SelectorBar>
+                        </ScrollView>
+
+                        <ScrollView ContentOrientation="Horizontal"
+                                    HorizontalScrollBarVisibility="Auto"
+                                    VerticalScrollBarVisibility="Hidden"
+                                    VerticalScrollMode="Disabled">
+                            <SelectorBar x:Name="CategorySelector"
+                                         SelectionChanged="CategorySelector_SelectionChanged">
+                                <SelectorBarItem Text="All" Tag="All" IsSelected="True"/>
+                                <SelectorBarItem Text="Weapons" Tag="Weapons"/>
+                                <SelectorBarItem Text="Equipment" Tag="Equipment"/>
+                                <SelectorBarItem Text="Medical" Tag="Medical"/>
+                                <SelectorBarItem Text="General" Tag="General"/>
+                                <SelectorBarItem Text="Junk" Tag="Junk"/>
+                                <SelectorBarItem Text="Food" Tag="Food"/>
+                            </SelectorBar>
+                        </ScrollView>
+
+                        <InfoBar x:Name="UnmappedItemsInfoBar"
+                                 IsOpen="False"
+                                 IsClosable="False"
+                                 Severity="Informational"
+                                 Title="Some item keys are not catalogued yet"
+                                 Message="They remain visible in All with their raw defKey and are preserved on save."/>
+
+                        <InfoBar x:Name="NoItemsInfoBar"
+                                 IsOpen="False"
+                                 IsClosable="False"
+                                 Severity="Informational"
+                                 Title="No matching stacks"
+                                 Message="Try another storage container or category."/>
+
+                        <ItemsRepeater x:Name="ItemsRepeater">
+                            <ItemsRepeater.Layout>
+                                <UniformGridLayout MinItemWidth="288"
+                                                   MinColumnSpacing="16"
+                                                   MinRowSpacing="16"
+                                                   ItemsStretch="Fill"/>
+                            </ItemsRepeater.Layout>
+                            <ItemsRepeater.ItemTemplate>
+                                <DataTemplate x:DataType="vm:InventoryItemViewModel">
+                                    <Border Style="{StaticResource CardBorderStyle}" Padding="16">
+                                        <StackPanel Spacing="14">
+                                            <Grid ColumnSpacing="12">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="56"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <Border Width="56"
+                                                        Height="56"
+                                                        CornerRadius="8"
+                                                        Background="{ThemeResource LayerFillColorDefaultBrush}">
+                                                    <Grid>
+                                                        <!-- Uncatalogued keys retain a neutral, non-misleading fallback. -->
+                                                        <FontIcon Glyph="&#xE7B8;"
+                                                                  FontSize="26"
+                                                                  HorizontalAlignment="Center"
+                                                                  VerticalAlignment="Center"
+                                                                  Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                                  Visibility="{x:Bind FallbackIconVisibility}"
+                                                                  AutomationProperties.AccessibilityView="Raw"/>
+                                                        <Image Source="{x:Bind Icon}"
+                                                               Width="52"
+                                                               Height="52"
+                                                               HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center"
+                                                               Stretch="Uniform"
+                                                               Visibility="{x:Bind IconVisibility}"
+                                                               AutomationProperties.AccessibilityView="Raw"/>
+                                                    </Grid>
+                                                </Border>
+
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                                    <TextBlock Text="{x:Bind DisplayName}"
+                                                               FontWeight="SemiBold"
+                                                               TextWrapping="Wrap"/>
+                                                    <TextBlock Text="{x:Bind DefinitionKey}"
+                                                               Style="{StaticResource MonospaceTextBlockStyle}"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               ToolTipService.ToolTip="{x:Bind DefinitionKey}"/>
+                                                    <TextBlock Text="{x:Bind CategoryLabel}"
+                                                               FontSize="12"
+                                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                                </StackPanel>
+                                            </Grid>
+
+                                            <Grid ColumnSpacing="12">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <NumberBox Grid.Column="0"
+                                                           Header="Amount"
+                                                           Value="{x:Bind Amount, Mode=TwoWay}"
+                                                           SpinButtonPlacementMode="Compact"
+                                                           AutomationProperties.Name="{x:Bind AmountAutomationName}"/>
+                                                <NumberBox Grid.Column="1"
+                                                           Header="Integrity"
+                                                           Value="{x:Bind Integrity, Mode=TwoWay}"
+                                                           SpinButtonPlacementMode="Compact"
+                                                           AutomationProperties.Name="{x:Bind IntegrityAutomationName}"/>
+                                            </Grid>
+
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="Quality" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{x:Bind QualityStars}"
+                                                           Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                           VerticalAlignment="Center"
+                                                           AutomationProperties.Name="{x:Bind QualityLabel}"/>
+                                                <NumberBox Width="84"
+                                                           Value="{x:Bind Quality, Mode=TwoWay}"
+                                                           SpinButtonPlacementMode="Compact"
+                                                           AutomationProperties.Name="{x:Bind QualityAutomationName}"/>
+                                                <TextBlock Text="{x:Bind QualityLabel}"
+                                                           VerticalAlignment="Center"
+                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsRepeater.ItemTemplate>
+                        </ItemsRepeater>
+                    </StackPanel>
+                </Border>
             </StackPanel>
         </ScrollView>
     </Grid>

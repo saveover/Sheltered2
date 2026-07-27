@@ -1,10 +1,12 @@
 {
   "profiles": {
-    "SaveOver.Sheltered2 (Package)": {
-      "commandName": "MsixPackage"
+    "SaveOver for Sheltered2 (Packaged)": {
+      "commandName": "MsixPackage",
+      "nativeDebugging": false
     },
-    "SaveOver.Sheltered2 (Unpackaged)": {
-      "commandName": "Project"
+    "SaveOver for Sheltered2 (Unpackaged)": {
+      "commandName": "Project",
+      "nativeDebugging": true
     }
   }
 }

@@ -118,7 +118,11 @@ public sealed partial class HomePage : Page
         try
         {
             // A timestamped backup is created first and the write itself is atomic.
-            string updatedXml = SaveWriter.ApplyEdits(saveData.DecryptedContent, saveData.Characters, saveData.Pets);
+            string updatedXml = SaveWriter.ApplyEdits(
+                saveData.DecryptedContent,
+                saveData.Characters,
+                saveData.Pets,
+                saveData.Inventory);
             await FileHelper.EncryptAndSaveSaveFileAsync(sourceFilePath, updatedXml);
             saveData.CommitSavedContent(updatedXml);
 

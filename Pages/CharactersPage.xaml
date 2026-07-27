@@ -6,6 +6,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:toolkit="using:CommunityToolkit.WinUI"
+    xmlns:models="using:SaveOver.Sheltered2.Models"
     xmlns:vm="using:SaveOver.Sheltered2.ViewModels"
     NavigationCacheMode="Enabled">
 
@@ -76,13 +77,20 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- DisplayMemberPath needs the public Character.FullName. -->
             <ComboBox x:Name="CharacterComboBox"
                       Grid.Row="0" Grid.ColumnSpan="2"
                       Header="Select a character from the drop-down menu and edit the relevant fields."
                       PlaceholderText="Select a character"
-                      DisplayMemberPath="FullName"
-                      SelectionChanged="CharacterComboBox_SelectionChanged"/>
+                      SelectionChanged="CharacterComboBox_SelectionChanged">
+                <!-- A template rather than DisplayMemberPath: that resolves "FullName" by
+                     reflection at run time, which the trimmer and AOT cannot follow (WMC1510).
+                     OneWay so renaming a character updates the entry you picked them from. -->
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="models:Character">
+                        <TextBlock Text="{x:Bind FullName, Mode=OneWay}"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
 
             <!-- Left group -->
             <StackPanel x:Name="LeftColumn"
