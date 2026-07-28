@@ -1,10 +1,5 @@
 # Support
 
-Editing save files requires precision, as the file may represent a thriving shelter, a 
-failed shelter, or, after extensive modification, a shelter the game no longer recognizes. 
-Although SaveOver generates backups, users are strongly advised to maintain an additional 
-personal backup.
-
 By participating in this project or interacting with this repository, organization, 
 or community, you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md) and abide 
 by its terms.
