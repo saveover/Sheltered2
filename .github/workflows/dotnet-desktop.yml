@@ -1,8 +1,8 @@
-# .github/workflows/build.yml
+# .github/workflows/dotnet-desktop.yml
 #
-# Two distribution paths from one build:
-#   1. Portable self-contained zips  -> GitHub Releases (what the README points at)
-#   2. MSIX packages                 -> Microsoft Store via Partner Center
+# Two distribution artifacts from one source:
+#   1. Portable self-contained zips -> GitHub Releases
+#   2. Unsigned MSIX uploads        -> Partner Center
 
 name: Build
 
@@ -19,7 +19,6 @@ permissions:
 
 env:
   PROJECT: SaveOver.Sheltered2.csproj
-  DOTNET_VERSION: "10.0.x"
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -42,98 +41,90 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@main
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          global-json-file: global.json
 
-      # Without this every build reports 1.0.0.0 in its file properties.
       - name: Resolve version
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
         shell: pwsh
         run: |
-          $v = if ("${{ github.ref_type }}" -eq 'tag') {
-                 "${{ github.ref_name }}" -replace '^v', ''
-               } else { '0.0.0' }
-          "APP_VERSION=$v" | Out-File $env:GITHUB_ENV -Append
-          Write-Host "Building version $v"
+          $version = if ($env:REF_TYPE -eq 'tag') {
+            $env:REF_NAME -replace '^v', ''
+          } else {
+            [xml]$project = Get-Content $env:PROJECT
+            [string](@($project.Project.PropertyGroup.Version | Where-Object { $_ })[0])
+          }
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Version '$version' is not MAJOR.MINOR.PATCH"
+          }
+          foreach ($component in $version.Split('.')) {
+            [uint16]$parsed = 0
+            if (-not [uint16]::TryParse($component, [ref]$parsed)) {
+              throw "Version '$version' contains a component outside the 0-65535 range"
+            }
+          }
+          "APP_VERSION=$version" | Out-File $env:GITHUB_ENV -Append
+          Write-Host "Building version $version"
 
       - name: Restore
         run: >
           dotnet restore $env:PROJECT
           -r ${{ matrix.rid }}
+          -p:Configuration=Release-Unpackaged
           -p:Platform=${{ matrix.platform }}
-          -p:SelfContained=true
-          -p:WindowsPackageType=None
-          -p:WindowsAppSDKSelfContained=true
-          -p:AppxPackage=false
-          -p:ProjectPriFileName=resources.pri
-          -p:PublishReadyToRun=true
-          -p:PublishTrimmed=true
- 
-      - name: Build
-        run: >
-          dotnet build $env:PROJECT
-          -c Release
-          -r ${{ matrix.rid }}
-          -p:Platform=${{ matrix.platform }}
-          -p:SelfContained=true
-          -p:WindowsPackageType=None
-          -p:WindowsAppSDKSelfContained=true
-          -p:AppxPackage=false
-          -p:ProjectPriFileName=resources.pri
-          -p:PublishReadyToRun=true
-          -p:PublishTrimmed=true
-          -p:Version=${{ env.APP_VERSION }}
-          -p:ContinuousIntegrationBuild=true
-          --no-restore
+          -p:PublishProfile=${{ matrix.rid }}
 
       - name: Publish
         run: >
           dotnet publish $env:PROJECT
-          -c Release
+          -c Release-Unpackaged
           -r ${{ matrix.rid }}
           -p:Platform=${{ matrix.platform }}
-          -p:WindowsPackageType=None
-          -p:WindowsAppSDKSelfContained=true
-          -p:SelfContained=true
-          -p:AppxPackage=false
-          -p:ProjectPriFileName=resources.pri
-          -p:PublishTrimmed=true
-          -p:PublishReadyToRun=true
-          -p:Version=${{ env.APP_VERSION }}
+          -p:PublishProfile=${{ matrix.rid }}
+          -p:Version=$env:APP_VERSION
           -p:ContinuousIntegrationBuild=true
           --no-restore
           -o publish/${{ matrix.rid }}
 
-      # A WinUI app missing either of these builds fine and then exits silently
-      # on launch, which is expensive to debug from a user bug report.
+      # A single-file publish embeds the Windows App SDK, PRI resources,
+      # application content, and other runtime dependencies in the executable.
+      # A portable PDB may remain beside it.
       - name: Verify publish output
         shell: pwsh
         run: |
           $dir = "publish/${{ matrix.rid }}"
-          foreach ($f in 'SaveOver.Sheltered2.exe', 'resources.pri',
-                         'Microsoft.WindowsAppRuntime.Bootstrap.dll') {
-            if (-not (Test-Path (Join-Path $dir $f))) {
-              throw "Missing $f in $dir - the app will not start"
-            }
+          $exePath = Join-Path $dir 'SaveOver.Sheltered2.exe'
+          if (-not (Test-Path $exePath -PathType Leaf)) {
+            throw "Missing SaveOver.Sheltered2.exe in $dir"
           }
- 
-          # Content items only reach an unpackaged publish if they are marked
-          # CopyToOutputDirectory. Without this check a missing Assets folder
-          # ships as blank images rather than as a build failure.
-          $assets = Join-Path $dir 'Assets'
-          if (-not (Test-Path $assets)) {
-            throw "Missing Assets folder in $dir - images will not render"
+
+          $exe = Get-Item $exePath
+          $pdbPath = Join-Path $dir 'SaveOver.Sheltered2.pdb'
+          $allowed = @(
+            [IO.Path]::GetFullPath($exePath),
+            [IO.Path]::GetFullPath($pdbPath)
+          )
+          $unexpected = @(
+            Get-ChildItem $dir -Recurse -File |
+              Where-Object FullName -NotIn $allowed
+          )
+          if ($unexpected.Count -gt 0) {
+            $names = $unexpected.FullName -join ', '
+            throw "Expected a single-file publish, but found loose payload files: $names"
           }
-          $count = (Get-ChildItem $assets -Recurse -File).Count
-          if ($count -lt 1) { throw "Assets folder in $dir is empty" }
- 
-          Write-Host "Publish output looks complete ($count asset files)."
- 
+
+          Write-Host "Single-file publish looks complete ($($exe.Length) bytes)."
+
       - name: Upload portable artifact
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: portable-${{ matrix.rid }}
           path: publish/${{ matrix.rid }}
@@ -153,26 +144,41 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@main
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          global-json-file: global.json
 
       - name: Set up MSBuild
-        uses: microsoft/setup-msbuild@main
+        uses: microsoft/setup-msbuild@30375c66a4eea26614e0d39710365f22f8b0af57 # v3
 
-      # Every Store submission needs a unique version higher than the last.
-      # The 4th component must stay 0 (the Store reserves it).
-      - name: Stamp version from tag
-        if: startsWith(github.ref, 'refs/tags/v')
+      # Store package versions have four components; the Store reserves the last.
+      - name: Resolve and stamp version
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
         shell: pwsh
         run: |
-          $version = "${{ github.ref_name }}" -replace '^v', ''
-          if ($version -notmatch '^\d+\.\d+\.\d+$') {
-            throw "Tag '${{ github.ref_name }}' is not vMAJOR.MINOR.PATCH"
+          $version = if ($env:REF_TYPE -eq 'tag') {
+            $env:REF_NAME -replace '^v', ''
+          } else {
+            [xml]$project = Get-Content $env:PROJECT
+            [string](@($project.Project.PropertyGroup.Version | Where-Object { $_ })[0])
           }
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Version '$version' is not MAJOR.MINOR.PATCH"
+          }
+          foreach ($component in $version.Split('.')) {
+            [uint16]$parsed = 0
+            if (-not [uint16]::TryParse($component, [ref]$parsed)) {
+              throw "Version '$version' contains a component outside the 0-65535 range"
+            }
+          }
+          "APP_VERSION=$version" | Out-File $env:GITHUB_ENV -Append
           [xml]$xml = Get-Content Package.appxmanifest
           $xml.Package.Identity.Version = "$version.0"
           $xml.Save((Resolve-Path Package.appxmanifest))
@@ -184,20 +190,20 @@ jobs:
           /restore
           /p:Configuration=Release
           /p:Platform=${{ matrix.platform }}
+          /p:Version=$env:APP_VERSION
           /p:GenerateAppxPackageOnBuild=true
           /p:AppxPackageDir="${{ github.workspace }}\AppPackages\\"
           /p:UapAppxPackageBuildMode=StoreUpload
           /p:AppxBundle=Never
           /p:AppxPackageSigningEnabled=false
-          /p:PublishTrimmed=false
-          /p:PublishReadyToRun=false
+          /p:AppxSymbolPackageEnabled=false
           /p:ContinuousIntegrationBuild=true
- 
+
       - name: Upload MSIX artifact
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: msix-${{ matrix.platform }}
-          path: AppPackages/*.msixupload
+          path: AppPackages/**/*.msixupload
           if-no-files-found: error
           retention-days: 14
 
@@ -210,62 +216,32 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: write
- 
+
     steps:
       - name: Download portable builds
-        uses: actions/download-artifact@main
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: portable-*
           path: artifacts
- 
+
       - name: Zip each architecture
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path dist | Out-Null
           Get-ChildItem artifacts -Directory | ForEach-Object {
             $arch = $_.Name -replace '^portable-', ''
-            $out  = "dist/SaveOver-Sheltered2-$arch-${{ github.ref_name }}.zip"
+            $out  = "dist/SaveOver-Sheltered2-$arch-$env:RELEASE_TAG.zip"
             Compress-Archive -Path "$($_.FullName)/*" -DestinationPath $out
           }
- 
+
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
         shell: pwsh
         run: |
           $files = Get-ChildItem dist/*.zip | ForEach-Object { $_.FullName }
-          gh release create "${{ github.ref_name }}" $files --generate-notes --verify-tag
- 
-  # ---------------------------------------------------------------------------
-  # Store submission. Disabled until the app is live in the Store.
-  # ---------------------------------------------------------------------------
-  store:
-    needs: msix
-    if: false && startsWith(github.ref, 'refs/tags/v')
-    runs-on: windows-latest
- 
-    steps:
-      - name: Download MSIX packages
-        uses: actions/download-artifact@main
-        with:
-          pattern: msix-*
-          path: AppPackages
- 
-      - name: Configure Microsoft Store CLI
-        uses: microsoft/microsoft-store-apppublisher@main
- 
-      - name: Authenticate
-        run: >
-          msstore reconfigure
-          --tenantId ${{ secrets.AZURE_AD_TENANT_ID }}
-          --sellerId ${{ secrets.SELLER_ID }}
-          --clientId ${{ secrets.AZURE_AD_APPLICATION_CLIENT_ID }}
-          --clientSecret ${{ secrets.AZURE_AD_APPLICATION_SECRET }}
- 
-      - name: Publish to Store
-        shell: pwsh
-        run: |
-          $pkg = Get-ChildItem AppPackages -Recurse -Include *.msixupload |
-                 Select-Object -First 1
-          msstore publish $pkg.FullName -id ${{ secrets.STORE_PRODUCT_ID }}
- 
+          gh release create $env:RELEASE_TAG $files --generate-notes --verify-tag

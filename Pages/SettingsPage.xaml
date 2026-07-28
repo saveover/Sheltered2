@@ -95,7 +95,7 @@
                 <toolkit:SettingsExpander x:Name="AboutExpander"
                                           Header="SaveOver for Sheltered 2">
                     <toolkit:SettingsExpander.HeaderIcon>
-                        <ImageIcon Source="ms-appx:///Assets/AppIcon.ico"/>
+                        <ImageIcon Source="ms-appx:///Assets/AppIcons/AppIcon-Dark.ico"/>
                     </toolkit:SettingsExpander.HeaderIcon>
                     <TextBlock x:Name="VersionTextBlock"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"

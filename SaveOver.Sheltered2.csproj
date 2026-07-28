@@ -1,91 +1,101 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-	<!-- Output and target platform -->
-	<PropertyGroup>
-		<OutputType>WinExe</OutputType>
-		<TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
-		<TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
-		<UseWinUI>true</UseWinUI>
-		<ApplicationManifest>app.manifest</ApplicationManifest>
-		<Platforms>x86;x64;ARM64</Platforms>
-		<RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
-		<Configurations>Debug;Release;Debug-Unpackaged;Release-Unpackaged</Configurations>
-		<Release>true</Release>
-		<Release Condition="'$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Debug-Unpackaged'">false</Release>
-		<Packaged>true</Packaged>
-		<Packaged Condition="'$(Configuration)' == 'Debug-Unpackaged' Or '$(Configuration)' == 'Release-Unpackaged'">false</Packaged>
-		<Optimized>true</Optimized>
-		<Optimized Condition="'$(Configuration)' == 'Debug-Unpackaged' Or '$(Configuration)' == 'Debug'">false</Optimized>
-		<WindowsAppSdkIncludeVersionInfo>true</WindowsAppSdkIncludeVersionInfo>
-		<PublishProfile>win-$(Platform).pubxml</PublishProfile>
-		<PublishSingleFile Condition="'$(PublishSingleFile)' == '' and '$(Packaged)' != 'true'">true</PublishSingleFile>
-		<WindowsAppSdkSelfContained Condition="'$(WindowsAppSdkSelfContained)' == '' and '$(PublishSingleFile)' == 'true'">true</WindowsAppSdkSelfContained>
-		<ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
-		<Nullable>enable</Nullable>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<Company>SaveOver</Company>
-		<IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net10.0'))">true</IsAotCompatible>
-	</PropertyGroup>
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <UseWinUI>true</UseWinUI>
 
-	<PropertyGroup Condition="'$(Packaged)' != 'true'">
-		<EnableMsixTooling>false</EnableMsixTooling>
-		<EnableMsixTooling Condition="'$(PublishSingleFile)'=='true'">true</EnableMsixTooling>
-		<WindowsPackageType>None</WindowsPackageType>
-	</PropertyGroup>
+    <Platforms>x86;x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+    <Configurations>Debug;Release;Debug-Unpackaged;Release-Unpackaged</Configurations>
 
-	<PropertyGroup Condition="'$(Packaged)' == 'true'">
-		<WindowsPackageType>MSIX</WindowsPackageType>
-		<AppxBundleNameForOutput>SaveOver.Sheltered2</AppxBundleNameForOutput>
-		<EnableMsixTooling>true</EnableMsixTooling>
-		<SDKIdentifier>Windows</SDKIdentifier>
-		<DefaultLanguage>en-US</DefaultLanguage>
-		<AppxPackage>true</AppxPackage>
-		<AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
-		<GenerateAppInstallerFile>False</GenerateAppInstallerFile>
-		<AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
-		<AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
-		<AppxBundlePlatforms>$(Platform)</AppxBundlePlatforms>
-		<AppxBundlePlatforms Condition="'$(BuildAllAppFlavors)' == 'true'">x86|x64|ARM64</AppxBundlePlatforms>
-		<AppxBundle>Always</AppxBundle>
-		<HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
-		<SDKVersion>10.0</SDKVersion>
-	</PropertyGroup>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\AppIcons\AppIcon-Dark.ico</ApplicationIcon>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <WindowsAppSdkDeploymentManagerInitialize>false</WindowsAppSdkDeploymentManagerInitialize>
+    <WindowsAppSdkIncludeVersionInfo>true</WindowsAppSdkIncludeVersionInfo>
 
-	<PropertyGroup Condition="'$(Platform)' == 'AnyCPU'">
-		<Platform>x64</Platform>
-	</PropertyGroup>
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>false</PublishTrimmed>
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <!-- Prevent repository-local CI outputs from becoming inputs to a later single-file publish. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);publish\**;AppPackages\**;artifacts\**;dist\**</DefaultItemExcludes>
 
-	<ItemGroup Condition="'$(Packaged)' == 'true'">
-		<AppxManifest Include="Package.appxmanifest" Condition="'$(Release)' == 'true'">
-			<SubType>Designer</SubType>
-		</AppxManifest>
-	</ItemGroup>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
 
-	<ItemGroup>
-		<Content Update="Assets\**" CopyToOutputDirectory="PreserveNewest" />
-		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-		<PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.251219" />
-		<PackageReference Include="CommunityToolkit.WinUI.Extensions" Version="8.2.251219" />
-		<PackageReference Include="CommunityToolkit.WinUI.Triggers" Version="8.2.251219" />
-		<PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2526" />
-		<PackageReference Include="Microsoft.WindowsAppSDK" Version="2.3.1" />
-	</ItemGroup>
+  <!-- A RuntimeIdentifier is required because packaged .NET apps include the .NET runtime. -->
+  <PropertyGroup Condition="'$(Platform)' == 'x86'">
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x86</RuntimeIdentifier>
+  </PropertyGroup>
 
-	<!-- Assembly metadata. Surfaces in the exe's Properties > Details tab. -->
-	<PropertyGroup>
-		<Version>0.1.0.0</Version>
-		<AssemblyTitle>SaveOver for Sheltered 2</AssemblyTitle>
-		<AssemblyProduct>SaveOver for Sheltered 2</AssemblyProduct>
-		<AssemblyCopyright>Copyright © SaveOver. All rights reserved.</AssemblyCopyright>
-		<AssemblyVersion>$(Version)</AssemblyVersion>
-		<AssemblyFileVersion>$(Version)</AssemblyFileVersion>
-		<Copyright>Copyright © SaveOver. All rights reserved.</Copyright>
-		<PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
-		<RepositoryUrl>https://github.com/saveover/Sheltered2</RepositoryUrl>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageIcon>AppIcon.png</PackageIcon>
-		<Title>SaveOver for Sheltered 2</Title>
-		<Product>SaveOver for Sheltered 2</Product>
-	</PropertyGroup>
-	
+  <PropertyGroup Condition="'$(Platform)' == 'x64'">
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Platform)' == 'ARM64'">
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-arm64</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Release'">
+    <PublishAppxPackage>true</PublishAppxPackage>
+  </PropertyGroup>
+
+  <!-- The Windows App SDK infers MSIX when Package.appxmanifest is present. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug-Unpackaged' Or '$(Configuration)' == 'Release-Unpackaged'">
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
+  </PropertyGroup>
+
+  <!-- Partial trimming preserves assemblies that have not explicitly opted into full trimming. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release-Unpackaged'">
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>partial</TrimMode>
+  </PropertyGroup>
+
+  <!-- Custom configurations do not inherit the SDK's Debug/Release compiler defaults. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug-Unpackaged'">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>false</Optimize>
+    <DefineConstants>DEBUG;$(DefineConstants)</DefineConstants>
+    <MetadataUpdaterSupport>true</MetadataUpdaterSupport>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release-Unpackaged'">
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>true</Optimize>
+    <DefineConstants>RELEASE;$(DefineConstants)</DefineConstants>
+    <MetadataUpdaterSupport>false</MetadataUpdaterSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Update="Assets\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.251219" />
+    <PackageReference Include="CommunityToolkit.WinUI.Extensions" Version="8.2.251219" />
+    <PackageReference Include="CommunityToolkit.WinUI.Triggers" Version="8.2.251219" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2526" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.3.1" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <Version>0.1.0</Version>
+    <AssemblyTitle>SaveOver for Sheltered 2</AssemblyTitle>
+    <Product>SaveOver for Sheltered 2</Product>
+    <Company>SaveOver</Company>
+    <Copyright>Copyright © SaveOver. All rights reserved.</Copyright>
+    <RepositoryUrl>https://github.com/saveover/Sheltered2</RepositoryUrl>
+  </PropertyGroup>
+
+  <Target Name="ValidateBuildDimensions" BeforeTargets="PrepareForBuild" Condition="'$(DesignTimeBuild)' != 'true'">
+    <Error Condition="'$(Platform)' != 'x86' And '$(Platform)' != 'x64' And '$(Platform)' != 'ARM64'" Text="Unsupported platform '$(Platform)'. Specify x86, x64, or ARM64 (for example, -p:Platform=x64)." />
+    <Error Condition="'$(Configuration)' != 'Debug' And '$(Configuration)' != 'Release' And '$(Configuration)' != 'Debug-Unpackaged' And '$(Configuration)' != 'Release-Unpackaged'" Text="Unsupported configuration '$(Configuration)'. Specify Debug, Release, Debug-Unpackaged, or Release-Unpackaged." />
+  </Target>
+
 </Project>

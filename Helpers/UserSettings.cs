@@ -1,57 +1,82 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 SaveOver
 
+using Microsoft.Windows.Storage;
 using System;
 using System.Diagnostics;
-using Windows.Storage;
+using System.Threading;
 
 namespace SaveOver.Sheltered2.Helpers;
 
 /// <summary>
 /// Stores the handful of preferences the settings page owns, so they survive a restart.
 /// </summary>
-/// <remarks>
-/// Local settings needs package identity, which an unpackaged run doesn't have. Forgetting a
-/// preference is not worth failing a settings change over, so every path here shrugs the failure
-/// off and falls back to the caller's default.
-/// </remarks>
 internal static class UserSettings
 {
-    internal static string? ReadString(string key)
-    {
-        try
-        {
-            return ApplicationData.Current.LocalSettings.Values[key] as string;
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Could not read the '{key}' preference: {ex}");
-            return null;
-        }
-    }
+    private static readonly Lock SettingsLock = new();
+    private static ApplicationData? _settings;
 
-    internal static bool ReadBool(string key, bool fallback)
-    {
-        try
-        {
-            return ApplicationData.Current.LocalSettings.Values[key] as bool? ?? fallback;
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Could not read the '{key}' preference: {ex}");
-            return fallback;
-        }
-    }
+    internal static string? ReadString(string key) => TryRead(key, out string? value) ? value : null;
+
+    internal static bool ReadBool(string key, bool fallback) => TryRead(key, out bool value) ? value : fallback;
 
     internal static void Write(string key, object value)
     {
         try
         {
-            ApplicationData.Current.LocalSettings.Values[key] = value;
+            if (GetSettings() is { } settings)
+            {
+                settings.LocalSettings.Values[key] = value;
+            }
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"Could not store the '{key}' preference: {ex}");
+        }
+    }
+
+    private static bool TryRead<T>(string key, out T? value)
+    {
+        try
+        {
+            if (GetSettings()?.LocalSettings.Values.TryGetValue(key, out object? storedValue) == true &&
+                storedValue is T typedValue)
+            {
+                value = typedValue;
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Could not read the '{key}' preference: {ex}");
+        }
+
+        value = default;
+        return false;
+    }
+
+    private static ApplicationData? GetSettings()
+    {
+        lock (SettingsLock)
+        {
+            return _settings ??= CreateApplicationData();
+        }
+    }
+
+    private static ApplicationData? CreateApplicationData()
+    {
+        try
+        {
+#if DEBUG_UNPACKAGED || RELEASE_UNPACKAGED
+            return ApplicationData.GetForUnpackaged("SaveOver", "SaveOver.Sheltered2");
+#else
+            return ApplicationData.GetDefault();
+#endif
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Could not initialize application settings: {ex}");
+            return null;
         }
     }
 }
