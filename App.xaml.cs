@@ -22,7 +22,12 @@ public partial class App : Application
     /// Initializes the singleton application object.  This is the first line of authored code
     /// executed, and as such is the logical equivalent of main() or WinMain().
     /// </summary>
-    public App() => InitializeComponent();
+    public App()
+    {
+        UnhandledException += OnUnhandledException;
+        System.AppDomain.CurrentDomain.UnhandledException += OnCurrentDomainUnhandledException;
+        InitializeComponent();
+    }
 
     /// <summary>
     /// Invoked when the application is launched.
@@ -39,5 +44,16 @@ public partial class App : Application
         SoundHelper.Initialize();
 
         StartupWindow.Activate();
+    }
+
+    private static void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs args) =>
+        CrashLogger.Write("Microsoft.UI.Xaml.Application.UnhandledException", args.Exception);
+
+    private static void OnCurrentDomainUnhandledException(object sender, System.UnhandledExceptionEventArgs args)
+    {
+        if (args.ExceptionObject is System.Exception exception)
+        {
+            CrashLogger.Write("AppDomain.CurrentDomain.UnhandledException", exception);
+        }
     }
 }

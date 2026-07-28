@@ -51,12 +51,6 @@
     <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
   </PropertyGroup>
 
-  <!-- Partial trimming preserves assemblies that have not explicitly opted into full trimming. -->
-  <PropertyGroup Condition="'$(Configuration)' == 'Release-Unpackaged'">
-    <PublishTrimmed>true</PublishTrimmed>
-    <TrimMode>partial</TrimMode>
-  </PropertyGroup>
-
   <!-- Custom configurations do not inherit the SDK's Debug/Release compiler defaults. -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug-Unpackaged'">
     <DebugSymbols>true</DebugSymbols>
