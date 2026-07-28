@@ -95,23 +95,18 @@ jobs:
           -o publish/${{ matrix.rid }}
 
       # A single-file publish embeds the Windows App SDK, PRI resources,
-      # application content, and other runtime dependencies in the executable.
-      # A portable PDB may remain beside it.
+      # application content, managed symbols, and other runtime dependencies.
       - name: Verify publish output
         shell: pwsh
         run: |
           $dir = "publish/${{ matrix.rid }}"
-          $exePath = Join-Path $dir 'SaveOver.Sheltered2.exe'
+          $exePath = Join-Path $dir 'SaveOver for Sheltered2.exe'
           if (-not (Test-Path $exePath -PathType Leaf)) {
-            throw "Missing SaveOver.Sheltered2.exe in $dir"
+            throw "Missing 'SaveOver for Sheltered2.exe' in $dir"
           }
 
           $exe = Get-Item $exePath
-          $pdbPath = Join-Path $dir 'SaveOver.Sheltered2.pdb'
-          $allowed = @(
-            [IO.Path]::GetFullPath($exePath),
-            [IO.Path]::GetFullPath($pdbPath)
-          )
+          $allowed = @([IO.Path]::GetFullPath($exePath))
           $unexpected = @(
             Get-ChildItem $dir -Recurse -File |
               Where-Object FullName -NotIn $allowed

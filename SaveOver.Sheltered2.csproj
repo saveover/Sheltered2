@@ -63,7 +63,7 @@
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release-Unpackaged'">
     <DebugSymbols>false</DebugSymbols>
-    <DebugType>portable</DebugType>
+    <DebugType>embedded</DebugType>
     <Optimize>true</Optimize>
     <DefineConstants>RELEASE;$(DefineConstants)</DefineConstants>
     <MetadataUpdaterSupport>false</MetadataUpdaterSupport>
@@ -81,6 +81,11 @@
 
   <PropertyGroup>
     <Version>0.1.0</Version>
+	<AssemblyName>SaveOver for Sheltered2</AssemblyName>
+    <AssemblyVersion>$(Version).0</AssemblyVersion>
+    <FileVersion>$(Version).0</FileVersion>
+    <InformationalVersion>$(Version).0</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <AssemblyTitle>SaveOver for Sheltered 2</AssemblyTitle>
     <Product>SaveOver for Sheltered 2</Product>
     <Company>SaveOver</Company>
