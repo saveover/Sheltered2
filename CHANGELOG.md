@@ -4,7 +4,7 @@ All notable changes to SaveOver for Sheltered 2 will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0] - 2026-07-28
+## [0.1.0](https://github.com/saveover/Sheltered2/releases/tag/v0.1.0) - 2026-07-28
 
 Initial public release of SaveOver for Sheltered 2.
 
