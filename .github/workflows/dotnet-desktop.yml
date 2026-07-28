@@ -198,6 +198,7 @@ jobs:
           /p:AppxPackageSigningEnabled=false
           /p:AppxSymbolPackageEnabled=false
           /p:ContinuousIntegrationBuild=true
+          /verbosity:minimal
 
       - name: Upload MSIX artifact
         uses: actions/upload-artifact@main
