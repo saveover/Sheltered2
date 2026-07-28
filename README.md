@@ -6,23 +6,22 @@
 [![Windows](https://img.shields.io/badge/platform-Windows-0078D4?logo=windows)](#requirements)
 [![Discord](https://img.shields.io/discord/1529883189861158923?logo=discord&logoColor=white&color=%235865F2)](https://discord.gg/nzQSeGcta8)
 
-A free, open-source save editor for **Sheltered 2** on Windows. Edit characters,
-pets, and inventory through a modern graphical interface while automatic backups
-help protect the original save.
+This free, open-source save editor for **Sheltered 2** on Windows allows you to 
+edit characters, pets, and inventory through a modern graphical interface. 
+Automatic backups protect your original save files.
 
 > [!IMPORTANT]
 > SaveOver is an independent, unofficial project. It is not affiliated with,
-> endorsed by, or supported by Unicube or Team17. Always keep your own backup
-> before editing a save.
+> endorsed by, or supported by Unicube or Team17.
 
 ## Features
 
-- Edit character identity, health, attributes, needs, traits, relationships, and skills.
-- Edit pet identity, age, health, hunger, happiness, and training skills.
-- Edit shelter water and existing inventory stack quantities, integrity, and quality.
-- Creates a timestamped backup beside the save before every write.
+- Modify character identity, health, attributes, needs, traits, relationships, and skills.
+- Modify pet identity, age, health, hunger, happiness, and training skills.
+- Modify shelter water and inventory stack quantities, integrity, and quality.
+- Creates a timestamped backup for you next to the save file before each write.
 - Stages changes in a temporary file before replacing the original.
-- Choose a light, dark, or system theme and a left or top navigation layout.
+- Select a light, dark, or system theme, and choose a left or top navigation layout.
 - Run as an x86, x64, or ARM64 application.
 
 > [!NOTE]
@@ -31,16 +30,16 @@ help protect the original save.
 
 ## Quick start
 
-1. Download the archive for your computer from the
+1. Download the appropriate archive for your operating system from the
    [latest release](https://github.com/saveover/Sheltered2/releases/latest):
    - `win-x64` for most Windows computers.
    - `win-arm64` for Windows on ARM.
    - `win-x86` only for 32-bit Windows.
-2. Extract the entire ZIP archive.
+2. Extract all files from the ZIP archive.
 3. Run `SaveOver for Sheltered2.exe`.
-4. Select **Load save file** and open the relevant `.dat` file.
-5. Use the navigation pages to make your changes.
-6. Return to **Home** and select **Save file**.
+4. Select '**Load save file**' and open the relevant `.dat` file.
+5. Use the navigation pages to make your desired changes.
+6. Return to '**Home**' and select '**Save file**'.
 
 Sheltered 2 normally stores saves in:
 
@@ -48,35 +47,29 @@ Sheltered 2 normally stores saves in:
 %USERPROFILE%\AppData\LocalLow\Unicube\Sheltered2
 ```
 
-SaveOver writes a timestamped backup into the same directory as default before changing the
+By default, SaveOver creates a timestamped backup in the same directory before modifying the
 selected file.
 
 ## Installation
 
 ### Portable release
 
-The portable release is self-contained: it includes .NET and the Windows App SDK,
-so no additional runtime installation is required. Download, extract, and run it.
+The portable release is self-contained and includes both .NET and the Windows App SDK, 
+eliminating the need for additional runtime installation. Download, extract, and run 
+the application.
 
-Because releases are currently unsigned, Windows may display a Microsoft Defender
-SmartScreen warning. Confirm that the file came from the
-[official releases page](https://github.com/saveover/Sheltered2/releases) before
-choosing to run it.
+Because releases are unsigned, Windows may display a Microsoft Defender SmartScreen 
+warning. This is expected.
 
 ### MSIX
 
-MSIX packages are produced for Microsoft Store submission. Use the Store version
-when it becomes available; unsigned CI-generated MSIX packages are not intended
-for ordinary installation.
+MSIX packages are produced for Microsoft Store submission. These are currently unavailable.
 
 ## Requirements
 
 - Windows 10 version 1809 (build 17763) or later, or Windows 11.
 - An x86, x64, or ARM64 processor matching the downloaded release.
 - A Sheltered 2 save file.
-
-The portable release does not require a separately installed .NET or Windows App
-SDK runtime.
 
 ## Documentation and support
 
@@ -85,4 +78,3 @@ SDK runtime.
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Release history](https://github.com/saveover/Sheltered2/releases)
 - [Issue tracker](https://github.com/saveover/Sheltered2/issues)
-
