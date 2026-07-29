@@ -73,8 +73,8 @@ MSIX packages are produced for Microsoft Store submission. These are currently u
 
 ## Documentation and support
 
-- [Support and troubleshooting](SUPPORT.md)
-- [Contributing guide](CONTRIBUTING.md)
-- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Support and troubleshooting](.github/SUPPORT.md)
+- [Contributing guide](.github/CONTRIBUTING.md)
+- [Code of Conduct](.github/CODE_OF_CONDUCT.md)
 - [Release history](https://github.com/saveover/Sheltered2/releases)
 - [Issue tracker](https://github.com/saveover/Sheltered2/issues)
