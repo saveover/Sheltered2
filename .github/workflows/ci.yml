@@ -1,0 +1,105 @@
+# .github/workflows/ci.yml
+#
+# Fast validation for code pull requests. Release packaging is intentionally kept
+# in release.yml so pull requests do not build every architecture or upload assets.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  PROJECT: SaveOver.Sheltered2.csproj
+  PLATFORM: x64
+  RID: win-x64
+
+jobs:
+  changes:
+    name: Detect build-relevant changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      build: ${{ steps.filter.outputs.build }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Check changed paths
+        id: filter
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          if [[ "$EVENT_NAME" != "pull_request" ]]; then
+            echo "build=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          build=false
+          while IFS= read -r file; do
+            case "$file" in
+              *.md|LICENSE.txt|.github/FUNDING.yml)
+                ;;
+              *)
+                build=true
+                break
+                ;;
+            esac
+          done < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+
+          echo "build=$build" >> "$GITHUB_OUTPUT"
+          if [[ "$build" == "false" ]]; then
+            echo "Only documentation or community files changed; Windows builds are not needed." \
+              >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  build:
+    name: Build x64
+    needs: changes
+    if: needs.changes.outputs.build == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Build unpackaged app
+        run: >
+          dotnet build $env:PROJECT
+          -c Debug-Unpackaged
+          -r $env:RID
+          -p:Platform=$env:PLATFORM
+          -p:ContinuousIntegrationBuild=true
+
+      - name: Build packaged app
+        run: >
+          dotnet build $env:PROJECT
+          -c Debug
+          -r $env:RID
+          -p:Platform=$env:PLATFORM
+          -p:GenerateAppxPackageOnBuild=false
+          -p:AppxPackageSigningEnabled=false
+          -p:ContinuousIntegrationBuild=true
