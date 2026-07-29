@@ -18,7 +18,7 @@ about using the application belong in [SUPPORT.md](SUPPORT.md).
 ## Development environment setup
 
 - Windows 10 version 1809 or later, or Windows 11.
-- The .NET SDK selected by [`global.json`](global.json).
+- The .NET SDK selected by [`global.json`](../global.json).
 - Git.
 - Visual Studio with .NET desktop development support, or another editor with the
   C# tooling needed for .NET and WinUI projects.
