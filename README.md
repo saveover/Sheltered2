@@ -19,7 +19,7 @@ Automatic backups protect your original save files.
 - Modify character identity, health, attributes, needs, traits, relationships, and skills.
 - Modify pet identity, age, health, hunger, happiness, and training skills.
 - Modify shelter water and inventory stack quantities, integrity, and quality.
-- Creates a timestamped backup for you next to the save file before each write.
+- Creates a timestamped backup outside the Steam Cloud save folder before each write.
 - Stages changes in a temporary file before replacing the original.
 - Select a light, dark, or system theme, and choose a left or top navigation layout.
 - Run as an x86, x64, or ARM64 application.
@@ -47,8 +47,11 @@ Sheltered 2 normally stores saves in:
 %USERPROFILE%\AppData\LocalLow\Unicube\Sheltered2
 ```
 
-By default, SaveOver creates a timestamped backup in this directory before modifying the selected
-file. You can choose a different backup folder on the Settings page.
+Before modifying a save, SaveOver creates a timestamped backup in its own local application-data
+folder. Keeping backups outside Sheltered 2's directory prevents Steam Cloud from treating them as
+game saves. The Settings page lets you choose, open or reset the backup folder and select how many
+backups to retain per save file. The app also confirms before overwriting a save unless you turn
+that confirmation off in the dialog or Settings.
 
 ## Installation
 

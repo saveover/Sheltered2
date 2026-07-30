@@ -4,6 +4,8 @@
 using SaveOver.Sheltered2.Models;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.ComponentModel;
 
 namespace SaveOver.Sheltered2.Helpers;
 
@@ -14,6 +16,10 @@ namespace SaveOver.Sheltered2.Helpers;
 /// </summary>
 internal sealed class SaveSession
 {
+    private readonly List<INotifyPropertyChanged> trackedObjects = [];
+    private readonly List<INotifyCollectionChanged> trackedCollections = [];
+    private bool suppressChangeTracking;
+
     public string? SourceFilePath { get; private set; }
 
     public string DecryptedContent { get; private set; } = string.Empty;
@@ -33,11 +39,15 @@ internal sealed class SaveSession
 
     public bool IsLoaded => !string.IsNullOrEmpty(SourceFilePath) && !string.IsNullOrEmpty(DecryptedContent);
 
+    public bool HasUnsavedChanges { get; private set; }
+
     /// <summary>
     /// Raised when the loaded save data is replaced. Note this also fires when a second
     /// save is loaded over an already open one, where <see cref="IsLoaded"/> stays true.
     /// </summary>
     public event EventHandler? SaveDataChanged;
+
+    public event EventHandler? DirtyStateChanged;
 
     public void Load(string filePath, string decryptedContent, ParsedSave data)
     {
@@ -52,6 +62,8 @@ internal sealed class SaveSession
         Inventory = data.Inventory;
         SelectedCharacter = null;
 
+        TrackEditableData();
+        SetDirty(false);
         SaveDataChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -60,5 +72,143 @@ internal sealed class SaveSession
     {
         ArgumentException.ThrowIfNullOrEmpty(decryptedContent);
         DecryptedContent = decryptedContent;
+
+        suppressChangeTracking = true;
+        try
+        {
+            foreach (Character character in Characters)
+            {
+                character.ResetPositionRequested = false;
+            }
+        }
+        finally
+        {
+            suppressChangeTracking = false;
+        }
+
+        SetDirty(false);
+    }
+
+    private void TrackEditableData()
+    {
+        StopTrackingEditableData();
+
+        foreach (Character character in Characters)
+        {
+            Track(character);
+            Track(character.Strength);
+            Track(character.Dexterity);
+            Track(character.Intelligence);
+            Track(character.Charisma);
+            Track(character.Perception);
+            Track(character.Fortitude);
+            TrackCollection(character.Relationships);
+            TrackCollection(character.StrengthSkills);
+            TrackCollection(character.DexteritySkills);
+            TrackCollection(character.IntelligenceSkills);
+            TrackCollection(character.CharismaSkills);
+            TrackCollection(character.PerceptionSkills);
+            TrackCollection(character.FortitudeSkills);
+        }
+
+        foreach (Pet pet in Pets)
+        {
+            Track(pet);
+            Track(pet.PreyDrive);
+            Track(pet.Scavenging);
+            Track(pet.Affection);
+        }
+
+        if (Inventory is { } inventory)
+        {
+            Track(inventory);
+            TrackItems(inventory.Storage?.Items);
+            TrackItems(inventory.Overflow?.Items);
+        }
+    }
+
+    private void TrackItems(IReadOnlyList<InventoryItem>? items)
+    {
+        if (items is null)
+        {
+            return;
+        }
+
+        foreach (InventoryItem item in items)
+        {
+            Track(item);
+        }
+    }
+
+    private void TrackCollection<T>(System.Collections.ObjectModel.ObservableCollection<T> collection)
+        where T : INotifyPropertyChanged
+    {
+        collection.CollectionChanged += TrackedCollection_CollectionChanged;
+        trackedCollections.Add(collection);
+
+        foreach (T item in collection)
+        {
+            Track(item);
+        }
+    }
+
+    private void Track(INotifyPropertyChanged item)
+    {
+        item.PropertyChanged += TrackedObject_PropertyChanged;
+        trackedObjects.Add(item);
+    }
+
+    private void StopTrackingEditableData()
+    {
+        foreach (INotifyPropertyChanged item in trackedObjects)
+        {
+            item.PropertyChanged -= TrackedObject_PropertyChanged;
+        }
+
+        foreach (INotifyCollectionChanged collection in trackedCollections)
+        {
+            collection.CollectionChanged -= TrackedCollection_CollectionChanged;
+        }
+
+        trackedObjects.Clear();
+        trackedCollections.Clear();
+    }
+
+    private void TrackedObject_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (!suppressChangeTracking)
+        {
+            SetDirty(true);
+        }
+    }
+
+    private void TrackedCollection_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.NewItems is not null)
+        {
+            foreach (object? item in e.NewItems)
+            {
+                if (item is INotifyPropertyChanged observable)
+                {
+                    Track(observable);
+                }
+            }
+        }
+
+        if (!suppressChangeTracking)
+        {
+            SetDirty(true);
+        }
+    }
+
+    private void SetDirty(bool value)
+    {
+        if (HasUnsavedChanges == value)
+        {
+            return;
+        }
+
+        HasUnsavedChanges = value;
+        DirtyStateChanged?.Invoke(this, EventArgs.Empty);
     }
 }

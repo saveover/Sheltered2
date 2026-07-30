@@ -99,9 +99,42 @@
                                    TextWrapping="Wrap"
                                    IsTextSelectionEnabled="True"/>
                     </toolkit:SettingsCard.Description>
-                    <Button Content="Choose folder"
-                            Click="ChooseBackupFolderButton_Click"
-                            AutomationProperties.Name="Choose backup folder"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Choose"
+                                Click="ChooseBackupFolderButton_Click"
+                                AutomationProperties.Name="Choose backup folder"/>
+                        <Button Content="Open"
+                                Click="OpenBackupFolderButton_Click"
+                                AutomationProperties.Name="Open backup folder"/>
+                        <Button Content="Reset"
+                                Click="ResetBackupFolderButton_Click"
+                                AutomationProperties.Name="Reset backup folder to default"/>
+                    </StackPanel>
+                </toolkit:SettingsCard>
+
+                <toolkit:SettingsCard Header="Backup retention"
+                                      Description="Maximum backups kept per save file">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE823;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <ComboBox x:Name="BackupRetentionComboBox"
+                              SelectionChanged="BackupRetentionComboBox_SelectionChanged"
+                              AutomationProperties.Name="Backup retention">
+                        <ComboBoxItem Content="Keep latest 5" Tag="5"/>
+                        <ComboBoxItem Content="Keep latest 10" Tag="10"/>
+                        <ComboBoxItem Content="Keep latest 20" Tag="20"/>
+                        <ComboBoxItem Content="Keep all" Tag="0"/>
+                    </ComboBox>
+                </toolkit:SettingsCard>
+
+                <toolkit:SettingsCard Header="Confirm before saving"
+                                      Description="Ask before the original save file is overwritten">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE9D9;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <ToggleSwitch x:Name="SaveConfirmationToggleSwitch"
+                                  Toggled="SaveConfirmationToggleSwitch_Toggled"
+                                  AutomationProperties.Name="Confirm before saving"/>
                 </toolkit:SettingsCard>
 
                 <TextBlock Text="About"

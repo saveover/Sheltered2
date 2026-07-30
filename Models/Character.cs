@@ -95,7 +95,11 @@ public sealed partial class Character : ObservableObject
     /// Session-only flag, never stored in the save: when set, the writer moves this
     /// member onto a sibling's transform on save, freeing a member stuck in the world.
     /// </summary>
-    public bool ResetPositionRequested { get; set; }
+    public bool ResetPositionRequested
+    {
+        get;
+        set => SetProperty(ref field, value);
+    }
 
     public Stat Strength { get; } = new();
     public Stat Dexterity { get; } = new();

@@ -19,10 +19,12 @@ public sealed partial class SettingsPage : Page
 {
     /// <summary>Drives the copy-to-checkmark swap on the clone command's copy button.</summary>
     private readonly CopyIconFeedback _copyFeedback = new();
+    private bool cloudFolderDialogShown;
 
     public SettingsPage()
     {
         InitializeComponent();
+        Loaded += SettingsPage_Loaded;
 
         SelectStoredTheme();
 
@@ -31,7 +33,8 @@ public sealed partial class SettingsPage : Page
         SoundToggleSwitch.IsOn = SoundHelper.IsSoundEnabled;
         SpatialAudioToggleSwitch.IsOn = SoundHelper.IsSpatialAudioEnabled;
         SpatialAudioCard.IsEnabled = SoundHelper.IsSoundEnabled;
-        BackupFolderTextBlock.Text = BackupSettings.FolderPath;
+        SaveConfirmationToggleSwitch.IsOn = SaveSettings.ConfirmBeforeSaving;
+        RefreshBackupSettings();
 
         Assembly assembly = Assembly.GetExecutingAssembly();
         VersionTextBlock.Text = ReadableVersion(assembly);
@@ -71,7 +74,17 @@ public sealed partial class SettingsPage : Page
             if (folderPath is not null)
             {
                 BackupSettings.FolderPath = folderPath;
-                BackupFolderTextBlock.Text = BackupSettings.FolderPath;
+                bool isSteamCloudFolder = BackupSettings.IsGameSaveFolder;
+                if (isSteamCloudFolder)
+                {
+                    BackupSettings.ResetFolder();
+                }
+
+                RefreshBackupSettings();
+                if (isSteamCloudFolder)
+                {
+                    await ShowCloudFolderDialogAsync();
+                }
             }
         }
         catch (Exception ex)
@@ -83,6 +96,96 @@ public sealed partial class SettingsPage : Page
         {
             button.IsEnabled = true;
         }
+    }
+
+    private async void OpenBackupFolderButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            System.IO.Directory.CreateDirectory(BackupSettings.FolderPath);
+            if (!await Launcher.LaunchFolderPathAsync(BackupSettings.FolderPath))
+            {
+                BackupFolderTextBlock.Text = "Windows could not open the backup folder.";
+            }
+        }
+        catch (Exception ex)
+        {
+            BackupFolderTextBlock.Text = $"Could not open the backup folder: {ex.Message}";
+            System.Diagnostics.Debug.WriteLine($"Open backup folder error: {ex}");
+        }
+    }
+
+    private void ResetBackupFolderButton_Click(object sender, RoutedEventArgs e)
+    {
+        BackupSettings.ResetFolder();
+        RefreshBackupSettings();
+    }
+
+    private void BackupRetentionComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (BackupRetentionComboBox.SelectedItem is ComboBoxItem { Tag: string tag } &&
+            int.TryParse(tag, out int retentionCount))
+        {
+            BackupSettings.RetentionCount = retentionCount;
+        }
+    }
+
+    private void SaveConfirmationToggleSwitch_Toggled(object sender, RoutedEventArgs e) =>
+        SaveSettings.ConfirmBeforeSaving = SaveConfirmationToggleSwitch.IsOn;
+
+    private void RefreshBackupSettings()
+    {
+        BackupFolderTextBlock.Text = BackupSettings.FolderPath;
+        BackupRetentionComboBox.IsEnabled = !BackupSettings.IsGameSaveFolder;
+        if (!BackupSettings.IsGameSaveFolder)
+        {
+            // Warn again if the user later switches back into the Steam Cloud folder.
+            cloudFolderDialogShown = false;
+        }
+
+        string retention = BackupSettings.RetentionCount.ToString();
+        foreach (object item in BackupRetentionComboBox.Items)
+        {
+            if (item is ComboBoxItem { Tag: string tag } && tag == retention)
+            {
+                BackupRetentionComboBox.SelectedItem = item;
+                break;
+            }
+        }
+    }
+
+    private async void SettingsPage_Loaded(object sender, RoutedEventArgs e)
+    {
+        SaveConfirmationToggleSwitch.IsOn = SaveSettings.ConfirmBeforeSaving;
+
+        if (BackupSettings.IsGameSaveFolder)
+        {
+            BackupSettings.ResetFolder();
+            RefreshBackupSettings();
+            await ShowCloudFolderDialogAsync();
+        }
+    }
+
+    private async System.Threading.Tasks.Task ShowCloudFolderDialogAsync()
+    {
+        if (cloudFolderDialogShown || XamlRoot is null)
+        {
+            return;
+        }
+
+        cloudFolderDialogShown = true;
+        ContentDialog dialog = new()
+        {
+            XamlRoot = XamlRoot,
+            Title = "Choose a folder outside Steam Cloud",
+            Content =
+                "Sheltered 2's save folder is managed by Steam Cloud. Backups stored there can " +
+                "be synchronized as game saves and restored after deletion. The backup folder " +
+                "has been reset to SaveOver's default location.",
+            CloseButtonText = "Got it",
+            DefaultButton = ContentDialogButton.Close,
+        };
+        await dialog.ShowAsync();
     }
 
     /// <summary>

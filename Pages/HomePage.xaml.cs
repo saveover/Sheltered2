@@ -58,7 +58,8 @@ public sealed partial class HomePage : Page
 
         // Keep the Save button in step with the shared load state, so it stays enabled even
         // if this page is recreated after a file was already loaded.
-        SaveFileButton.IsEnabled = App.CurrentSaveData.IsLoaded;
+        App.CurrentSaveData.DirtyStateChanged += CurrentSaveData_DirtyStateChanged;
+        UpdateSaveButtonState();
     }
 
     private async void LoadFileButton_Click(object sender, RoutedEventArgs e)
@@ -98,7 +99,7 @@ public sealed partial class HomePage : Page
         finally
         {
             LoadFileButton.IsEnabled = true;
-            SaveFileButton.IsEnabled = App.CurrentSaveData.IsLoaded;
+            UpdateSaveButtonState();
         }
     }
 
@@ -123,6 +124,21 @@ public sealed partial class HomePage : Page
                 saveData.Characters,
                 saveData.Pets,
                 saveData.Inventory);
+
+            if (string.Equals(updatedXml, saveData.DecryptedContent, StringComparison.Ordinal))
+            {
+                saveData.CommitSavedContent(updatedXml);
+                LoadFileTextBlock.Text = "There are no changes to save.";
+                return;
+            }
+
+            if (SaveSettings.ConfirmBeforeSaving &&
+                !await ConfirmSaveAsync(sourceFilePath))
+            {
+                LoadFileTextBlock.Text = "Save cancelled.";
+                return;
+            }
+
             await FileHelper.EncryptAndSaveSaveFileAsync(sourceFilePath, updatedXml);
             saveData.CommitSavedContent(updatedXml);
 
@@ -136,9 +152,59 @@ public sealed partial class HomePage : Page
         }
         finally
         {
-            SaveFileButton.IsEnabled = true;
+            UpdateSaveButtonState();
             LoadFileButton.IsEnabled = true;
         }
+    }
+
+    private void CurrentSaveData_DirtyStateChanged(object? sender, EventArgs e) => UpdateSaveButtonState();
+
+    private void UpdateSaveButtonState() =>
+        SaveFileButton.IsEnabled =
+            App.CurrentSaveData.IsLoaded && App.CurrentSaveData.HasUnsavedChanges;
+
+    private async System.Threading.Tasks.Task<bool> ConfirmSaveAsync(string sourceFilePath)
+    {
+        CheckBox neverShowAgainCheckBox = new()
+        {
+            Content = "Never show again",
+            Margin = new Thickness(0, 12, 0, 0),
+        };
+        StackPanel content = new() { Spacing = 4 };
+        content.Children.Add(new TextBlock
+        {
+            Text = $"This will overwrite '{Path.GetFileName(sourceFilePath)}'.",
+            TextWrapping = TextWrapping.Wrap,
+        });
+        content.Children.Add(new TextBlock
+        {
+            Text = $"A backup will be created in '{BackupSettings.FolderPath}'.",
+            TextWrapping = TextWrapping.Wrap,
+        });
+        content.Children.Add(neverShowAgainCheckBox);
+
+        ContentDialog dialog = new()
+        {
+            XamlRoot = XamlRoot,
+            Title = "Save these changes?",
+            Content = content,
+            PrimaryButtonText = "Save",
+            CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Primary,
+        };
+
+        ContentDialogResult result = await dialog.ShowAsync();
+        if (result != ContentDialogResult.Primary)
+        {
+            return false;
+        }
+
+        if (neverShowAgainCheckBox.IsChecked == true)
+        {
+            SaveSettings.ConfirmBeforeSaving = false;
+        }
+
+        return true;
     }
 
     /// <summary>

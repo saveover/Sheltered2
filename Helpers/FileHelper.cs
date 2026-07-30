@@ -5,6 +5,7 @@ using Microsoft.Windows.Storage.Pickers;
 using System;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -177,7 +178,7 @@ internal static class FileHelper
 
         try
         {
-            Directory.CreateDirectory(directory);
+            _ = Directory.CreateDirectory(directory);
 
             for (int copyNumber = 1; ; copyNumber++)
             {
@@ -185,6 +186,7 @@ internal static class FileHelper
                 string backupPath = Path.Combine(directory, $"{backupBaseName}{collisionSuffix}{extension}");
                 if (await TryCreateBackupAsync(filePath, backupPath, cancellationToken).ConfigureAwait(false))
                 {
+                    PruneBackups(filePath, directory);
                     return;
                 }
             }
@@ -193,6 +195,79 @@ internal static class FileHelper
         {
             throw new IOException($"Could not create a backup of '{filePath}'. The save was not changed.", ex);
         }
+    }
+
+    /// <summary>
+    /// Removes only backups created for this exact source-save name. Cleanup is deliberately
+    /// disabled in the game's Steam Cloud directory so deleted files cannot be downloaded again
+    /// and repeatedly deleted on subsequent saves.
+    /// </summary>
+    private static void PruneBackups(string sourcePath, string backupDirectory)
+    {
+        int retentionCount = BackupSettings.RetentionCount;
+        if (retentionCount == 0 || BackupSettings.IsGameSaveFolder)
+        {
+            return;
+        }
+
+        string sourceStem = Path.GetFileNameWithoutExtension(sourcePath);
+        string extension = Path.GetExtension(sourcePath);
+        string prefix = $"{sourceStem}{BackupFileSuffix}";
+
+        try
+        {
+            FileInfo[] backups = new DirectoryInfo(backupDirectory)
+                .EnumerateFiles($"{prefix}*{extension}", SearchOption.TopDirectoryOnly)
+                .Where(file => IsRecognizedBackup(file, prefix, extension))
+                .OrderByDescending(file => file.LastWriteTimeUtc)
+                .ThenByDescending(file => file.Name, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            foreach (FileInfo backup in backups.Skip(retentionCount))
+            {
+                try
+                {
+                    backup.Delete();
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Could not prune backup '{backup.FullName}': {ex}");
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            System.Diagnostics.Debug.WriteLine($"Could not enumerate backups in '{backupDirectory}': {ex}");
+        }
+    }
+
+    private static bool IsRecognizedBackup(FileInfo file, string prefix, string extension)
+    {
+        string fileName = file.Name;
+        if (!fileName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||
+            !fileName.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        string suffix = fileName[prefix.Length..^extension.Length];
+        if (suffix.Length < BackupDateFormat.Length ||
+            !DateTime.TryParseExact(
+                suffix[..BackupDateFormat.Length],
+                BackupDateFormat,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out _))
+        {
+            return false;
+        }
+
+        ReadOnlySpan<char> collision = suffix.AsSpan(BackupDateFormat.Length);
+        return collision.IsEmpty ||
+               collision.StartsWith(" (", StringComparison.Ordinal) &&
+                collision.EndsWith(')') &&
+                int.TryParse(collision[2..^1], NumberStyles.None, CultureInfo.InvariantCulture, out int copyNumber) &&
+                copyNumber >= 2;
     }
 
     private static async Task<bool> TryCreateBackupAsync(

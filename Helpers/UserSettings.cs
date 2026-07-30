@@ -20,6 +20,8 @@ internal static class UserSettings
 
     internal static bool ReadBool(string key, bool fallback) => TryRead(key, out bool value) ? value : fallback;
 
+    internal static int ReadInt32(string key, int fallback) => TryRead(key, out int value) ? value : fallback;
+
     internal static void Write(string key, object value)
     {
         try
@@ -32,6 +34,18 @@ internal static class UserSettings
         catch (Exception ex)
         {
             Debug.WriteLine($"Could not store the '{key}' preference: {ex}");
+        }
+    }
+
+    internal static void Remove(string key)
+    {
+        try
+        {
+            _ = (GetSettings()?.LocalSettings.Values.Remove(key));
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Could not remove the '{key}' preference: {ex}");
         }
     }
 
