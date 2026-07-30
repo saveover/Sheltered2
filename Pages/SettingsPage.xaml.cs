@@ -179,9 +179,7 @@ public sealed partial class SettingsPage : Page
             XamlRoot = XamlRoot,
             Title = "Choose a folder outside Steam Cloud",
             Content =
-                "Sheltered 2's save folder is managed by Steam Cloud. Backups stored there can " +
-                "be synchronized as game saves and restored after deletion. The backup folder " +
-                "has been reset to SaveOver's default location.",
+                "Steam Cloud manages the Sheltered 2 save folder. Backups stored there can be synchronized as game saves and restored if deleted, potentially leading to an unlimited accumulation of saved files. The backup folder has now been reset to the default SaveOver location.",
             CloseButtonText = "Got it",
             DefaultButton = ContentDialogButton.Close,
         };

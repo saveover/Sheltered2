@@ -77,6 +77,13 @@ public sealed partial class HomePage : Page
                 return;
             }
 
+            if (App.CurrentSaveData.HasUnsavedChanges &&
+                !await ConfirmDiscardChangesAsync(filePath))
+            {
+                LoadFileTextBlock.Text = "Load cancelled. Your unsaved changes are still open.";
+                return;
+            }
+
             string fileName = Path.GetFileName(filePath);
             LoadFileTextBlock.Text = $"Loading {fileName}...";
             string decryptedContent = await FileHelper.LoadAndDecryptSaveFileAsync(filePath);
@@ -162,6 +169,22 @@ public sealed partial class HomePage : Page
     private void UpdateSaveButtonState() =>
         SaveFileButton.IsEnabled =
             App.CurrentSaveData.IsLoaded && App.CurrentSaveData.HasUnsavedChanges;
+
+    private async System.Threading.Tasks.Task<bool> ConfirmDiscardChangesAsync(string replacementFilePath)
+    {
+        ContentDialog dialog = new()
+        {
+            XamlRoot = XamlRoot,
+            Title = "Discard unsaved changes?",
+            Content =
+                $"Loading '{Path.GetFileName(replacementFilePath)}' will replace the save currently open in the editor.",
+            PrimaryButtonText = "Discard and load",
+            CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Close,
+        };
+
+        return await dialog.ShowAsync() == ContentDialogResult.Primary;
+    }
 
     private async System.Threading.Tasks.Task<bool> ConfirmSaveAsync(string sourceFilePath)
     {

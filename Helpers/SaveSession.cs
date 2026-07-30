@@ -158,6 +158,12 @@ internal sealed class SaveSession
         trackedObjects.Add(item);
     }
 
+    private void StopTracking(INotifyPropertyChanged item)
+    {
+        item.PropertyChanged -= TrackedObject_PropertyChanged;
+        _ = trackedObjects.Remove(item);
+    }
+
     private void StopTrackingEditableData()
     {
         foreach (INotifyPropertyChanged item in trackedObjects)
@@ -184,13 +190,33 @@ internal sealed class SaveSession
 
     private void TrackedCollection_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        if (e.NewItems is not null)
+        if (e.Action == NotifyCollectionChangedAction.Reset)
         {
-            foreach (object? item in e.NewItems)
+            // Reset does not report the removed items. Rebuild all subscriptions from the
+            // authoritative model so detached items cannot keep this session alive or dirty it.
+            TrackEditableData();
+        }
+        else
+        {
+            if (e.OldItems is not null)
             {
-                if (item is INotifyPropertyChanged observable)
+                foreach (object? item in e.OldItems)
                 {
-                    Track(observable);
+                    if (item is INotifyPropertyChanged observable)
+                    {
+                        StopTracking(observable);
+                    }
+                }
+            }
+
+            if (e.NewItems is not null)
+            {
+                foreach (object? item in e.NewItems)
+                {
+                    if (item is INotifyPropertyChanged observable)
+                    {
+                        Track(observable);
+                    }
                 }
             }
         }
