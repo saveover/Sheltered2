@@ -236,7 +236,8 @@ jobs:
             Compress-Archive -Path "$($_.FullName)/*" -DestinationPath $out
           }
 
-      - name: Create release
+      # Keep the release private until all assets have been submitted successfully.
+      - name: Create draft release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -244,4 +245,39 @@ jobs:
         shell: pwsh
         run: |
           $files = Get-ChildItem dist/*.zip | ForEach-Object { $_.FullName }
-          gh release create $env:RELEASE_TAG $files --generate-notes --verify-tag
+          gh release create $env:RELEASE_TAG $files --draft --generate-notes --verify-tag
+
+      - name: Scan release assets with VirusTotal
+        id: virustotal
+        uses: crazy-max/ghaction-virustotal@936d8c5c00afe97d3d9a1af26d017cfdf26800a2 # v5
+        with:
+          vt_api_key: ${{ secrets.VT_API_KEY }}
+          request_rate: 4
+          files: |
+            dist/*.zip
+
+      - name: Add VirusTotal results and publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          VT_ANALYSIS: ${{ steps.virustotal.outputs.analysis }}
+        shell: pwsh
+        run: |
+          gh release view $env:RELEASE_TAG --json body --jq .body |
+            Out-File release-notes.md -Encoding utf8
+
+          @(
+            ''
+            '## VirusTotal analysis'
+            ''
+            ($env:VT_ANALYSIS -split ',' | ForEach-Object {
+              $parts = $_ -split '=', 2
+              if ($parts.Count -ne 2) {
+                throw "Unexpected VirusTotal analysis output: '$_'"
+              }
+              "- [$($parts[0])]($($parts[1]))"
+            })
+          ) | Add-Content release-notes.md -Encoding utf8
+
+          gh release edit $env:RELEASE_TAG --notes-file release-notes.md --draft=false
