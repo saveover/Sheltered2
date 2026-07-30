@@ -177,6 +177,7 @@ public sealed partial class SettingsPage : Page
         ContentDialog dialog = new()
         {
             XamlRoot = XamlRoot,
+            RequestedTheme = ActualTheme,
             Title = "Choose a folder outside Steam Cloud",
             Content =
                 "Steam Cloud manages the Sheltered 2 save folder. Backups stored there can be synchronized as game saves and restored if deleted, potentially leading to an unlimited accumulation of saved files. The backup folder has now been reset to the default SaveOver location.",

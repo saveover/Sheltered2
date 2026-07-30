@@ -175,6 +175,7 @@ public sealed partial class HomePage : Page
         ContentDialog dialog = new()
         {
             XamlRoot = XamlRoot,
+            RequestedTheme = ActualTheme,
             Title = "Discard unsaved changes?",
             Content =
                 $"Loading '{Path.GetFileName(replacementFilePath)}' will replace the save currently open in the editor.",
@@ -209,6 +210,7 @@ public sealed partial class HomePage : Page
         ContentDialog dialog = new()
         {
             XamlRoot = XamlRoot,
+            RequestedTheme = ActualTheme,
             Title = "Save these changes?",
             Content = content,
             PrimaryButtonText = "Save",
