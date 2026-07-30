@@ -47,8 +47,8 @@ Sheltered 2 normally stores saves in:
 %USERPROFILE%\AppData\LocalLow\Unicube\Sheltered2
 ```
 
-By default, SaveOver creates a timestamped backup in the same directory before modifying the
-selected file.
+By default, SaveOver creates a timestamped backup in this directory before modifying the selected
+file. You can choose a different backup folder on the Settings page.
 
 ## Installation
 

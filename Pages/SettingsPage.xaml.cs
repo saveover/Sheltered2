@@ -31,6 +31,7 @@ public sealed partial class SettingsPage : Page
         SoundToggleSwitch.IsOn = SoundHelper.IsSoundEnabled;
         SpatialAudioToggleSwitch.IsOn = SoundHelper.IsSpatialAudioEnabled;
         SpatialAudioCard.IsEnabled = SoundHelper.IsSoundEnabled;
+        BackupFolderTextBlock.Text = BackupSettings.FolderPath;
 
         Assembly assembly = Assembly.GetExecutingAssembly();
         VersionTextBlock.Text = ReadableVersion(assembly);
@@ -54,6 +55,35 @@ public sealed partial class SettingsPage : Page
 
     private void SpatialAudioToggleSwitch_Toggled(object sender, RoutedEventArgs e) =>
         SoundHelper.IsSpatialAudioEnabled = SpatialAudioToggleSwitch.IsOn;
+
+    private async void ChooseBackupFolderButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button)
+        {
+            return;
+        }
+
+        button.IsEnabled = false;
+
+        try
+        {
+            string? folderPath = await FileHelper.PickFolderAsync();
+            if (folderPath is not null)
+            {
+                BackupSettings.FolderPath = folderPath;
+                BackupFolderTextBlock.Text = BackupSettings.FolderPath;
+            }
+        }
+        catch (Exception ex)
+        {
+            BackupFolderTextBlock.Text = $"Could not select a backup folder: {ex.Message}";
+            System.Diagnostics.Debug.WriteLine($"Backup folder picker error: {ex}");
+        }
+        finally
+        {
+            button.IsEnabled = true;
+        }
+    }
 
     /// <summary>
     /// The version as a person would quote it. The informational version is preferred because it

@@ -86,6 +86,24 @@
                     </toolkit:SettingsExpander.Items>
                 </toolkit:SettingsExpander>
 
+                <TextBlock Text="Save games"
+                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
+                           AutomationProperties.HeadingLevel="Level2"/>
+
+                <toolkit:SettingsCard Header="Backup folder">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE8B7;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <toolkit:SettingsCard.Description>
+                        <TextBlock x:Name="BackupFolderTextBlock"
+                                   TextWrapping="Wrap"
+                                   IsTextSelectionEnabled="True"/>
+                    </toolkit:SettingsCard.Description>
+                    <Button Content="Choose folder"
+                            Click="ChooseBackupFolderButton_Click"
+                            AutomationProperties.Name="Choose backup folder"/>
+                </toolkit:SettingsCard>
+
                 <TextBlock Text="About"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
                            AutomationProperties.HeadingLevel="Level2"/>

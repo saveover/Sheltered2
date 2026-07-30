@@ -52,6 +52,31 @@ internal static class FileHelper
     }
 
     /// <summary>
+    /// Opens a folder picker so the user can choose where backups are stored.
+    /// </summary>
+    internal static async Task<string?> PickFolderAsync(CancellationToken cancellationToken = default)
+    {
+        FolderPicker picker = new(App.StartupWindow!.AppWindow.Id)
+        {
+            SuggestedStartLocation = PickerLocationId.ComputerFolder,
+            CommitButtonText = "Select folder",
+            SettingsIdentifier = "BackupFolder",
+        };
+
+        try
+        {
+            PickFolderResult? result = await picker.PickSingleFolderAsync()
+                .AsTask(cancellationToken)
+                .ConfigureAwait(false);
+            return result?.Path;
+        }
+        catch (Exception ex) when (ex is COMException or InvalidOperationException)
+        {
+            throw new InvalidOperationException("An error occurred while opening the folder picker.", ex);
+        }
+    }
+
+    /// <summary>
     /// Loads, decrypts and validates the specified save file, returning its XML content.
     /// </summary>
     /// <exception cref="InvalidDataException">
@@ -138,21 +163,22 @@ internal static class FileHelper
     }
 
     /// <summary>
-    /// Creates a timestamped backup copy of the specified file in the same directory.
+    /// Creates a timestamped backup copy of the specified file in the configured backup directory.
     /// </summary>
     /// <exception cref="IOException">The backup could not be created, so the save was not changed.</exception>
     internal static async Task CreateBackupAsync(string filePath, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(filePath);
 
-        string directory = Path.GetDirectoryName(filePath)
-            ?? throw new IOException($"Could not determine the directory for '{filePath}'.");
+        string directory = BackupSettings.FolderPath;
         string timestamp = DateTime.Now.ToString(BackupDateFormat, CultureInfo.InvariantCulture);
         string backupBaseName = $"{Path.GetFileNameWithoutExtension(filePath)}{BackupFileSuffix}{timestamp}";
         string extension = Path.GetExtension(filePath);
 
         try
         {
+            Directory.CreateDirectory(directory);
+
             for (int copyNumber = 1; ; copyNumber++)
             {
                 string collisionSuffix = copyNumber == 1 ? string.Empty : $" ({copyNumber})";

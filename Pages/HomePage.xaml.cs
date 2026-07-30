@@ -127,7 +127,7 @@ public sealed partial class HomePage : Page
             saveData.CommitSavedContent(updatedXml);
 
             LoadFileTextBlock.Text =
-                $"Saved '{Path.GetFileName(sourceFilePath)}'. A timestamped backup was created alongside it.";
+                $"Saved '{Path.GetFileName(sourceFilePath)}'. A timestamped backup was created in '{BackupSettings.FolderPath}'.";
         }
         catch (Exception ex)
         {
