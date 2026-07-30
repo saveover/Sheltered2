@@ -1,6 +1,6 @@
 # SaveOver for Sheltered 2
 
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/saveover/sheltered2/ci.yml)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/saveover/sheltered2/release.yml)
 [![Latest release](https://img.shields.io/github/v/release/saveover/Sheltered2)](https://github.com/saveover/Sheltered2/releases/latest)
 [![GitHub License](https://img.shields.io/github/license/saveover/sheltered2)](LICENSE.txt)
 [![Windows](https://img.shields.io/badge/platform-Windows-0078D4?logo=windows)](#requirements)
