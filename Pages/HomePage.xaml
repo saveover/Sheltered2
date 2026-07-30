@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Copyright (C) 2026 SaveOver -->
 <Page
@@ -9,200 +9,397 @@
     NavigationCacheMode="Enabled">
 
     <Page.Resources>
-        <!-- One "what you can edit" tile. -->
         <DataTemplate x:Key="EditorFeatureTemplate" x:DataType="pages:EditorFeature">
-            <Border Padding="16"
+            <Border Padding="18"
+                    MinHeight="82"
                     Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
                     CornerRadius="8">
-                <StackPanel Orientation="Horizontal" Spacing="12">
-                    <IconSourceElement IconSource="{x:Bind Icon}"
-                                       Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                                       AutomationProperties.AccessibilityView="Raw"/>
-                    <StackPanel>
-                        <TextBlock Text="{x:Bind Name}" FontWeight="SemiBold"/>
+                <Grid ColumnSpacing="14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="36"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Width="36"
+                            Height="36"
+                            CornerRadius="8"
+                            Background="{ThemeResource SubtleFillColorSecondaryBrush}">
+                        <IconSourceElement IconSource="{x:Bind Icon}"
+                                           Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           AutomationProperties.AccessibilityView="Raw"/>
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                        <TextBlock Text="{x:Bind Name}"
+                                   Style="{StaticResource BodyStrongTextBlockStyle}"/>
                         <TextBlock Text="{x:Bind Summary}"
-                                   FontSize="12"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap"/>
                     </StackPanel>
-                </StackPanel>
+                </Grid>
             </Border>
         </DataTemplate>
     </Page.Resources>
 
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+    <ScrollView>
+        <StackPanel Margin="36,28,36,40"
+                    MaxWidth="1120"
+                    HorizontalAlignment="Center"
+                    Spacing="28">
 
-        <!-- Outside the scroller, so it stays put while the cards move under it. -->
-        <TextBlock Margin="36,24,36,0"
-                   Style="{StaticResource TitleTextBlockStyle}"
-                   TextWrapping="Wrap"
-                   Text="Sheltered 2 Save Editor"
-                   AutomationProperties.HeadingLevel="Level1"/>
-
-        <!-- The inset goes on the content, not on the ScrollView: ScrollView.Padding shrinks the
-             viewport instead, which clips the content short of the edges and leaves dead bands. -->
-        <ScrollView Grid.Row="1">
-            <StackPanel Margin="36,16,36,36" Spacing="32">
-                <StackPanel Spacing="12">
-                <TextBlock Style="{StaticResource SubtitleTextBlockStyle}"
-                           TextWrapping="Wrap"
+            <StackPanel Spacing="6">
+                <TextBlock Text="Home"
+                           Style="{StaticResource TitleTextBlockStyle}"
+                           AutomationProperties.HeadingLevel="Level1"/>
+                <TextBlock Text="Open, edit, and safely back up your Sheltered 2 saves."
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                           Text="Modify your game saves with ease!" />
-                <TextBlock TextWrapping="Wrap"
-                           Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                           Text="Edit characters, pets, inventory, crafting materials, and faction relationships in your Sheltered 2 save files." />
+                           TextWrapping="Wrap"/>
             </StackPanel>
 
-            <!-- Getting Started Card -->
+            <!-- Primary workspace. The right-hand visual disappears on compact windows so the
+                 state, actions and feedback retain a straightforward reading and tab order. -->
             <Border Style="{StaticResource CardBorderStyle}">
-                <StackPanel Spacing="16">
-                    <StackPanel Orientation="Horizontal" Spacing="12">
-                        <FontIcon
-                            Glyph="&#xE80F;"
-                            FontSize="20"
-                            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                            AutomationProperties.AccessibilityView="Raw" />
-                        <TextBlock
-                            Style="{StaticResource SubtitleTextBlockStyle}"
-                            Text="Getting Started"
-                            AutomationProperties.HeadingLevel="Level2" />
-                    </StackPanel>
+                <Grid x:Name="WorkspaceGrid" ColumnSpacing="36">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition x:Name="WorkspaceVisualColumn" Width="260"/>
+                    </Grid.ColumnDefinitions>
 
-                    <TextBlock
-                        TextWrapping="Wrap"
-                        Text="Load a Sheltered 2 save file to begin editing. Save files are typically found in:" />
+                    <VisualStateManager.VisualStateGroups>
+                        <VisualStateGroup>
+                            <VisualState x:Name="CompactWorkspace">
+                                <VisualState.StateTriggers>
+                                    <AdaptiveTrigger MinWindowWidth="0"/>
+                                </VisualState.StateTriggers>
+                                <VisualState.Setters>
+                                    <Setter Target="WorkspaceVisualPanel.Visibility" Value="Collapsed"/>
+                                    <Setter Target="WorkspaceVisualColumn.Width" Value="0"/>
+                                    <Setter Target="LoadFileButton.HorizontalAlignment" Value="Stretch"/>
+                                    <Setter Target="SaveFileButton.HorizontalAlignment" Value="Stretch"/>
+                                </VisualState.Setters>
+                            </VisualState>
+                            <VisualState x:Name="WideWorkspace">
+                                <VisualState.StateTriggers>
+                                    <AdaptiveTrigger MinWindowWidth="760"/>
+                                </VisualState.StateTriggers>
+                                <VisualState.Setters>
+                                    <Setter Target="WorkspaceVisualPanel.Visibility" Value="Visible"/>
+                                    <Setter Target="WorkspaceVisualColumn.Width" Value="260"/>
+                                    <Setter Target="LoadFileButton.HorizontalAlignment" Value="Stretch"/>
+                                    <Setter Target="SaveFileButton.HorizontalAlignment" Value="Left"/>
+                                </VisualState.Setters>
+                            </VisualState>
+                        </VisualStateGroup>
+                    </VisualStateManager.VisualStateGroups>
 
-                    <Border Style="{StaticResource InsetBorderStyle}">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
+                    <StackPanel Spacing="20">
+                        <TextBlock x:Name="WorkspaceTitleTextBlock"
+                                   Text="Choose a save file"
+                                   FontSize="28"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="Wrap"
+                                   AutomationProperties.HeadingLevel="Level2"/>
 
-                            <TextBlock Style="{StaticResource MonospaceTextBlockStyle}"
-                                Text="%userprofile%\AppData\LocalLow\Unicube\Sheltered2"
-                                VerticalAlignment="Center" />
-
-                            <!-- The copy glyph and the checkmark sit on top of each other and are
-                                 swapped by CopyIconFeedback, which reads them in order: copy
-                                 first, checkmark second, the checkmark starting invisible. -->
-                            <Button Grid.Column="1"
-                                    x:Name="CopyPathButton"
-                                    Style="{StaticResource IconButtonStyle}"
-                                    Click="CopyPathButton_Click"
-                                    Margin="8,0,0,0"
-                                    AutomationProperties.Name="Copy save folder path"
-                                    ToolTipService.ToolTip="Copy path to clipboard">
-                                <Grid>
-                                    <FontIcon Glyph="&#xE8C8;" FontSize="14"
-                                              Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                              AutomationProperties.AccessibilityView="Raw"/>
-                                    <FontIcon Glyph="&#xE73E;" FontSize="14" Opacity="0"
-                                              Foreground="{ThemeResource SystemFillColorSuccessBrush}"
-                                              AutomationProperties.AccessibilityView="Raw"/>
-                                </Grid>
-                            </Button>
-                        </Grid>
-                    </Border>
-
-                    <StackPanel Orientation="Horizontal" Spacing="12">
-                        <Button x:Name="LoadFileButton" 
+                        <!-- One control for both pointer workflows: click to browse, or drop a
+                             local .dat file anywhere on its surface. -->
+                        <Button x:Name="LoadFileButton"
+                                Padding="16,14"
+                                AllowDrop="True"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Stretch"
+                                Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                BorderBrush="{ThemeResource AccentFillColorDefaultBrush}"
+                                BorderThickness="1"
+                                CornerRadius="{StaticResource ControlCornerRadius}"
                                 Click="LoadFileButton_Click"
-                                Style="{StaticResource AccentButtonStyle}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE8E5;" FontSize="16"/>
-                                <TextBlock Text="Load Save File"/>
-                            </StackPanel>
+                                DragOver="SaveDropZone_DragOver"
+                                DragLeave="SaveDropZone_DragLeave"
+                                Drop="SaveDropZone_Drop"
+                                AutomationProperties.Name="Open or drop a Sheltered 2 DAT save file">
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <FontIcon Glyph="&#xE898;"
+                                          FontSize="22"
+                                          Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                          VerticalAlignment="Center"
+                                          AutomationProperties.AccessibilityView="Raw"/>
+                                <StackPanel Grid.Column="1" Spacing="2">
+                                    <TextBlock Text="Open or drop a save file"
+                                               Style="{StaticResource BodyStrongTextBlockStyle}"/>
+                                    <TextBlock Text="Click to browse, or drag one Sheltered 2 .dat file here."
+                                               Style="{StaticResource CaptionTextBlockStyle}"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <FontIcon Grid.Column="2"
+                                          Glyph="&#xE76C;"
+                                          FontSize="14"
+                                          Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                          VerticalAlignment="Center"
+                                          AutomationProperties.AccessibilityView="Raw"/>
+                            </Grid>
                         </Button>
-                        <Button x:Name="SaveFileButton" 
-                                IsEnabled="False" 
+
+                        <Button x:Name="SaveFileButton"
+                                MinWidth="164"
+                                HorizontalAlignment="Left"
+                                HorizontalContentAlignment="Center"
+                                IsEnabled="False"
                                 Click="SaveFileButton_Click">
                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE74E;" FontSize="16"/>
+                                <FontIcon Glyph="&#xE74E;"
+                                          FontSize="16"
+                                          AutomationProperties.AccessibilityView="Raw"/>
                                 <TextBlock Text="Save Changes"/>
                             </StackPanel>
                         </Button>
+
+                        <Border Padding="12,10"
+                                Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                CornerRadius="{StaticResource ControlCornerRadius}">
+                            <Grid ColumnSpacing="10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <FontIcon Glyph="&#xE946;"
+                                          FontSize="14"
+                                          Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                          VerticalAlignment="Center"
+                                          AutomationProperties.AccessibilityView="Raw"/>
+                                <TextBlock x:Name="LoadFileTextBlock"
+                                           Grid.Column="1"
+                                           Text="No save file is currently open."
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           VerticalAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           AutomationProperties.LiveSetting="Polite"/>
+                            </Grid>
+                        </Border>
                     </StackPanel>
 
-                    <!-- Carries every load/save outcome, including failures, so it is announced. -->
-                    <TextBlock x:Name="LoadFileTextBlock"
-                               VerticalAlignment="Center"
-                               TextWrapping="Wrap"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               AutomationProperties.LiveSetting="Polite"/>
-                </StackPanel>
+                    <Border x:Name="WorkspaceVisualPanel"
+                            Grid.Column="1"
+                            Padding="24"
+                            MinHeight="240"
+                            Background="{ThemeResource LayerFillColorDefaultBrush}"
+                            CornerRadius="12">
+                        <StackPanel Spacing="18">
+                            <Border Width="48"
+                                    Height="48"
+                                    CornerRadius="12"
+                                    Background="{ThemeResource AccentFillColorDefaultBrush}"
+                                    HorizontalAlignment="Left">
+                                <FontIcon Glyph="&#xE72E;"
+                                          FontSize="22"
+                                          Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          AutomationProperties.AccessibilityView="Raw"/>
+                            </Border>
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="Safe by default"
+                                           Style="{StaticResource SubtitleTextBlockStyle}"/>
+                                <TextBlock Text="SaveOver protects the original before applying your edits."
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <StackPanel Spacing="10">
+                                <StackPanel Orientation="Horizontal" Spacing="9">
+                                    <FontIcon Glyph="&#xE73E;"
+                                              FontSize="13"
+                                              Foreground="{ThemeResource SystemFillColorSuccessBrush}"
+                                              AutomationProperties.AccessibilityView="Raw"/>
+                                    <TextBlock Text="Validates before opening"
+                                               Style="{StaticResource CaptionTextBlockStyle}"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="9">
+                                    <FontIcon Glyph="&#xE73E;"
+                                              FontSize="13"
+                                              Foreground="{ThemeResource SystemFillColorSuccessBrush}"
+                                              AutomationProperties.AccessibilityView="Raw"/>
+                                    <TextBlock Text="Creates a timestamped backup"
+                                               Style="{StaticResource CaptionTextBlockStyle}"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="9">
+                                    <FontIcon Glyph="&#xE73E;"
+                                              FontSize="13"
+                                              Foreground="{ThemeResource SystemFillColorSuccessBrush}"
+                                              AutomationProperties.AccessibilityView="Raw"/>
+                                    <TextBlock Text="Replaces the file atomically"
+                                               Style="{StaticResource CaptionTextBlockStyle}"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
             </Border>
 
-            <!-- Features Overview -->
-            <StackPanel Spacing="20">
-                <TextBlock
-                    Style="{StaticResource SubtitleTextBlockStyle}"
-                    Text="What You Can Edit"
-                    AutomationProperties.HeadingLevel="Level2" />
+            <!-- Supporting utility, visually separate from the primary workflow. -->
+            <Border Padding="18"
+                    Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE8B7;"
+                              FontSize="18"
+                              Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                              VerticalAlignment="Center"
+                              AutomationProperties.AccessibilityView="Raw"/>
+                    <StackPanel Grid.Column="1" Spacing="3">
+                        <TextBlock Text="Looking for your saves?"
+                                   Style="{StaticResource BodyStrongTextBlockStyle}"/>
+                        <TextBlock Text="%userprofile%\AppData\LocalLow\Unicube\Sheltered2"
+                                   Style="{StaticResource MonospaceTextBlockStyle}"
+                                   TextTrimming="CharacterEllipsis"
+                                   ToolTipService.ToolTip="%userprofile%\AppData\LocalLow\Unicube\Sheltered2"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center"
+                                Spacing="8">
+                        <Button Click="OpenSaveFolderButton_Click"
+                                AutomationProperties.Name="Open Sheltered 2 save folder">
+                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                <FontIcon Glyph="&#xE838;"
+                                          FontSize="14"
+                                          AutomationProperties.AccessibilityView="Raw"/>
+                                <TextBlock Text="Open folder"/>
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="CopyPathButton"
+                                Style="{StaticResource IconButtonStyle}"
+                                Click="CopyPathButton_Click"
+                                AutomationProperties.Name="Copy save folder path"
+                                ToolTipService.ToolTip="Copy path to clipboard">
+                            <Grid>
+                                <FontIcon Glyph="&#xE8C8;"
+                                          FontSize="14"
+                                          Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                          AutomationProperties.AccessibilityView="Raw"/>
+                                <FontIcon Glyph="&#xE73E;"
+                                          FontSize="14"
+                                          Opacity="0"
+                                          Foreground="{ThemeResource SystemFillColorSuccessBrush}"
+                                          AutomationProperties.AccessibilityView="Raw"/>
+                            </Grid>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
 
-                <!-- Two columns that collapse to one when the page gets narrow, which the fixed
-                     two-column Grid this replaced never did. -->
+            <StackPanel Spacing="14">
+                <StackPanel Spacing="3">
+                    <TextBlock Text="What you can edit"
+                               Style="{StaticResource SubtitleTextBlockStyle}"
+                               AutomationProperties.HeadingLevel="Level2"/>
+                    <TextBlock Text="Editors unlock after a valid save is loaded."
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                </StackPanel>
                 <ItemsRepeater ItemsSource="{x:Bind Features}"
                                ItemTemplate="{StaticResource EditorFeatureTemplate}">
                     <ItemsRepeater.Layout>
-                        <UniformGridLayout MinItemWidth="240"
-                                           MinColumnSpacing="16"
-                                           MinRowSpacing="8"
-                                           MaximumRowsOrColumns="2"
+                        <UniformGridLayout MinItemWidth="250"
+                                           MinColumnSpacing="12"
+                                           MinRowSpacing="12"
+                                           MaximumRowsOrColumns="3"
                                            ItemsStretch="Fill"/>
                     </ItemsRepeater.Layout>
                 </ItemsRepeater>
             </StackPanel>
 
-            <!-- Important Notice -->
-            <InfoBar IsOpen="True" 
-                     Severity="Warning" 
+            <InfoBar IsOpen="True"
+                     Severity="Warning"
                      IsClosable="False"
-                     Title="Important Legal Notice"
-                     Message="This software is provided 'as is' without warranty. Always backup your save files before editing. Use at your own risk.">
+                     Title="Edit carefully"
+                     Message="SaveOver creates backups, but game saves can still be sensitive to unexpected values. Review your changes before saving.">
                 <InfoBar.ActionButton>
-                    <HyperlinkButton Content="View License" NavigateUri="https://github.com/saveover/Sheltered2/blob/master/LICENSE.txt" />
+                    <HyperlinkButton Content="View licence"
+                                     NavigateUri="https://github.com/saveover/Sheltered2/blob/master/LICENSE.txt"/>
                 </InfoBar.ActionButton>
             </InfoBar>
 
-            <!-- Support Section -->
             <Border Style="{StaticResource CardBorderStyle}">
-                <StackPanel Spacing="16">
-                    <StackPanel Orientation="Horizontal" Spacing="12">
-                        <FontIcon Glyph="&#xEB51;"
-                                  FontSize="20"
-                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                                  AutomationProperties.AccessibilityView="Raw"/>
-                        <TextBlock
-                            Style="{StaticResource SubtitleTextBlockStyle}"
-                            Text="Open Source Project"
-                            AutomationProperties.HeadingLevel="Level2" />
+                <Grid ColumnSpacing="20">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <VisualStateManager.VisualStateGroups>
+                        <VisualStateGroup>
+                            <VisualState x:Name="CompactSupport">
+                                <VisualState.StateTriggers>
+                                    <AdaptiveTrigger MinWindowWidth="0"/>
+                                </VisualState.StateTriggers>
+                                <VisualState.Setters>
+                                    <Setter Target="SupportActionPanel.(Grid.Row)" Value="1"/>
+                                    <Setter Target="SupportActionPanel.(Grid.Column)" Value="0"/>
+                                    <Setter Target="SupportActionPanel.Margin" Value="0,16,0,0"/>
+                                </VisualState.Setters>
+                            </VisualState>
+                            <VisualState x:Name="WideSupport">
+                                <VisualState.StateTriggers>
+                                    <AdaptiveTrigger MinWindowWidth="760"/>
+                                </VisualState.StateTriggers>
+                                <VisualState.Setters>
+                                    <Setter Target="SupportActionPanel.(Grid.Row)" Value="0"/>
+                                    <Setter Target="SupportActionPanel.(Grid.Column)" Value="1"/>
+                                    <Setter Target="SupportActionPanel.Margin" Value="0"/>
+                                </VisualState.Setters>
+                            </VisualState>
+                        </VisualStateGroup>
+                    </VisualStateManager.VisualStateGroups>
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Built in the open"
+                                   Style="{StaticResource SubtitleTextBlockStyle}"
+                                   AutomationProperties.HeadingLevel="Level2"/>
+                        <TextBlock Text="SaveOver is free and open source. Contributions, useful bug reports, and donations all help it improve."
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap"/>
                     </StackPanel>
-
-                    <TextBlock
-                        TextWrapping="Wrap"
-                        Text="This is a free, open-source project. If you find it useful, consider supporting its development through donations or contributions." />
-
-                    <StackPanel Orientation="Horizontal" Spacing="12">
+                    <StackPanel x:Name="SupportActionPanel"
+                                Grid.Column="1"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center"
+                                Spacing="10">
                         <HyperlinkButton NavigateUri="https://github.com/saveover/Sheltered2">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE8A7;" FontSize="16"/>
-                                <TextBlock Text="View on GitHub"/>
+                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                <FontIcon Glyph="&#xE8A7;"
+                                          FontSize="15"
+                                          AutomationProperties.AccessibilityView="Raw"/>
+                                <TextBlock Text="GitHub"/>
                             </StackPanel>
                         </HyperlinkButton>
                         <Button Click="SupportButton_Click">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xEB51;" FontSize="16"/>
-                                <TextBlock Text="Support Development"/>
+                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                <FontIcon Glyph="&#xEB51;"
+                                          FontSize="15"
+                                          AutomationProperties.AccessibilityView="Raw"/>
+                                <TextBlock Text="Support"/>
                             </StackPanel>
                         </Button>
                     </StackPanel>
-                </StackPanel>
+                </Grid>
             </Border>
-            </StackPanel>
-        </ScrollView>
-    </Grid>
+        </StackPanel>
+    </ScrollView>
 </Page>

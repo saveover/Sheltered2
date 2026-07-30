@@ -1,4 +1,5 @@
 ﻿using Microsoft.UI.Windowing;
+using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
@@ -51,6 +52,14 @@ public sealed partial class MainWindow : Window
         // what lets the icon, title and pane toggle sit level with them.
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
 
+        // Native caption buttons sit outside the XAML theme inheritance tree. Follow the root's
+        // effective theme explicitly, including live Windows theme changes while using Default.
+        if (Content is FrameworkElement rootElement)
+        {
+            rootElement.ActualThemeChanged += (_, _) => UpdateCaptionButtonTheme(rootElement.ActualTheme);
+            UpdateCaptionButtonTheme(rootElement.ActualTheme);
+        }
+
         InitializeNavigation();
 
         // Editor pages stay locked until a save file has been loaded and decrypted.
@@ -69,6 +78,17 @@ public sealed partial class MainWindow : Window
 
             MatchWindowTitleBarHeight();
         };
+    }
+
+    private void UpdateCaptionButtonTheme(ElementTheme theme)
+    {
+        bool isDark = theme == ElementTheme.Dark;
+        Windows.UI.Color foreground = isDark ? Colors.White : Colors.Black;
+        AppWindow.TitleBar.ButtonForegroundColor = foreground;
+        AppWindow.TitleBar.ButtonHoverForegroundColor = foreground;
+        AppWindow.TitleBar.ButtonHoverBackgroundColor = isDark
+            ? Windows.UI.Color.FromArgb(24, 255, 255, 255)
+            : Windows.UI.Color.FromArgb(24, 0, 0, 0);
     }
 
     /// <summary>

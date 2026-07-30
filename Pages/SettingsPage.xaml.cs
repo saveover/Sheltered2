@@ -34,6 +34,7 @@ public sealed partial class SettingsPage : Page
         SpatialAudioToggleSwitch.IsOn = SoundHelper.IsSpatialAudioEnabled;
         SpatialAudioCard.IsEnabled = SoundHelper.IsSoundEnabled;
         SaveConfirmationToggleSwitch.IsOn = SaveSettings.ConfirmBeforeSaving;
+        ResumeLastSaveToggleSwitch.IsOn = SaveSettings.RememberLastOpenedSave;
         RefreshBackupSettings();
 
         Assembly assembly = Assembly.GetExecutingAssembly();
@@ -133,6 +134,9 @@ public sealed partial class SettingsPage : Page
     private void SaveConfirmationToggleSwitch_Toggled(object sender, RoutedEventArgs e) =>
         SaveSettings.ConfirmBeforeSaving = SaveConfirmationToggleSwitch.IsOn;
 
+    private void ResumeLastSaveToggleSwitch_Toggled(object sender, RoutedEventArgs e) =>
+        SaveSettings.RememberLastOpenedSave = ResumeLastSaveToggleSwitch.IsOn;
+
     private void RefreshBackupSettings()
     {
         BackupFolderTextBlock.Text = BackupSettings.FolderPath;
@@ -157,6 +161,7 @@ public sealed partial class SettingsPage : Page
     private async void SettingsPage_Loaded(object sender, RoutedEventArgs e)
     {
         SaveConfirmationToggleSwitch.IsOn = SaveSettings.ConfirmBeforeSaving;
+        ResumeLastSaveToggleSwitch.IsOn = SaveSettings.RememberLastOpenedSave;
 
         if (BackupSettings.IsGameSaveFolder)
         {

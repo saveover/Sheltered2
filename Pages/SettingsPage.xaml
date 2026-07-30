@@ -137,6 +137,16 @@
                                   AutomationProperties.Name="Confirm before saving"/>
                 </toolkit:SettingsCard>
 
+                <toolkit:SettingsCard Header="Remember last opened save"
+                                      Description="Offer to reopen the most recently loaded save when SaveOver starts">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE72C;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <ToggleSwitch x:Name="ResumeLastSaveToggleSwitch"
+                                  Toggled="ResumeLastSaveToggleSwitch_Toggled"
+                                  AutomationProperties.Name="Remember last opened save"/>
+                </toolkit:SettingsCard>
+
                 <TextBlock Text="About"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
                            AutomationProperties.HeadingLevel="Level2"/>

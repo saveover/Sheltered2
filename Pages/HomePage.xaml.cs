@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.Storage;
 
 namespace SaveOver.Sheltered2.Pages;
 
@@ -49,6 +50,7 @@ public sealed partial class HomePage : Page
     /// <summary>The copy button's resting tooltip, taken from the markup so the wording lives in
     /// one place even though the copy swaps it out for a moment.</summary>
     private readonly object _copyTooltip;
+    private bool startupResumePromptHandled;
 
     public HomePage()
     {
@@ -60,6 +62,7 @@ public sealed partial class HomePage : Page
         // if this page is recreated after a file was already loaded.
         App.CurrentSaveData.DirtyStateChanged += CurrentSaveData_DirtyStateChanged;
         UpdateSaveButtonState();
+        Loaded += HomePage_Loaded;
     }
 
     private async void LoadFileButton_Click(object sender, RoutedEventArgs e)
@@ -84,15 +87,7 @@ public sealed partial class HomePage : Page
                 return;
             }
 
-            string fileName = Path.GetFileName(filePath);
-            LoadFileTextBlock.Text = $"Loading {fileName}...";
-            string decryptedContent = await FileHelper.LoadAndDecryptSaveFileAsync(filePath);
-            ParsedSave parsed = SaveParser.Parse(decryptedContent);
-
-            // Raises SaveDataChanged, which unlocks navigation and refreshes the editor pages.
-            App.CurrentSaveData.Load(filePath, decryptedContent, parsed);
-
-            LoadFileTextBlock.Text = $"File '{fileName}' loaded successfully. You can now navigate to other pages to edit your save.";
+            await LoadSaveAsync(filePath);
         }
         catch (Exception ex) when (ex is FileNotFoundException or InvalidDataException)
         {
@@ -164,11 +159,212 @@ public sealed partial class HomePage : Page
         }
     }
 
+    private void SaveDropZone_DragOver(object sender, DragEventArgs e)
+    {
+        e.AcceptedOperation = DataPackageOperation.None;
+        if (!LoadFileButton.IsEnabled ||
+            !e.DataView.Contains(StandardDataFormats.StorageItems))
+        {
+            return;
+        }
+
+        e.AcceptedOperation = DataPackageOperation.Copy;
+        e.DragUIOverride.Caption = "Open this save";
+        e.DragUIOverride.IsCaptionVisible = true;
+        e.DragUIOverride.IsGlyphVisible = true;
+        LoadFileButton.BorderThickness = new Thickness(2);
+        e.Handled = true;
+    }
+
+    private void SaveDropZone_DragLeave(object sender, DragEventArgs e) =>
+        LoadFileButton.BorderThickness = new Thickness(1);
+
+    private async void SaveDropZone_Drop(object sender, DragEventArgs e)
+    {
+        LoadFileButton.BorderThickness = new Thickness(1);
+        e.Handled = true;
+
+        try
+        {
+            if (!e.DataView.Contains(StandardDataFormats.StorageItems))
+            {
+                LoadFileTextBlock.Text = "Drop one Sheltered 2 .dat save file.";
+                return;
+            }
+
+            IReadOnlyList<IStorageItem> items = await e.DataView.GetStorageItemsAsync();
+            if (items.Count != 1 ||
+                items[0] is not StorageFile file ||
+                !string.Equals(file.FileType, ".dat", StringComparison.OrdinalIgnoreCase))
+            {
+                LoadFileTextBlock.Text = "Only one Sheltered 2 .dat save file can be opened at a time.";
+                return;
+            }
+
+            if (App.CurrentSaveData.HasUnsavedChanges &&
+                !await ConfirmDiscardChangesAsync(file.Path))
+            {
+                LoadFileTextBlock.Text = "Load cancelled. Your unsaved changes are still open.";
+                return;
+            }
+
+            LoadFileButton.IsEnabled = false;
+            SaveFileButton.IsEnabled = false;
+            await LoadSaveAsync(file.Path);
+        }
+        catch (Exception ex) when (ex is FileNotFoundException or InvalidDataException)
+        {
+            LoadFileTextBlock.Text = $"Error loading dropped file: {ex.Message}";
+        }
+        catch (Exception ex)
+        {
+            LoadFileTextBlock.Text = $"Unexpected error loading dropped file: {ex.Message}";
+            System.Diagnostics.Debug.WriteLine($"Drop save error: {ex}");
+        }
+        finally
+        {
+            LoadFileButton.IsEnabled = true;
+            UpdateSaveButtonState();
+        }
+    }
+
+    private async void HomePage_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (startupResumePromptHandled || App.CurrentSaveData.IsLoaded)
+        {
+            return;
+        }
+
+        startupResumePromptHandled = true;
+        if (!SaveSettings.RememberLastOpenedSave)
+        {
+            return;
+        }
+
+        string? lastSavePath = SaveSettings.LastOpenedSavePath;
+        if (string.IsNullOrWhiteSpace(lastSavePath))
+        {
+            return;
+        }
+
+        if (!File.Exists(lastSavePath))
+        {
+            SaveSettings.LastOpenedSavePath = null;
+            LoadFileTextBlock.Text = "The previously opened save file could not be found.";
+            return;
+        }
+
+        StackPanel dialogContent = new() { Spacing = 10 };
+        dialogContent.Children.Add(new TextBlock
+        {
+            Text =
+                "SaveOver remembers the last save you opened so you can return to editing " +
+                "without finding the file again.",
+            TextWrapping = TextWrapping.Wrap,
+        });
+        dialogContent.Children.Add(new TextBlock
+        {
+            Text = Path.GetFileName(lastSavePath),
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            IsTextSelectionEnabled = true,
+        });
+        dialogContent.Children.Add(new TextBlock
+        {
+            Text = lastSavePath,
+            TextWrapping = TextWrapping.Wrap,
+            IsTextSelectionEnabled = true,
+            Opacity = 0.7,
+        });
+        dialogContent.Children.Add(new TextBlock
+        {
+            Text = "Reopening the file will not change it. Nothing is written until you save an edit.",
+            TextWrapping = TextWrapping.Wrap,
+            Opacity = 0.7,
+        });
+
+        ContentDialog dialog = new()
+        {
+            XamlRoot = XamlRoot,
+            RequestedTheme = ActualTheme,
+            Title = "Continue where you left off?",
+            Content = dialogContent,
+            PrimaryButtonText = "Continue",
+            CloseButtonText = "Not now",
+            DefaultButton = ContentDialogButton.Primary,
+        };
+
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        {
+            return;
+        }
+
+        LoadFileButton.IsEnabled = false;
+        SaveFileButton.IsEnabled = false;
+        try
+        {
+            await LoadSaveAsync(lastSavePath);
+        }
+        catch (Exception ex) when (ex is FileNotFoundException or InvalidDataException)
+        {
+            SaveSettings.LastOpenedSavePath = null;
+            LoadFileTextBlock.Text = $"Could not reopen the previous save: {ex.Message}";
+        }
+        catch (Exception ex)
+        {
+            LoadFileTextBlock.Text = $"Unexpected error reopening the previous save: {ex.Message}";
+            System.Diagnostics.Debug.WriteLine($"Resume save error: {ex}");
+        }
+        finally
+        {
+            LoadFileButton.IsEnabled = true;
+            UpdateSaveButtonState();
+        }
+    }
+
+    private async System.Threading.Tasks.Task LoadSaveAsync(string filePath)
+    {
+        string fileName = Path.GetFileName(filePath);
+        LoadFileTextBlock.Text = $"Loading {fileName}...";
+
+        string decryptedContent = await FileHelper.LoadAndDecryptSaveFileAsync(filePath);
+        ParsedSave parsed = SaveParser.Parse(decryptedContent);
+
+        // Raises SaveDataChanged, which unlocks navigation and refreshes the editor pages.
+        App.CurrentSaveData.Load(filePath, decryptedContent, parsed);
+        if (SaveSettings.RememberLastOpenedSave)
+        {
+            SaveSettings.LastOpenedSavePath = filePath;
+        }
+
+        LoadFileTextBlock.Text =
+            $"File '{fileName}' loaded successfully. You can now navigate to other pages to edit your save.";
+    }
+
     private void CurrentSaveData_DirtyStateChanged(object? sender, EventArgs e) => UpdateSaveButtonState();
 
-    private void UpdateSaveButtonState() =>
-        SaveFileButton.IsEnabled =
-            App.CurrentSaveData.IsLoaded && App.CurrentSaveData.HasUnsavedChanges;
+    private void UpdateSaveButtonState()
+    {
+        SaveSession session = App.CurrentSaveData;
+        SaveFileButton.IsEnabled = session.IsLoaded && session.HasUnsavedChanges;
+
+        Style accentButtonStyle = (Style)Application.Current.Resources["AccentButtonStyle"];
+        SaveFileButton.Style = session.IsLoaded ? accentButtonStyle : null;
+
+        if (!session.IsLoaded)
+        {
+            WorkspaceTitleTextBlock.Text = "Choose a save file";
+            return;
+        }
+
+        if (session.HasUnsavedChanges)
+        {
+            WorkspaceTitleTextBlock.Text = "Changes ready to save";
+        }
+        else
+        {
+            WorkspaceTitleTextBlock.Text = "Save loaded";
+        }
+    }
 
     private async System.Threading.Tasks.Task<bool> ConfirmDiscardChangesAsync(string replacementFilePath)
     {
@@ -254,6 +450,30 @@ public sealed partial class HomePage : Page
 
         ToolTipService.SetToolTip(CopyPathButton, "Path copied!");
         _copyFeedback.Play(CopyPathButton, () => ToolTipService.SetToolTip(CopyPathButton, _copyTooltip));
+    }
+
+    private async void OpenSaveFolderButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            string saveFolderPath = Environment.ExpandEnvironmentVariables(SaveFolder);
+            if (!Directory.Exists(saveFolderPath))
+            {
+                LoadFileTextBlock.Text =
+                    "The Sheltered 2 save folder does not exist yet. Start the game once to create it.";
+                return;
+            }
+
+            if (!await Windows.System.Launcher.LaunchFolderPathAsync(saveFolderPath))
+            {
+                LoadFileTextBlock.Text = "Windows could not open the Sheltered 2 save folder.";
+            }
+        }
+        catch (Exception ex)
+        {
+            LoadFileTextBlock.Text = $"Could not open the Sheltered 2 save folder: {ex.Message}";
+            System.Diagnostics.Debug.WriteLine($"Open save folder error: {ex}");
+        }
     }
 
     /// <summary>
