@@ -236,7 +236,7 @@ jobs:
             Compress-Archive -Path "$($_.FullName)/*" -DestinationPath $out
           }
 
-      # Keep the release private until all assets have been submitted successfully.
+      # Keep the release private so its notes can be reviewed before publication.
       - name: Create draft release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -244,9 +244,50 @@ jobs:
           RELEASE_TAG: ${{ github.ref_name }}
         shell: pwsh
         run: |
-          $files = Get-ChildItem dist/*.zip | ForEach-Object { $_.FullName }
-          gh release create $env:RELEASE_TAG $files --draft --generate-notes --verify-tag
+          $previousTag = gh release view --json tagName --jq .tagName 2>$null
+          if ($LASTEXITCODE -eq 0 -and $previousTag) {
+            $changelogUrl = "https://github.com/$env:GH_REPO/compare/$previousTag...$env:RELEASE_TAG"
+          } else {
+            $changelogUrl = "https://github.com/$env:GH_REPO/commits/$env:RELEASE_TAG"
+          }
 
+          @"
+          # 📃 Release notes
+
+          **Full Changelog**: $changelogUrl
+
+          ## Added
+
+          <!-- Describe new features here. -->
+
+          ## Changed
+
+          <!-- Describe changes to existing functionality here; i.e. the behavior worked as intended, and now works differently. -->
+
+          ## Deprecated
+
+          <!-- Describe soon-to-be removed features here. -->
+
+          ## Removed
+
+          <!-- Describe now removed features here. -->
+
+          ## Fixed
+
+          <!-- Describe bug fixes here; i.e. the behavior was wrong, and is now correct. -->
+
+          ## Security
+
+          <!-- Describe vulnerabilities here; the change addresses a vulnerability. It could fit under Fixed or Changed, but its urgency and audience are different. -->
+          "@ | Out-File release-notes.md -Encoding utf8
+
+          $files = Get-ChildItem dist/*.zip | ForEach-Object { $_.FullName }
+          gh release create $env:RELEASE_TAG $files `
+            --draft `
+            --notes-file release-notes.md `
+            --title $env:RELEASE_TAG `
+            --verify-tag
+            
       - name: Scan release assets with VirusTotal
         id: virustotal
         uses: crazy-max/ghaction-virustotal@936d8c5c00afe97d3d9a1af26d017cfdf26800a2 # v5
@@ -256,7 +297,7 @@ jobs:
           files: |
             dist/*.zip
 
-      - name: Add VirusTotal results and publish release
+      - name: Add VirusTotal results to draft release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -269,7 +310,7 @@ jobs:
 
           @(
             ''
-            '## VirusTotal analysis'
+            '# 🛡️ VirusTotal analysis'
             ''
             ($env:VT_ANALYSIS -split ',' | ForEach-Object {
               $parts = $_ -split '=', 2
@@ -280,4 +321,4 @@ jobs:
             })
           ) | Add-Content release-notes.md -Encoding utf8
 
-          gh release edit $env:RELEASE_TAG --notes-file release-notes.md --draft=false
+          gh release edit $env:RELEASE_TAG --notes-file release-notes.md
