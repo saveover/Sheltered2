@@ -4,7 +4,87 @@ All notable changes to SaveOver for Sheltered 2 will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0](https://github.com/saveover/Sheltered2/releases/tag/v0.1.0) - 2026-07-28
+## [Unreleased]
+
+## [0.1.2] - 2026-07-30
+
+### Added
+
+- Drag-and-drop support for opening Sheltered 2 .dat save files.
+- A Remember last opened save setting, enabled by default.
+- A startup prompt for reopening the previously loaded save.
+- An Open save folder button for quickly accessing the Sheltered 2 save directory.
+- Automatic VirusTotal scanning of release archives, with analysis links added to the GitHub release notes.
+
+### Changed
+
+- Redesigned the Home page with a clearer load, edit, and save workflow.
+- Added responsive layouts for compact and wide window sizes.
+- Improved status messages and visual feedback for loaded and modified saves.
+- Updated the Save button to better reflect the current workspace state.
+- Improved feedback when dropping unsupported files or multiple files.
+- Release automation now creates a draft release, uploads and scans its archives, and publishes it after the scans complete.
+- Updated the application version to 0.1.2.0.
+
+### Fixed
+
+- Content dialogs now follow the application’s current light or dark theme.
+- The stored save path is cleared when remembering the last opened save is disabled.
+- Missing previously opened saves are detected and removed from the stored settings.
+
+## [0.1.1] - 2026-07-30
+
+### Added
+
+- Configurable backup folder under **Settings → Save games**.
+- Controls to choose, open, or reset the backup folder.
+- Backup retention options for keeping the latest 5, 10, 20, or all backups for each save file.
+- Save confirmation before overwriting the original save, enabled by default.
+- A **Never show again** option in the save confirmation dialog.
+- A setting to re-enable or disable save confirmations.
+- Unsaved-change tracking across characters, pets, relationships, skills, and inventory.
+- A confirmation prompt before loading another file when the current save contains unsaved changes.
+- Dedicated project documentation for support, contributing, community conduct, and release history.
+- Lightweight pull-request CI for packaged and unpackaged x64 builds.
+- A dedicated tag-triggered release workflow for x86, x64, and ARM64 artifacts.
+
+### Changed
+
+- Backups are now stored outside the Sheltered 2 Steam Cloud directory by default:
+  - `%LOCALAPPDATA%\SaveOver\Sheltered2\Backups`
+  - This is to prevent Steam Cloud backing up the backups, which would then lead to an increasing number of backup saves not easily removed.
+- The **Save file** button is now enabled only when the loaded save contains unsaved changes.
+- Saving without making changes no longer overwrites the save or creates an unnecessary backup.
+- Successful save messages now show the backup destination.
+- Backup retention applies independently to each source save file.
+- Backup cleanup now recognizes only files produced by SaveOver.
+- Selecting the Sheltered 2 Steam Cloud directory as the backup location resets the setting to the safe default and explains why.
+- Backup pruning is disabled inside the Steam Cloud directory to avoid files being restored and repeatedly deleted by synchronization.
+- Pull requests now run representative x64 validation instead of the complete release matrix.
+- Documentation-only pull requests skip the expensive Windows builds while still receiving a completed CI result.
+- Full release builds now run automatically only for version tags.
+- GitHub Actions dependencies are pinned to immutable commit hashes.
+- Workflow permissions, concurrency handling, and execution timeouts have been tightened.
+- The README has been reorganized with clearer installation, quick-start, requirements, support, technology, and licensing sections.
+
+### Fixed
+
+- Prevented unsaved edits from being silently discarded when another save file is loaded.
+- Fixed save-button state becoming inconsistent after edits, saves, or file changes.
+- Fixed change tracking for items added to or removed from observable collections.
+- Fixed stale event subscriptions after replacing or resetting editable collections.
+- Fixed detached model objects continuing to mark the active save as changed.
+- Fixed unnecessary backup creation when serialized save content has not changed.
+- Fixed backup retention potentially matching unrelated files with similar names.
+- Fixed backup filename ordering and cleanup when multiple backups share the same timestamp.
+- Fixed the contributing guide's `global.json` path.
+- Fixed README links to the project support and community documents.
+
+### Removed
+
+- Removed the repository-level GitHub funding configuration for an organization-wide.
+
+## [0.1.0] - 2026-07-28
 
 Initial public release of SaveOver for Sheltered 2.
 
@@ -79,3 +159,8 @@ Initial public release of SaveOver for Sheltered 2.
 - Fixed controls accepting unsuitable fractional values where the save format requires integers.
 - Fixed application metadata, icon, tile, splash-screen, and manifest inconsistencies.
 - Fixed portable release artifacts containing unnecessary loose files.
+
+[Unreleased]: https://github.com/saveover/Sheltered2/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/saveover/Sheltered2/compare/v0.1.1...v0.1.2
+[0.1.1]: https://github.com/saveover/Sheltered2/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/saveover/Sheltered2/releases/tag/v0.1.0
