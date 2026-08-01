@@ -81,7 +81,8 @@ public sealed partial class Character : ObservableObject
     public Stat Perception { get; } = new();
     public Stat Fortitude { get; } = new();
 
-    // One collection per skill tree, matching the save layout.
+    // Separate collections mirror the XML trees and let collection-change tracking identify the
+    // exact tree whose entry list must be rebuilt.
     public ObservableCollection<SkillInstance> StrengthSkills { get; } = [];
     public ObservableCollection<SkillInstance> DexteritySkills { get; } = [];
     public ObservableCollection<SkillInstance> IntelligenceSkills { get; } = [];
@@ -89,7 +90,8 @@ public sealed partial class Character : ObservableObject
     public ObservableCollection<SkillInstance> PerceptionSkills { get; } = [];
     public ObservableCollection<SkillInstance> FortitudeSkills { get; } = [];
 
-    // Needs (from NeedsStats). 0-100 floats in the save; lower is better in-game.
+    // Keep the game's inverse 0-100 scale rather than presenting a second semantic model that the
+    // writer would have to translate and could accidentally invert.
     [ObservableProperty]
     public partial double Hunger { get; set; }
 
@@ -143,8 +145,8 @@ public sealed partial class Character : ObservableObject
 }
 
 /// <summary>
-/// A character stat with a current level and a cap derived from it: twice the level up to
-/// level 5, then always 20.
+/// Enforces the game's level domain and raises for the derived cap in the same setter, preventing
+/// XAML from displaying a cap that no longer matches the value the writer will persist.
 /// </summary>
 public sealed partial class Stat : ObservableObject
 {
@@ -172,8 +174,8 @@ public sealed partial class Stat : ObservableObject
 }
 
 /// <summary>
-/// A relationship entry: the other member's unique id and how this character feels about
-/// them (-100 hostile to 100 best friends).
+/// Keeps the other member's ID as the stable cross-reference. The raw level is not clamped here so
+/// unusual existing values survive until the user deliberately edits that relationship.
 /// </summary>
 public sealed partial class Relationship(int memberId, int level) : ObservableObject
 {
@@ -184,7 +186,8 @@ public sealed partial class Relationship(int memberId, int level) : ObservableOb
 }
 
 /// <summary>
-/// A skill entry as stored in the save: the numeric key and the trained level.
+/// Uses the numeric game key as identity because display order and localized names cannot safely
+/// map an edited rank back to the sparse unlocked-skill list.
 /// </summary>
 public sealed partial class SkillInstance(int key, int level) : ObservableObject
 {

@@ -13,13 +13,17 @@ using System.Xml.Linq;
 namespace SaveOver.Sheltered2.Helpers;
 
 /// <summary>
-/// Writes edited model data back into a save file's XML. Edits are applied onto the
-/// original decrypted document so everything the editor doesn't model stays untouched.
-/// Characters map to <c>FamilyMembers</c> elements by document order, the same order the
-/// parser produced them in.
+/// Applies supported edits onto the original decrypted XML rather than serializing models into a
+/// replacement document. That asymmetry with <see cref="SaveParser"/> is deliberate: unknown game
+/// fields, ordering, attributes, and future-version data retain their original XML nodes unless
+/// an edited structure must be rebuilt.
 /// </summary>
 internal static class SaveWriter
 {
+    /// <summary>
+    /// Reuses the parser's document-order identity for members and inventory stacks because their
+    /// apparent IDs and definition keys are not universally unique.
+    /// </summary>
     internal static string ApplyEdits(
         string originalXml,
         IReadOnlyList<Character> characters,
@@ -198,6 +202,8 @@ internal static class SaveWriter
             return;
         }
 
+        // Relationship order is not guaranteed to match FamilyMembers order; memberID is the
+        // explicit cross-reference here, unlike the positional identity used for member subtrees.
         Dictionary<int, Relationship> byMemberId = [];
         foreach (Relationship relationship in character.Relationships)
         {
@@ -218,6 +224,8 @@ internal static class SaveWriter
 
     private static void ApplyPets(XElement? root, IReadOnlyList<Pet> pets)
     {
+        // Existing Pet_N elements are mutated in place to preserve unknown species state. Only
+        // session-created pets go through PetXmlFactory's verified complete entry shape.
         if (root is null)
         {
             return;
@@ -540,8 +548,8 @@ internal static class SaveWriter
     }
 
     /// <summary>
-    /// Applies only the editable values of existing inventory entries. Containers and entries are
-    /// matched by their original document order so duplicate definition keys remain independent.
+    /// Applies inventory edits while retaining the full XML of surviving source entries. Source
+    /// indices preserve duplicate definition keys; new entries use the verified game entry shape.
     /// </summary>
     private static void ApplyShelterInventory(XElement? root, ShelterInventory? inventory)
     {
@@ -569,20 +577,74 @@ internal static class SaveWriter
             return;
         }
 
-        List<XElement> entries = [.. contents.Elements()];
-        int count = Math.Min(entries.Count, container.Items.Count);
-        for (int index = 0; index < count; index++)
+        List<XElement> sourceEntries = [.. contents.Elements()];
+        bool structureChanged = sourceEntries.Count != container.Items.Count;
+        if (!structureChanged)
+        {
+            for (int index = 0; index < container.Items.Count; index++)
+            {
+                if (container.Items[index].SourceIndex != index)
+                {
+                    structureChanged = true;
+                    break;
+                }
+            }
+        }
+
+        if (!structureChanged)
+        {
+            for (int index = 0; index < container.Items.Count; index++)
+            {
+                ApplyInventoryItemValues(sourceEntries[index], container.Items[index]);
+            }
+
+            return;
+        }
+
+        List<XElement> updatedEntries = new(container.Items.Count);
+        for (int index = 0; index < container.Items.Count; index++)
         {
             InventoryItem item = container.Items[index];
-            XElement entry = entries[index];
-            SetValue(entry, "amount", Int(item.Amount));
-            SetValue(entry, "integrity", Int(item.Integrity));
-            SetValue(entry, "quality", Int(item.Quality));
+            int sourceIndex = item.SourceIndex ?? -1;
+            bool isSourceEntry = sourceIndex >= 0 && sourceIndex < sourceEntries.Count;
+            XElement entry = isSourceEntry
+                ? sourceEntries[sourceIndex]
+                : BuildInventoryEntry(item);
+
+            entry.Name = $"i{index}";
+            if (isSourceEntry)
+            {
+                ApplyInventoryItemValues(entry, item);
+            }
+
+            updatedEntries.Add(entry);
         }
+
+        contents.ReplaceNodes(updatedEntries);
+        contents.SetAttributeValue("size", Int(updatedEntries.Count));
+    }
+
+    private static XElement BuildInventoryEntry(InventoryItem item) =>
+        new("i0",
+            new XElement("defKey", item.DefinitionKey),
+            new XElement("lastUpdateTime", "0"),
+            new XElement("amount", Int(item.Amount)),
+            new XElement("id", "0"),
+            new XElement("integrity", Int(item.Integrity)),
+            new XElement("quality", Int(item.Quality)),
+            new XElement("spawnType", "0"));
+
+    private static void ApplyInventoryItemValues(XElement entry, InventoryItem item)
+    {
+        SetValue(entry, "amount", Int(item.Amount));
+        SetValue(entry, "integrity", Int(item.Integrity));
+        SetValue(entry, "quality", Int(item.Quality));
     }
 
     private static void SetValue(XElement parent, string childName, string value)
     {
+        // Supported edits never create a missing field in an existing subtree: absence may signal
+        // a different save-version schema, and guessing a location would be destructive.
         XElement? child = parent.Element(childName);
         child?.Value = value;
     }
@@ -605,12 +667,12 @@ internal static class SaveWriter
     private static bool TryParseInt(ReadOnlySpan<char> value, out int result) =>
         int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
 
-    // The game writes booleans capitalised (<isSlave>False</isSlave>).
+    // Match the game's capitalization so edits do not introduce a second lexical form.
     private static string Bool(bool value) => value ? "True" : "False";
 
     private static string Int(int value) => value.ToString(CultureInfo.InvariantCulture);
 
-    // Round-trip format keeps the game's float precision without locale surprises.
+    // Round-trip invariant formatting preserves precision and avoids locale-specific decimal commas.
     private static string Dbl(double value) => value.ToString("R", CultureInfo.InvariantCulture);
 
 }

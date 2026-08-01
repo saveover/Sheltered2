@@ -10,8 +10,9 @@ using System;
 namespace SaveOver.Sheltered2.ViewModels;
 
 /// <summary>
-/// One skill in the tree: icon, name, maximum rank, and the invested points bound two-way
-/// to a <c>RatingControl</c>. Edits are pushed back through <paramref name="onLevelChanged"/>.
+/// Adapts a catalog definition and sparse saved rank to RatingControl without giving the view
+/// responsibility for inserting or removing save entries. The callback keeps that mutation with
+/// the page that owns the selected character.
 /// </summary>
 public sealed partial class SkillSlotViewModel(SkillDefinition definition, int level, Action<SkillDefinition, int>? onLevelChanged = null) : ObservableObject
 {

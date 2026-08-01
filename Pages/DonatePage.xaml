@@ -31,7 +31,6 @@
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
 
-            <!-- One reward line in a tier card. -->
             <DataTemplate x:Key="PerkTemplate" x:DataType="x:String">
                 <Grid ColumnSpacing="8">
                     <Grid.ColumnDefinitions>
@@ -49,7 +48,6 @@
                 </Grid>
             </DataTemplate>
 
-            <!-- One membership tier. -->
             <DataTemplate x:Key="TierTemplate" x:DataType="pages:DonationTier">
                 <Border Style="{StaticResource CardBorderStyle}" Padding="20">
                     <StackPanel Spacing="12">
@@ -85,7 +83,6 @@
                 <Setter Property="VerticalContentAlignment" Value="Stretch"/>
             </Style>
 
-            <!-- One membership platform, as a logo on a plate. -->
             <DataTemplate x:Key="PlatformTemplate" x:DataType="pages:DonationPlatform">
                 <HyperlinkButton NavigateUri="{x:Bind Url}"
                                  Padding="4"
@@ -218,7 +215,6 @@
                 <TextBlock TextWrapping="Wrap"
                            Text="SaveOver is free, and stays that way. Donations pay for the time behind new editors, for keeping the existing ones working when a patch changes a save format, and for helping people whose saves won't open."/>
 
-                <!-- Memberships -->
                 <StackPanel Spacing="16">
                     <StackPanel Spacing="4">
                         <TextBlock Text="Memberships"
@@ -259,7 +255,6 @@
                              Title="DISCLAIMER"
                              Message="Credits ship with every release as a CREDITS file, listing everyone under the years they supported. Nothing is removed once it's there, so your name stays whether or not you're still a member. Votes set priority, not promises: some save formats turn out to be locked tight, and ballots run on Discord or by email."/>
 
-                    <!-- Join -->
                     <Border Style="{StaticResource CardBorderStyle}" Padding="24,20">
                         <StackPanel Spacing="16">
                             <TextBlock TextWrapping="Wrap"
@@ -281,7 +276,6 @@
                     </Border>
                 </StackPanel>
 
-                <!-- Cryptocurrency -->
                 <Border Style="{StaticResource CardBorderStyle}">
                     <StackPanel Spacing="16">
                         <TextBlock Text="Cryptocurrency"
@@ -319,7 +313,6 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Other ways to help -->
                 <Border Style="{StaticResource CardBorderStyle}">
                     <StackPanel Spacing="16">
                         <TextBlock Text="Other ways to help"

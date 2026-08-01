@@ -8,7 +8,8 @@ using System;
 namespace SaveOver.Sheltered2.Converters;
 
 /// <summary>
-/// Shows a saved percentage as a whole number and normalizes only values edited by the user.
+/// Normalizes at the binding boundary so user edits stay within the game's percentage domain
+/// without rewriting unrelated raw XML values during parsing.
 /// </summary>
 public sealed partial class PercentageNumberConverter : IValueConverter
 {

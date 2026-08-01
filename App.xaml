@@ -10,7 +10,6 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
-                <!-- Other merged dictionaries here -->
             </ResourceDictionary.MergedDictionaries>
 
             <!-- The TitleBar sits in its own row above the NavigationView rather than overlapping
@@ -25,8 +24,8 @@
             <x:Double x:Key="PageContentMaxWidth">1100</x:Double>
             <x:Double x:Key="WidePageContentMaxWidth">1280</x:Double>
 
-            <!-- A page section: the standard Fluent card. Every card in the app uses this, so the
-                 editor pages and Home/Donate read as one surface. -->
+            <!-- Sharing the same card treatment keeps dense editor pages and informational pages
+                 visually related without duplicating theme-resource choices in every view. -->
             <Style x:Key="CardBorderStyle" TargetType="Border">
                 <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
                 <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
@@ -35,7 +34,8 @@
                 <Setter Property="Padding" Value="24"/>
             </Style>
 
-            <!-- A well inside a card, holding a value the user is meant to copy. -->
+            <!-- Copyable values need stronger containment than surrounding prose without looking
+                 like editable text fields. -->
             <Style x:Key="InsetBorderStyle" TargetType="Border">
                 <Setter Property="Background" Value="{ThemeResource LayerFillColorDefaultBrush}"/>
                 <Setter Property="BorderBrush" Value="{ThemeResource DividerStrokeColorDefaultBrush}"/>
@@ -44,20 +44,22 @@
                 <Setter Property="Padding" Value="12,8"/>
             </Style>
 
-            <!-- Verbatim text - a path or a wallet address - shown for copying. -->
+            <!-- Paths and wallet addresses use a selection-enabled monospace treatment so users
+                 can distinguish exact characters before copying them. -->
             <Style x:Key="MonospaceTextBlockStyle" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="Consolas"/>
                 <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>
                 <Setter Property="IsTextSelectionEnabled" Value="True"/>
             </Style>
 
-            <!-- Copy button carrying an icon -->
+            <!-- Compact icon actions share one hit target even when their glyph metrics differ. -->
             <Style x:Key="IconButtonStyle" TargetType="Button">
                 <Setter Property="Padding" Value="8"/>
                 <Setter Property="CornerRadius" Value="4"/>
             </Style>
 
-            <!-- The heading above a group of settings rows. -->
+            <!-- Extra leading space separates settings groups while keeping the first row close
+                 enough to its heading to preserve their relationship. -->
             <Style x:Key="SettingsSectionHeaderTextBlockStyle"
                    BasedOn="{StaticResource BodyStrongTextBlockStyle}"
                    TargetType="TextBlock">

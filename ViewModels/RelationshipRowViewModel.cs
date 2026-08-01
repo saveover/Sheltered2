@@ -8,9 +8,8 @@ using System;
 namespace SaveOver.Sheltered2.ViewModels;
 
 /// <summary>
-/// One relationship row: the other member's display name and the level, bound two-way to
-/// a <c>NumberBox</c>. Wraps the model's <see cref="Relationship"/> directly so edits land
-/// on the right entry.
+/// Pairs presentation-only member names with an ID-backed relationship. Retaining the original
+/// model instance ensures sorting or filtering rows cannot redirect an edit to another member.
 /// </summary>
 public sealed partial class RelationshipRowViewModel(Relationship relationship, string name) : ObservableObject
 {
@@ -21,7 +20,8 @@ public sealed partial class RelationshipRowViewModel(Relationship relationship, 
 
     public string AutomationName { get; } = $"Relationship with {name}";
 
-    // Exposed as double so it binds straight to NumberBox.Value.
+    // Normalize only on the editing surface: the model may contain an out-of-range raw value that
+    // should survive unless the user chooses to replace it.
     public double Level
     {
         get => relationship.Level;

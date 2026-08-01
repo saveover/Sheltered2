@@ -6,7 +6,8 @@ using Microsoft.UI.Xaml;
 namespace SaveOver.Sheltered2.Helpers;
 
 /// <summary>
-/// Whether controls play the Fluent interaction sounds, remembered between runs.
+/// Coordinates the process-wide ElementSoundPlayer with persisted settings so individual pages do
+/// not compete over a global state or leave spatial audio enabled behind a disabled parent option.
 /// </summary>
 /// <remarks>
 /// <see cref="ElementSoundPlayer"/> is app-wide and off by default on desktop, so this is opt-in.
@@ -51,7 +52,7 @@ internal static class SoundHelper
         }
     }
 
-    /// <summary>Applies the stored preferences. Call once at startup.</summary>
+    /// <summary>Restores both settings together so spatial audio is never briefly active alone.</summary>
     internal static void Initialize()
     {
         _isSoundEnabled = UserSettings.ReadBool(SoundSettingKey, false);

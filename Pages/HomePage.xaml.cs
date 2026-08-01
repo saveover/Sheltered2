@@ -16,24 +16,22 @@ using Windows.Storage;
 namespace SaveOver.Sheltered2.Pages;
 
 /// <summary>
-/// One tile in the home page's "What You Can Edit" grid.
+/// Keeps the advertised editor destination, explanation, and reusable icon source together so the
+/// home grid cannot drift from its navigation action or reuse a single-parent IconElement.
 /// </summary>
-/// <param name="Name">Editor name, matching the navigation item it points at.</param>
-/// <param name="Summary">One line on what that editor covers.</param>
-/// <param name="Icon">Glyph shown beside the name. An <see cref="IconSource"/> rather than an
-/// <c>IconElement</c> because a template instantiates it once per item, and an element can only
-/// live at one place in the tree.</param>
 public sealed record EditorFeature(string Name, string Summary, IconSource Icon);
 
 /// <summary>
-/// The home page is displayed when the application starts.
+/// Coordinates the only load/save boundary in the UI. Editor pages mutate the shared in-memory
+/// graph; this page alone replaces that graph or commits it to disk, which keeps confirmation,
+/// backup, busy-state, and error handling consistent.
 /// </summary>
 public sealed partial class HomePage : Page
 {
-    /// <summary>Where Sheltered 2 keeps its saves, as shown on the page.</summary>
+    /// <summary>Left unexpanded on screen for portability, but expanded before clipboard or shell use.</summary>
     private const string SaveFolder = @"%userprofile%\AppData\LocalLow\Unicube\Sheltered2";
 
-    /// <summary>Tiles bound to the "What You Can Edit" grid, in navigation order.</summary>
+    /// <summary>One ordered source keeps the home-page promises aligned with shell destinations.</summary>
     public IReadOnlyList<EditorFeature> Features { get; } =
     [
         new("Characters", "Stats, skills, traits", new SymbolIconSource { Symbol = Symbol.People }),
@@ -43,7 +41,7 @@ public sealed partial class HomePage : Page
         new("Factions", "Relationships, reputation", new SymbolIconSource { Symbol = Symbol.Flag }),
     ];
 
-    /// <summary>A Segoe Fluent glyph, sized to match what the SymbolIconSources beside it render at.</summary>
+    /// <summary>Normalizes glyph sizing because FontIconSource and SymbolIconSource use different defaults.</summary>
     private static FontIconSource Glyph(string glyph) => new() { Glyph = glyph, FontSize = 20 };
 
     /// <summary>Drives the copy-to-checkmark swap on the copy button.</summary>
@@ -124,9 +122,10 @@ public sealed partial class HomePage : Page
 
         try
         {
-            // A timestamped backup is created first and the write itself is atomic.
             logger.LogInformation("Save operation started.");
             SetWorkspaceBusy(true);
+            // XML rewriting is CPU-bound and may walk a large document. Keep it off the UI thread
+            // while the shell lock prevents pages from mutating the shared model mid-snapshot.
             string updatedXml = await Task.Run(() => SaveWriter.ApplyEdits(
                 saveData.DecryptedContent,
                 saveData.Characters,
@@ -345,7 +344,8 @@ public sealed partial class HomePage : Page
             string decryptedContent = await FileHelper.LoadAndDecryptSaveFileAsync(filePath);
             ParsedSave parsed = await Task.Run(() => SaveParser.Parse(decryptedContent));
 
-            // Raises SaveDataChanged, which unlocks navigation and refreshes the editor pages.
+            // Publish only after the complete document has parsed so editor pages never observe a
+            // partially replaced model graph.
             App.CurrentSaveData.Load(filePath, decryptedContent, parsed);
             if (SaveSettings.RememberLastOpenedSave)
             {
@@ -492,9 +492,6 @@ public sealed partial class HomePage : Page
         }
     }
 
-    /// <summary>
-    /// Handles the Support Development button click by navigating to the Donate page.
-    /// </summary>
     private void SupportButton_Click(object sender, RoutedEventArgs e)
     {
         if (App.StartupWindow is MainWindow mainWindow)
@@ -505,6 +502,8 @@ public sealed partial class HomePage : Page
 
     private static void SetWorkspaceBusy(bool isBusy)
     {
+        // The window owns navigation and title-bar commands; routing the lock through it prevents
+        // a page switch while a worker is reading or committing the shared graph.
         if (App.StartupWindow is MainWindow mainWindow)
         {
             mainWindow.SetWorkspaceBusy(isBusy);

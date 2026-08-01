@@ -8,46 +8,31 @@ using System.Linq;
 namespace SaveOver.Sheltered2.Models;
 
 /// <summary>
-/// Static display metadata for a single skill: which stat tree and tier it belongs to,
-/// its display name, how many ranks (stars) it supports, and the icon asset that
-/// represents it.
+/// Couples presentation data to the numeric key needed for sparse save-list matching. Keeping icon
+/// IDs beside keys makes a mismatched asset or skill identity reviewable in one catalog row.
 /// </summary>
-/// <param name="id">
-/// Stable identifier, equal to the icon asset's base file name (e.g.
-/// <c>SkillStrengthCrushWindpipe</c>).
-/// </param>
-/// <param name="key">The <c>skillKey</c> value used in the save file to identify this skill.</param>
-/// <param name="stat">The owning stat tree (e.g. <c>"Strength"</c>).</param>
-/// <param name="tier">The tier (1-3) the skill appears in.</param>
-/// <param name="name">The display name.</param>
-/// <param name="maxLevel">The maximum number of ranks that can be invested.</param>
 public sealed class SkillDefinition(string id, int key, string stat, int tier, string name, int maxLevel)
 {
-    /// <summary>Gets the stable identifier (icon asset base file name).</summary>
     public string Id { get; } = id;
 
-    /// <summary>Gets the save-file <c>skillKey</c> for this skill.</summary>
     public int Key { get; } = key;
 
-    /// <summary>Gets the owning stat tree.</summary>
     public CharacterStat Stat { get; } = Enum.Parse<CharacterStat>(stat, ignoreCase: false);
 
-    /// <summary>Gets the tier (1-3) this skill belongs to.</summary>
     public int Tier { get; } = tier;
 
-    /// <summary>Gets the display name.</summary>
     public string Name { get; } = name;
 
-    /// <summary>Gets the maximum rank that can be invested in this skill.</summary>
     public int MaxLevel { get; } = maxLevel;
 
-    /// <summary>Gets the packaged icon URI for this skill.</summary>
+    /// <summary>Uses a fixed package URI so save data never participates in resource resolution.</summary>
     public Uri ImageUri { get; } = new($"ms-appx:///Assets/Skills/{id}.png");
 }
 
 /// <summary>
-/// The complete Sheltered 2 skill tree: every skill for every stat, grouped by tier, with
-/// its icon, maximum rank, and save-file key.
+/// Provides one authoritative mapping for parser identity, writer identity, UI grouping, and local
+/// artwork. Keeping those concerns in the same reviewed rows prevents a display reorder from being
+/// mistaken for a save-key reorder.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -63,10 +48,9 @@ public sealed class SkillDefinition(string id, int key, string stat, int tier, s
 /// </remarks>
 public static class SkillCatalog
 {
-    /// <summary>The stat trees, in display order.</summary>
+    /// <summary>Shares save-format order with parser and writer rather than maintaining a UI copy.</summary>
     public static IReadOnlyList<CharacterStat> Stats => SaveFieldKind.CharacterStats;
 
-    /// <summary>Gets every skill definition.</summary>
     public static IReadOnlyList<SkillDefinition> All { get; } =
     [
         // Strength
@@ -179,7 +163,7 @@ public static class SkillCatalog
         All.GroupBy(s => s.Stat)
            .ToDictionary(g => g.Key, g => (IReadOnlyList<SkillDefinition>)[.. g]);
 
-    /// <summary>Gets the skills for a stat tree, in tier order, or an empty list if unknown.</summary>
+    /// <summary>Returns an empty list for unknown enum values so corrupt UI state cannot mutate a tree.</summary>
     public static IReadOnlyList<SkillDefinition> ForStat(CharacterStat stat) =>
         ByStat.TryGetValue(stat, out IReadOnlyList<SkillDefinition>? skills) ? skills : [];
 }

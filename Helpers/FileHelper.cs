@@ -15,11 +15,14 @@ using System.Threading.Tasks;
 namespace SaveOver.Sheltered2.Helpers;
 
 /// <summary>
-/// High-level helpers for picking, loading, validating and saving Sheltered 2 save files.
+/// Keeps every filesystem boundary behind one policy: strict decoding on load, bounded input,
+/// backup-before-write, and same-volume atomic replacement. Pages therefore cannot accidentally
+/// introduce a weaker save path.
 /// </summary>
 internal static class FileHelper
 {
-    private const long MaxFileSize = 25L * 1024 * 1024; // 25 MB
+    // A generous ceiling still prevents a dropped unrelated file from causing unbounded allocation.
+    private const long MaxFileSize = 25L * 1024 * 1024;
     private const int BackupCopyBufferSize = 80 * 1024;
     private const string BackupFileSuffix = "_backup_";
     private const string BackupDateFormat = "yyyyMMdd_HHmmss";
@@ -28,9 +31,7 @@ internal static class FileHelper
         encoderShouldEmitUTF8Identifier: false,
         throwOnInvalidBytes: true);
 
-    /// <summary>
-    /// Opens a file picker so the user can select a save file.
-    /// </summary>
+    /// <summary>Uses the window-bound desktop picker required outside the UWP app model.</summary>
     internal static async Task<string?> PickFileAsync(CancellationToken cancellationToken = default)
     {
         FileOpenPicker picker = new(App.StartupWindow!.AppWindow.Id)
@@ -52,9 +53,7 @@ internal static class FileHelper
         }
     }
 
-    /// <summary>
-    /// Opens a folder picker so the user can choose where backups are stored.
-    /// </summary>
+    /// <summary>Uses a stable settings identifier so Windows can remember this picker's location.</summary>
     internal static async Task<string?> PickFolderAsync(CancellationToken cancellationToken = default)
     {
         FolderPicker picker = new(App.StartupWindow!.AppWindow.Id)
@@ -78,7 +77,8 @@ internal static class FileHelper
     }
 
     /// <summary>
-    /// Loads, decrypts and validates the specified save file, returning its XML content.
+    /// Rejects implausible sizes and malformed UTF-8 before XML parsing so corrupt or unrelated
+    /// files fail at the boundary rather than producing partially populated editor models.
     /// </summary>
     /// <exception cref="InvalidDataException">
     /// Thrown when the file is empty, too large, or is not a valid Sheltered 2 save file.
@@ -162,7 +162,8 @@ internal static class FileHelper
     }
 
     /// <summary>
-    /// Creates a timestamped backup copy of the specified file in the configured backup directory.
+    /// Uses create-new semantics and collision suffixes so two saves in the same second can never
+    /// overwrite the only known-good copy.
     /// </summary>
     /// <exception cref="IOException">The backup could not be created, so the save was not changed.</exception>
     internal static async Task CreateBackupAsync(string filePath, CancellationToken cancellationToken = default)
@@ -314,10 +315,8 @@ internal static class FileHelper
     }
 
     /// <summary>
-    /// Attempts to delete the temporary staging file from <see cref="EncryptAndSaveSaveFileAsync"/>
-    /// at the given <paramref name="path"/> as a best-effort cleanup.
-    /// Any IO- or permission-related failures are caught and ignored so callers do not fail if
-    /// the removal cannot be performed (for example, if the file is locked).
+    /// Treats staging cleanup as best effort: failure to remove an orphan must not turn an already
+    /// successful atomic replacement into a reported save failure.
     /// </summary>
     private static void TryDeleteFile(string path)
     {

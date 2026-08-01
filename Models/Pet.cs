@@ -9,14 +9,22 @@ using System.Linq;
 namespace SaveOver.Sheltered2.Models;
 
 /// <summary>
-/// A pet parsed from a save file (a root-level <c>Pet_N</c> element).
+/// Represents both a parsed <c>Pet_N</c> subtree and a session-created pet awaiting materialization.
+/// Unknown species remains valid so incomplete saves can still round-trip without being guessed
+/// into the dog or cat schema.
 /// </summary>
 public sealed partial class Pet : ObservableObject
 {
-    /// <summary>Index taken from the <c>Pet_N</c> element name.</summary>
+    /// <summary>
+    /// Retains the <c>Pet_N</c> suffix because it is also the cross-reference used by
+    /// <c>PetManager</c>; display order is not a safe substitute.
+    /// </summary>
     public int PetId { get; set; } = -1;
 
-    /// <summary>The species stored in <c>PetManager/pets</c>.</summary>
+    /// <summary>
+    /// Comes from <c>PetManager/pets</c> because the individual pet subtree does not carry a
+    /// reliable species discriminator.
+    /// </summary>
     public PetSpecies Species { get; init; } = PetSpecies.Unknown;
 
     public string SpeciesName => Species switch
@@ -52,7 +60,7 @@ public sealed partial class Pet : ObservableObject
     [ObservableProperty]
     public partial int Health { get; set; }
 
-    // 0-100 float in the save; lower is better.
+    // Preserve the game's inverse scale so parsing and writing do not need a lossy semantic flip.
     [ObservableProperty]
     public partial double Hunger { get; set; }
 
@@ -69,7 +77,10 @@ public sealed partial class Pet : ObservableObject
     public PetSkill Scavenging { get; } = new();
     public PetSkill Affection { get; } = new();
 
-    /// <summary>Dog skills in the reference editor's visual order, carrying their save keys.</summary>
+    /// <summary>
+    /// Starts from the complete catalog so unavailable skills remain addressable in the UI; save
+    /// keys, not list positions, reconcile them with existing XML.
+    /// </summary>
     public IReadOnlyList<DogSkill> DogSkills { get; init; } = [.. DogSkillCatalog.All.Select(definition => new DogSkill(definition))];
 
     [ObservableProperty]
@@ -105,7 +116,8 @@ public enum PetSpecies
 }
 
 /// <summary>
-/// A pet training skill: level, level cap and accumulated experience, as stored in the save.
+/// Leaves parsed level and experience values unnormalized so merely opening a save cannot erase an
+/// unusual value; bulk UI operations write explicit canonical boundaries.
 /// </summary>
 public sealed partial class PetSkill : ObservableObject
 {
@@ -119,7 +131,10 @@ public sealed partial class PetSkill : ObservableObject
     public partial int Experience { get; set; }
 }
 
-/// <summary>A dog skill and its purchase/training state.</summary>
+/// <summary>
+/// Translates the game's two-field purchase/progress representation into one UI state while still
+/// retaining finite intermediate training progress from existing saves.
+/// </summary>
 public sealed partial class DogSkill : ObservableObject
 {
     internal DogSkill(DogSkillDefinition definition)
@@ -169,7 +184,10 @@ public sealed partial class DogSkill : ObservableObject
         }
     }
 
-    /// <summary>0 = unavailable, 1 = purchased/training, 2 = fully trained.</summary>
+    /// <summary>
+    /// Uses three canonical states because RatingControl cannot directly express the independent
+    /// <see cref="Purchased"/> and <see cref="CurrentTrainingTime"/> fields.
+    /// </summary>
     public int SelectedStateIndex
     {
         get => !Purchased ? 0 : CurrentTrainingTime >= TrainingTimeRequired ? 2 : 1;

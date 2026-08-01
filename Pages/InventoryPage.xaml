@@ -5,6 +5,7 @@
     x:Class="SaveOver.Sheltered2.Pages.InventoryPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:models="using:SaveOver.Sheltered2.Models"
     xmlns:toolkit="using:CommunityToolkit.WinUI"
     xmlns:vm="using:SaveOver.Sheltered2.ViewModels"
     NavigationCacheMode="Enabled">
@@ -25,9 +26,12 @@
                         <Setter Target="WaterDetails.(Grid.ColumnSpan)" Value="2"/>
                         <Setter Target="StoredWaterNumberBox.(Grid.Row)" Value="1"/>
                         <Setter Target="StoredWaterNumberBox.(Grid.Column)" Value="2"/>
-                        <Setter Target="SaveHintTextBlock.(Grid.Row)" Value="1"/>
-                        <Setter Target="SaveHintTextBlock.(Grid.Column)" Value="0"/>
-                        <Setter Target="SaveHintTextBlock.(Grid.ColumnSpan)" Value="2"/>
+                        <Setter Target="InventoryActionsPanel.(Grid.Row)" Value="1"/>
+                        <Setter Target="InventoryActionsPanel.(Grid.Column)" Value="0"/>
+                        <Setter Target="InventoryActionsPanel.(Grid.ColumnSpan)" Value="2"/>
+                        <Setter Target="InventoryActionsPanel.HorizontalAlignment" Value="Left"/>
+                        <Setter Target="InventoryActionButtonsPanel.Orientation" Value="Vertical"/>
+                        <Setter Target="InventorySaveHintTextBlock.HorizontalAlignment" Value="Left"/>
                     </VisualState.Setters>
                 </VisualState>
                 <VisualState x:Name="WideLayout">
@@ -103,7 +107,8 @@
                                    Header="Units"
                                    SpinButtonPlacementMode="Inline"
                                    ValueChanged="StoredWaterNumberBox_ValueChanged"
-                                   AutomationProperties.Name="Stored water"/>
+                                   AutomationProperties.Name="Stored water"
+                                   AutomationProperties.AutomationId="StoredWaterNumberBox"/>
                     </Grid>
                 </Border>
 
@@ -129,11 +134,38 @@
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                             </StackPanel>
 
-                            <TextBlock x:Name="SaveHintTextBlock"
-                                       Grid.Column="1"
-                                       VerticalAlignment="Center"
-                                       Text="Changes are saved from Home"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <StackPanel x:Name="InventoryActionsPanel"
+                                        Grid.Column="1"
+                                        HorizontalAlignment="Right"
+                                        Spacing="8">
+                                <StackPanel x:Name="InventoryActionButtonsPanel"
+                                            Orientation="Horizontal"
+                                            Spacing="8">
+                                    <Button x:Name="AddItemButton"
+                                            Click="AddItemButton_Click"
+                                            AutomationProperties.AutomationId="AddInventoryItemButton">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <SymbolIcon Symbol="Add"
+                                                        AutomationProperties.AccessibilityView="Raw"/>
+                                            <TextBlock Text="Add item"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="IncreaseAllQualityButton"
+                                            Click="IncreaseAllQualityButton_Click"
+                                            ToolTipService.ToolTip="Set every stack in Shelter inventory and Overflow to 3 stars"
+                                            AutomationProperties.AutomationId="IncreaseAllInventoryQualityButton">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <SymbolIcon Symbol="Favorite"
+                                                        AutomationProperties.AccessibilityView="Raw"/>
+                                            <TextBlock Text="Set all to 3 stars"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                                <TextBlock x:Name="InventorySaveHintTextBlock"
+                                           Text="Changes are saved from Home"
+                                           HorizontalAlignment="Right"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            </StackPanel>
                         </Grid>
 
                         <!-- SelectorBar items do not wrap; scrolling keeps all categories usable on a narrow page. -->
@@ -142,7 +174,9 @@
                                     VerticalScrollBarVisibility="Hidden"
                                     VerticalScrollMode="Disabled">
                             <SelectorBar x:Name="ContainerSelector"
-                                         SelectionChanged="ContainerSelector_SelectionChanged">
+                                         SelectionChanged="ContainerSelector_SelectionChanged"
+                                         AutomationProperties.Name="Inventory container"
+                                         AutomationProperties.AutomationId="InventoryContainerSelector">
                                 <SelectorBarItem x:Name="StorageSelectorItem"
                                                  Text="Shelter inventory"
                                                  Tag="Storage"
@@ -153,21 +187,32 @@
                             </SelectorBar>
                         </ScrollView>
 
-                        <ScrollView ContentOrientation="Horizontal"
-                                    HorizontalScrollBarVisibility="Auto"
-                                    VerticalScrollBarVisibility="Hidden"
-                                    VerticalScrollMode="Disabled">
-                            <SelectorBar x:Name="CategorySelector"
-                                         SelectionChanged="CategorySelector_SelectionChanged">
-                                <SelectorBarItem Text="All" Tag="All" IsSelected="True"/>
-                                <SelectorBarItem Text="Weapons" Tag="Weapons"/>
-                                <SelectorBarItem Text="Equipment" Tag="Equipment"/>
-                                <SelectorBarItem Text="Medical" Tag="Medical"/>
-                                <SelectorBarItem Text="General" Tag="General"/>
-                                <SelectorBarItem Text="Junk" Tag="Junk"/>
-                                <SelectorBarItem Text="Food" Tag="Food"/>
-                            </SelectorBar>
-                        </ScrollView>
+                        <ComboBox x:Name="CategoryComboBox"
+                                  Width="240"
+                                  HorizontalAlignment="Left"
+                                  Header="Category"
+                                  SelectionChanged="CategoryComboBox_SelectionChanged"
+                                  AutomationProperties.Name="Filter inventory by category"
+                                  AutomationProperties.AutomationId="InventoryCategoryComboBox">
+                            <ComboBoxItem Content="All categories" Tag="All" IsSelected="True"/>
+                            <ComboBoxItem Content="Ammunition" Tag="Ammunition"/>
+                            <ComboBoxItem Content="Books" Tag="Books"/>
+                            <ComboBoxItem Content="Consumables" Tag="Consumables"/>
+                            <ComboBoxItem Content="Drugs" Tag="Drugs"/>
+                            <ComboBoxItem Content="Equipment" Tag="Equipment"/>
+                            <ComboBoxItem Content="Flora" Tag="Flora"/>
+                            <ComboBoxItem Content="Junk" Tag="Junk"/>
+                            <ComboBoxItem Content="Materials" Tag="Materials"/>
+                            <ComboBoxItem Content="Medicines" Tag="Medicines"/>
+                            <ComboBoxItem Content="Pets" Tag="Pets"/>
+                            <ComboBoxItem Content="Seeds" Tag="Seeds"/>
+                            <ComboBoxItem Content="Special Items" Tag="SpecialItems"/>
+                            <ComboBoxItem Content="Tools" Tag="Tools"/>
+                            <ComboBoxItem Content="Valuables" Tag="Valuables"/>
+                            <ComboBoxItem Content="Vegetables" Tag="Vegetables"/>
+                            <ComboBoxItem Content="Vehicle Parts" Tag="VehicleParts"/>
+                            <ComboBoxItem Content="Weapons" Tag="Weapons"/>
+                        </ComboBox>
 
                         <InfoBar x:Name="UnmappedItemsInfoBar"
                                  IsOpen="False"
@@ -186,6 +231,7 @@
                         <ItemsRepeater x:Name="ItemsRepeater">
                             <ItemsRepeater.Layout>
                                 <UniformGridLayout MinItemWidth="288"
+                                                   MinItemHeight="232"
                                                    MinColumnSpacing="16"
                                                    MinRowSpacing="16"
                                                    ItemsStretch="Fill"/>
@@ -194,10 +240,11 @@
                                 <DataTemplate x:DataType="vm:InventoryItemViewModel">
                                     <Border Style="{StaticResource CardBorderStyle}" Padding="16">
                                         <StackPanel Spacing="14">
-                                            <Grid ColumnSpacing="12">
+                                            <Grid MinHeight="80" ColumnSpacing="12">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="56"/>
                                                     <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
 
                                                 <Border Width="56"
@@ -211,31 +258,41 @@
                                                                   HorizontalAlignment="Center"
                                                                   VerticalAlignment="Center"
                                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                                  Visibility="{x:Bind FallbackIconVisibility}"
+                                                                  Visibility="{x:Bind FallbackIconVisibility, Mode=OneTime}"
                                                                   AutomationProperties.AccessibilityView="Raw"/>
-                                                        <Image Source="{x:Bind Icon}"
+                                                        <Image Source="{x:Bind Icon, Mode=OneTime}"
                                                                Width="52"
                                                                Height="52"
                                                                HorizontalAlignment="Center"
                                                                VerticalAlignment="Center"
                                                                Stretch="Uniform"
-                                                               Visibility="{x:Bind IconVisibility}"
+                                                               Visibility="{x:Bind IconVisibility, Mode=OneTime}"
                                                                AutomationProperties.AccessibilityView="Raw"/>
                                                     </Grid>
                                                 </Border>
 
                                                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
-                                                    <TextBlock Text="{x:Bind DisplayName}"
+                                                    <TextBlock Text="{x:Bind DisplayName, Mode=OneTime}"
                                                                FontWeight="SemiBold"
-                                                               TextWrapping="Wrap"/>
-                                                    <TextBlock Text="{x:Bind DefinitionKey}"
-                                                               Style="{StaticResource MonospaceTextBlockStyle}"
+                                                               TextWrapping="Wrap"
+                                                               MaxLines="3"
                                                                TextTrimming="CharacterEllipsis"
-                                                               ToolTipService.ToolTip="{x:Bind DefinitionKey}"/>
-                                                    <TextBlock Text="{x:Bind CategoryLabel}"
+                                                               ToolTipService.ToolTip="{x:Bind DisplayName, Mode=OneTime}"/>
+                                                    <TextBlock Text="{x:Bind CategoryLabel, Mode=OneTime}"
                                                                FontSize="12"
                                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                                 </StackPanel>
+
+                                                <Button Grid.Column="2"
+                                                        VerticalAlignment="Top"
+                                                        Click="DeleteItemButton_Click"
+                                                        CommandParameter="{x:Bind}"
+                                                        ToolTipService.ToolTip="Delete item"
+                                                        AutomationProperties.Name="{x:Bind DeleteAutomationName, Mode=OneTime}"
+                                                        AutomationProperties.AutomationId="{x:Bind DeleteAutomationId, Mode=OneTime}">
+                                                    <SymbolIcon Symbol="Delete"
+                                                                AutomationProperties.AccessibilityView="Raw"/>
+                                                </Button>
                                             </Grid>
 
                                             <Grid ColumnSpacing="12">
@@ -248,27 +305,27 @@
                                                            Header="Amount"
                                                            Value="{x:Bind Amount, Mode=TwoWay}"
                                                            SpinButtonPlacementMode="Compact"
-                                                           AutomationProperties.Name="{x:Bind AmountAutomationName}"/>
+                                                           AutomationProperties.Name="{x:Bind AmountAutomationName, Mode=OneTime}"
+                                                           AutomationProperties.AutomationId="{x:Bind AmountAutomationId, Mode=OneTime}"/>
                                                 <NumberBox Grid.Column="1"
                                                            Header="Integrity"
+                                                           Minimum="0"
+                                                           Maximum="100"
+                                                           SmallChange="1"
                                                            Value="{x:Bind Integrity, Mode=TwoWay}"
                                                            SpinButtonPlacementMode="Compact"
-                                                           AutomationProperties.Name="{x:Bind IntegrityAutomationName}"/>
+                                                           AutomationProperties.Name="{x:Bind IntegrityAutomationName, Mode=OneTime}"
+                                                           AutomationProperties.AutomationId="{x:Bind IntegrityAutomationId, Mode=OneTime}"/>
                                             </Grid>
 
                                             <StackPanel Orientation="Horizontal" Spacing="8">
                                                 <TextBlock Text="Quality" VerticalAlignment="Center"/>
-                                                <TextBlock Text="{x:Bind QualityStars, Mode=OneWay}"
-                                                           Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                                                           VerticalAlignment="Center"
-                                                           AutomationProperties.Name="{x:Bind QualityLabel, Mode=OneWay}"/>
-                                                <NumberBox Width="84"
-                                                           Value="{x:Bind Quality, Mode=TwoWay}"
-                                                           SpinButtonPlacementMode="Compact"
-                                                           AutomationProperties.Name="{x:Bind QualityAutomationName}"/>
-                                                <TextBlock Text="{x:Bind QualityLabel, Mode=OneWay}"
-                                                           VerticalAlignment="Center"
-                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                                <RatingControl MaxRating="3"
+                                                               Value="{x:Bind QualityRatingValue, Mode=TwoWay}"
+                                                               IsEnabled="{x:Bind IsQualityEditable, Mode=OneTime}"
+                                                               IsClearEnabled="False"
+                                                               AutomationProperties.Name="{x:Bind QualityAutomationName, Mode=OneTime}"
+                                                               AutomationProperties.AutomationId="{x:Bind QualityAutomationId, Mode=OneTime}"/>
                                             </StackPanel>
                                         </StackPanel>
                                     </Border>
@@ -279,5 +336,139 @@
                 </Border>
             </StackPanel>
         </ScrollView>
+
+        <ContentDialog x:Name="AddItemDialog"
+                       Grid.RowSpan="2"
+                       Title="Add item"
+                       PrimaryButtonText="Add item"
+                       CloseButtonText="Cancel"
+                       DefaultButton="Primary"
+                       IsPrimaryButtonEnabled="False"
+                       PrimaryButtonClick="AddItemDialog_PrimaryButtonClick">
+            <Grid MinWidth="480" MaxWidth="560" RowSpacing="12">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="240"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <ComboBox x:Name="AddItemCategoryComboBox"
+                          Header="Category"
+                          SelectedIndex="0"
+                          SelectionChanged="AddItemCategoryComboBox_SelectionChanged"
+                          AutomationProperties.Name="Filter catalog by category"
+                          AutomationProperties.AutomationId="AddItemCategoryComboBox">
+                    <ComboBoxItem Content="All categories" Tag="All"/>
+                    <ComboBoxItem Content="Ammunition" Tag="Ammunition"/>
+                    <ComboBoxItem Content="Books" Tag="Books"/>
+                    <ComboBoxItem Content="Consumables" Tag="Consumables"/>
+                    <ComboBoxItem Content="Drugs" Tag="Drugs"/>
+                    <ComboBoxItem Content="Equipment" Tag="Equipment"/>
+                    <ComboBoxItem Content="Flora" Tag="Flora"/>
+                    <ComboBoxItem Content="Junk" Tag="Junk"/>
+                    <ComboBoxItem Content="Materials" Tag="Materials"/>
+                    <ComboBoxItem Content="Medicines" Tag="Medicines"/>
+                    <ComboBoxItem Content="Pets" Tag="Pets"/>
+                    <ComboBoxItem Content="Seeds" Tag="Seeds"/>
+                    <ComboBoxItem Content="Special Items" Tag="SpecialItems"/>
+                    <ComboBoxItem Content="Tools" Tag="Tools"/>
+                    <ComboBoxItem Content="Valuables" Tag="Valuables"/>
+                    <ComboBoxItem Content="Vegetables" Tag="Vegetables"/>
+                    <ComboBoxItem Content="Vehicle Parts" Tag="VehicleParts"/>
+                    <ComboBoxItem Content="Weapons" Tag="Weapons"/>
+                </ComboBox>
+
+                <StackPanel Grid.Row="1" Spacing="4">
+                    <TextBlock Text="Search"/>
+                    <AutoSuggestBox x:Name="AddItemSearchBox"
+                                    PlaceholderText="Item name or defKey"
+                                    TextChanged="AddItemSearchBox_TextChanged"
+                                    AutomationProperties.Name="Search catalog items"
+                                    AutomationProperties.AutomationId="AddItemSearchBox"/>
+                </StackPanel>
+
+                <ListView x:Name="AddItemListView"
+                          Grid.Row="2"
+                          SelectionMode="Single"
+                          SelectionChanged="AddItemListView_SelectionChanged"
+                          AutomationProperties.Name="Items available to add"
+                          AutomationProperties.AutomationId="AddItemListView">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="models:InventoryItemDefinition">
+                            <Grid Padding="4" ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="40"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Image Width="40"
+                                       Height="40"
+                                       Source="{x:Bind ImageAssetPath, Mode=OneTime}"
+                                       Stretch="Uniform"
+                                       AutomationProperties.AccessibilityView="Raw"/>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="{x:Bind DisplayName, Mode=OneTime}"
+                                               FontWeight="SemiBold"
+                                               TextWrapping="Wrap"/>
+                                    <TextBlock Text="{x:Bind DefinitionKey, Mode=OneTime}"
+                                               Style="{StaticResource MonospaceTextBlockStyle}"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+
+                <TextBlock x:Name="NoAddItemsTextBlock"
+                           Grid.Row="2"
+                           Margin="24"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Text="No catalog items match this category and search."
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"
+                           Visibility="Collapsed"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+
+                <Grid Grid.Row="3" ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <NumberBox x:Name="AddItemAmountNumberBox"
+                               Header="Amount"
+                               Minimum="1"
+                               Value="1"
+                               SpinButtonPlacementMode="Compact"
+                               AutomationProperties.Name="New item amount"
+                               AutomationProperties.AutomationId="AddItemAmountNumberBox"/>
+                    <NumberBox x:Name="AddItemIntegrityNumberBox"
+                               Grid.Column="1"
+                               Header="Integrity"
+                               Minimum="0"
+                               Maximum="100"
+                               Value="100"
+                               SpinButtonPlacementMode="Compact"
+                               AutomationProperties.Name="New item integrity"
+                               AutomationProperties.AutomationId="AddItemIntegrityNumberBox"/>
+                </Grid>
+
+                <StackPanel Grid.Row="4" Spacing="4">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="Quality" VerticalAlignment="Center"/>
+                        <RatingControl x:Name="AddItemQualityRatingControl"
+                                       MaxRating="3"
+                                       Value="3"
+                                       IsClearEnabled="False"
+                                       AutomationProperties.Name="New item quality"
+                                       AutomationProperties.AutomationId="AddItemQualityRatingControl"/>
+                    </StackPanel>
+                    <TextBlock x:Name="AddItemQualityHintTextBlock"
+                               TextWrapping="Wrap"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                </StackPanel>
+            </Grid>
+        </ContentDialog>
     </Grid>
 </Page>

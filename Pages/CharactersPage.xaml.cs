@@ -14,11 +14,14 @@ using System.Linq;
 namespace SaveOver.Sheltered2.Pages;
 
 /// <summary>
-/// Lets the user pick a character and edit their basics, health, conditions and stats.
+/// Binds directly to the shared character models so edits remain live across cached-page
+/// navigation. Temporary row and skill view models exist only where WinUI controls need a
+/// different numeric surface or grouping shape.
 /// </summary>
 public sealed partial class CharactersPage : Page
 {
-    // The stat tree currently shown in the Skills section (driven by the SelectorBar).
+    // Keep the selected stat outside regenerated tier view models so bulk actions and refreshes
+    // target the same tree after template recycling.
     private CharacterStat currentSkillStat = SkillCatalog.Stats[0];
 
     // The character list currently bound to the combo box, so we can tell an unchanged
@@ -30,7 +33,7 @@ public sealed partial class CharactersPage : Page
 
     public CharactersPage() => InitializeComponent();
 
-    /// <summary>The character whose observable properties are bound to the editor fields.</summary>
+    /// <summary>Public because compiled page bindings cannot bind to a private selection field.</summary>
     public Character? SelectedCharacter { get; private set; }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -58,7 +61,8 @@ public sealed partial class CharactersPage : Page
     }
 
     /// <summary>
-    /// Fills the combo box from the shared save data, or disables editing if none exists.
+    /// Rebinds only when SaveSession replaces the list; a cached-page revisit must not discard the
+    /// user's remembered selection or recreate two-way binding targets.
     /// </summary>
     private void PopulateCharacterComboBox()
     {
@@ -90,13 +94,14 @@ public sealed partial class CharactersPage : Page
             : source[0];
     }
 
-    /// <summary>Handles selection changes in the character combo box.</summary>
     private void CharacterComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (CharacterComboBox.SelectedItem is Character selectedCharacter)
         {
             SelectedCharacter = selectedCharacter;
             App.CurrentSaveData.SelectedCharacter = selectedCharacter;
+            // SelectedCharacter is an ordinary page property; force compiled bindings to switch
+            // their root before enabling controls that can write back.
             Bindings.Update();
             EnableAllFields();
 
@@ -117,7 +122,10 @@ public sealed partial class CharactersPage : Page
         }
     }
 
-    /// <summary>Rebuilds the relationship rows, resolving member ids to display names.</summary>
+    /// <summary>
+    /// Resolves names for presentation but keeps each row attached to the ID-backed model entry,
+    /// because names are editable and not unique.
+    /// </summary>
     private void PopulateRelationships(Character character)
     {
         List<RelationshipRowViewModel> rows = [.. character.Relationships
@@ -132,7 +140,6 @@ public sealed partial class CharactersPage : Page
         NoRelationshipsTextBlock.Visibility = rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    /// <summary>Sets every stat to its maximum level and refreshes the grid.</summary>
     private void MaxStatsButton_Click(object sender, RoutedEventArgs e)
     {
         if (CharacterComboBox.SelectedItem is not Character selectedCharacter)
@@ -150,7 +157,6 @@ public sealed partial class CharactersPage : Page
         StatsFeedbackTextBlock.Text = $"All stats maximised to level {Stat.MaxLevel}.";
     }
 
-    /// <summary>Sets every stat to its minimum level and refreshes the grid.</summary>
     private void MinStatsButton_Click(object sender, RoutedEventArgs e)
     {
         if (CharacterComboBox.SelectedItem is not Character selectedCharacter)
@@ -168,11 +174,9 @@ public sealed partial class CharactersPage : Page
         StatsFeedbackTextBlock.Text = $"All stats minimised to level {Stat.MinLevel}.";
     }
 
-    /// <summary>Sets every relationship to its maximum (100).</summary>
     private void MaxRelationshipsButton_Click(object sender, RoutedEventArgs e) =>
         SetAllRelationships(RelationshipRowViewModel.MaxLevel, "All relationships set to 100.");
 
-    /// <summary>Sets every relationship to its minimum (-100).</summary>
     private void MinRelationshipsButton_Click(object sender, RoutedEventArgs e) =>
         SetAllRelationships(RelationshipRowViewModel.MinLevel, "All relationships set to -100.");
 
@@ -192,11 +196,9 @@ public sealed partial class CharactersPage : Page
         RelationshipsFeedbackTextBlock.Text = feedback;
     }
 
-    /// <summary>Sets every need to 0 (fully satisfied).</summary>
     private void SatisfyNeedsButton_Click(object sender, RoutedEventArgs e) =>
         SetAllNeeds(0, "All needs satisfied.");
 
-    /// <summary>Sets every need to 100 (critical).</summary>
     private void DepleteNeedsButton_Click(object sender, RoutedEventArgs e) =>
         SetAllNeeds(100, "All needs set to critical.");
 
@@ -219,7 +221,6 @@ public sealed partial class CharactersPage : Page
 
     #region Skills
 
-    /// <summary>Rebuilds the skill tree shown for the current stat and selected character.</summary>
     private void RefreshSkillTree()
     {
         if (CharacterComboBox.SelectedItem is not Character character)
@@ -232,7 +233,9 @@ public sealed partial class CharactersPage : Page
     }
 
     /// <summary>
-    /// Builds the tier view models for a stat, seeded from the character's saved levels.
+    /// Builds transient presentation objects from the sparse unlocked-skill list. Write-back checks
+    /// the captured character so a recycled control from the previous selection cannot edit the
+    /// newly selected character.
     /// </summary>
     private List<SkillTierViewModel> BuildSkillTree(Character character, CharacterStat stat)
     {
@@ -286,7 +289,6 @@ public sealed partial class CharactersPage : Page
         }
     }
 
-    /// <summary>Switches the visible skill tree when the stat selector changes.</summary>
     private void SelectorBar_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
         if (sender.SelectedItem?.Tag is string tag &&
@@ -298,7 +300,6 @@ public sealed partial class CharactersPage : Page
         }
     }
 
-    /// <summary>Maximises every skill in the currently viewed tree.</summary>
     private void MaxTreeMenuItem_Click(object sender, RoutedEventArgs e)
     {
         if (CharacterComboBox.SelectedItem is Character character)
@@ -308,7 +309,6 @@ public sealed partial class CharactersPage : Page
         }
     }
 
-    /// <summary>Maximises every skill in every tree.</summary>
     private void MaxAllTreesMenuItem_Click(object sender, RoutedEventArgs e)
     {
         if (CharacterComboBox.SelectedItem is Character character)
@@ -318,7 +318,6 @@ public sealed partial class CharactersPage : Page
         }
     }
 
-    /// <summary>Removes every invested point in the currently viewed tree.</summary>
     private void ClearTreeMenuItem_Click(object sender, RoutedEventArgs e)
     {
         if (CharacterComboBox.SelectedItem is Character character)
@@ -328,7 +327,6 @@ public sealed partial class CharactersPage : Page
         }
     }
 
-    /// <summary>Removes every invested point in every tree.</summary>
     private void ClearAllMenuItem_Click(object sender, RoutedEventArgs e)
     {
         if (CharacterComboBox.SelectedItem is Character character)

@@ -6,7 +6,8 @@ using Microsoft.UI.Xaml.Controls;
 namespace SaveOver.Sheltered2.Pages;
 
 /// <summary>
-/// TODO: Factions page.
+/// Keeps the announced navigation destination stable while faction support is still intentionally
+/// absent from the save model; no XML is exposed until faction identity rules are verified.
 /// </summary>
 public sealed partial class FactionsPage : Page
 {

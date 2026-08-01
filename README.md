@@ -16,12 +16,12 @@ Automatic backups protect your original save files.
 
 ## Features
 
-- Modify character identity, health, attributes, needs, traits, relationships, and skills.
+- Modify character identity, health, attributes, needs, traits, relationships, and skills. 
 - Modify pet identity, age, health, hunger, happiness, and training skills.
-- Modify shelter water and inventory stack quantities, integrity, and quality.
+- Modify shelter water; add or remove inventory stacks; and edit stack quantities, integrity, and quality.
 - Creates a timestamped backup outside the Steam Cloud save folder before each write.
 - Stages changes in a temporary file before replacing the original.
-- Select a light, dark, or system theme, and choose a left or top navigation layout.
+- Automatic dark mode support! 🌚
 - Run as an x86, x64, or ARM64 application.
 
 > [!NOTE]

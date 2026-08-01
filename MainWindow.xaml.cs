@@ -14,7 +14,8 @@ using System.Linq;
 namespace SaveOver.Sheltered2;
 
 /// <summary>
-/// The main application window containing the primary navigation and content frame.
+/// Centralizes shell state that must remain coherent across cached pages: navigation selection,
+/// title-bar geometry, editor availability, and the load/save busy lock.
 /// </summary>
 public sealed partial class MainWindow : Window
 {
@@ -25,7 +26,8 @@ public sealed partial class MainWindow : Window
     private bool isWorkspaceBusy;
 
     /// <summary>
-    /// Maps page tags to their corresponding page types for navigation.
+    /// Keeps string tags in XAML as the single navigation contract instead of duplicating a
+    /// switch in selection handling and another reverse mapping after frame navigation.
     /// </summary>
     private static readonly Dictionary<string, Type> PageMap = new()
     {
@@ -39,7 +41,7 @@ public sealed partial class MainWindow : Window
         [SettingsTag] = typeof(SettingsPage)
     };
 
-    /// <summary>Tag for the settings entry NavigationView provides for us.</summary>
+    /// <summary>NavigationView creates SettingsItem itself, so it cannot share the XAML tag map.</summary>
     private const string SettingsTag = "Settings";
 
     /// <summary>
@@ -186,7 +188,8 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Enables or disables the editor navigation items based on whether a save is loaded.
+    /// Keeps data editors unreachable without a model; disabling the navigation entry avoids
+    /// forcing every editor page to invent a separate pre-load interaction state.
     /// </summary>
     private void UpdateNavigationEnabledState()
     {
@@ -204,9 +207,9 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Navigates to a specific page by its tag and updates the navigation selection.
+    /// Routes calls from page content through NavigationView selection so programmatic and user
+    /// navigation follow the same transition and selection path.
     /// </summary>
-    /// <param name="pageTag">The tag of the page to navigate to.</param>
     public void NavigateToPageByTag(string pageTag)
     {
         NavigationViewItem? targetItem = NavigationViewControl.MenuItems
@@ -220,9 +223,7 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    /// <summary>
-    /// Sets up initial navigation state and event handlers.
-    /// </summary>
+    /// <summary>Seeds selection explicitly because the frame has no initial back-stack entry.</summary>
     private void InitializeNavigation()
     {
         // Navigated / NavigationFailed are wired in MainWindow.xaml; subscribing here
@@ -231,9 +232,6 @@ public sealed partial class MainWindow : Window
         NavigateToPage("Home");
     }
 
-    /// <summary>
-    /// Handles back navigation requests.
-    /// </summary>
     private void OnNavigationViewBackRequested(NavigationView sender, NavigationViewBackRequestedEventArgs args)
     {
         if (!isWorkspaceBusy && RootFrame.CanGoBack)
@@ -242,9 +240,6 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    /// <summary>
-    /// Handles navigation view selection changes.
-    /// </summary>
     private void OnNavigationViewSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
         // The settings entry is built into NavigationView and carries no Tag of its own.
@@ -259,7 +254,8 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Synchronizes the NavigationView selection with the current page.
+    /// Reconciles shell selection after frame-driven navigation, including back navigation that
+    /// bypasses NavigationView.SelectionChanged.
     /// </summary>
     private void OnNavigated(object sender, NavigationEventArgs e)
     {
@@ -299,7 +295,8 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Handles navigation failures by logging and throwing an exception.
+    /// Fails fast after logging because leaving the shell selected on a page the frame could not
+    /// construct produces a misleading, partially usable editor.
     /// </summary>
     private void OnNavigationFailed(object sender, NavigationFailedEventArgs e)
     {
@@ -307,10 +304,7 @@ public sealed partial class MainWindow : Window
         throw new InvalidOperationException($"Failed to load page {e.SourcePageType.FullName}.", e.Exception);
     }
 
-    /// <summary>
-    /// Navigates to a page based on its tag.
-    /// </summary>
-    /// <param name="pageTag">The tag identifying the target page.</param>
+    /// <summary>Avoids duplicate frame entries when selection is re-applied during synchronization.</summary>
     private void NavigateToPage(string pageTag)
     {
         if (PageMap.TryGetValue(pageTag, out Type? pageType) && RootFrame.CurrentSourcePageType != pageType)

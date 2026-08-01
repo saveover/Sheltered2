@@ -6,7 +6,8 @@ using Microsoft.UI.Xaml.Controls;
 namespace SaveOver.Sheltered2.Pages;
 
 /// <summary>
-/// TODO: Craftin page.
+/// Keeps the announced navigation destination stable while crafting support is still intentionally
+/// absent from the save model; presenting an empty shell is safer than guessing recipe invariants.
 /// </summary>
 public sealed partial class CraftingPage : Page
 {

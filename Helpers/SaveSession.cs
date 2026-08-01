@@ -11,9 +11,9 @@ using System.Linq;
 namespace SaveOver.Sheltered2.Helpers;
 
 /// <summary>
-/// The currently loaded save file and its parsed data. One instance lives for the app's
-/// lifetime (<see cref="App.CurrentSaveData"/>) so pages share state without reaching
-/// across the visual tree.
+/// Owns the original XML baseline and the observable model graph derived from it. One process-wide
+/// instance lets cached pages share edits while central change tracking decides whether replacing
+/// or closing that graph would lose work.
 /// </summary>
 internal sealed class SaveSession
 {
@@ -32,7 +32,7 @@ internal sealed class SaveSession
 
     public bool CanAddPets { get; private set; }
 
-    /// <summary>The shelter-owned water and inventory containers, when present in the save.</summary>
+    /// <summary>Nullable because absence must disable inventory editing, not synthesize save XML.</summary>
     public ShelterInventory? Inventory { get; private set; }
 
     /// <summary>
@@ -54,8 +54,13 @@ internal sealed class SaveSession
     /// </summary>
     public event EventHandler? SaveDataChanged;
 
+    /// <summary>Separated from data replacement so HomePage can update save affordances cheaply.</summary>
     public event EventHandler? DirtyStateChanged;
 
+    /// <summary>
+    /// Replaces the model graph as one transaction, then rebuilds subscriptions before notifying
+    /// pages so no page can observe new data with the old dirty-state wiring.
+    /// </summary>
     public void Load(string filePath, string decryptedContent, ParsedSave data)
     {
         ArgumentException.ThrowIfNullOrEmpty(filePath);
@@ -77,7 +82,10 @@ internal sealed class SaveSession
         SaveDataChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    /// <summary>Adds a new pet model; the writer materialises its XML on the next save.</summary>
+    /// <summary>
+    /// Reserves an ID against both PetManager's counter and parsed pets because either can be stale
+    /// in hand-edited saves; the writer materializes XML only after the user saves.
+    /// </summary>
     public Pet AddPet(PetSpecies species)
     {
         if (!IsLoaded)
@@ -131,7 +139,10 @@ internal sealed class SaveSession
         return pet;
     }
 
-    /// <summary>Updates the XML baseline after the current session has been saved successfully.</summary>
+    /// <summary>
+    /// Advances positional baselines only after the encrypted file replacement succeeds. Without
+    /// this step, a second save could treat newly added or reordered inventory entries as new again.
+    /// </summary>
     public void CommitSavedContent(string decryptedContent)
     {
         ArgumentException.ThrowIfNullOrEmpty(decryptedContent);
@@ -144,6 +155,9 @@ internal sealed class SaveSession
             {
                 character.ResetPositionRequested = false;
             }
+
+            Inventory?.Storage?.RebaselineSourceIndices();
+            Inventory?.Overflow?.RebaselineSourceIndices();
         }
         finally
         {
@@ -155,6 +169,8 @@ internal sealed class SaveSession
 
     private void TrackEditableData()
     {
+        // The graph is intentionally traversed explicitly. Reflection would hide which nested
+        // objects participate in dirty tracking and could begin tracking display-only properties.
         StopTrackingEditableData();
 
         foreach (Character character in Characters)
@@ -183,8 +199,8 @@ internal sealed class SaveSession
         if (Inventory is { } inventory)
         {
             Track(inventory);
-            TrackItems(inventory.Storage?.Items);
-            TrackItems(inventory.Overflow?.Items);
+            TrackInventoryItems(inventory.Storage);
+            TrackInventoryItems(inventory.Overflow);
         }
     }
 
@@ -211,17 +227,14 @@ internal sealed class SaveSession
         return checked(max + 1);
     }
 
-    private void TrackItems(IReadOnlyList<InventoryItem>? items)
+    private void TrackInventoryItems(InventoryContainer? container)
     {
-        if (items is null)
+        if (container is null)
         {
             return;
         }
 
-        foreach (InventoryItem item in items)
-        {
-            Track(item);
-        }
+        TrackCollection(container.Items);
     }
 
     private void TrackCollection<T>(System.Collections.ObjectModel.ObservableCollection<T> collection)

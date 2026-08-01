@@ -14,6 +14,9 @@
         <converters:Int32NumberConverter x:Key="Int32NumberConverter"/>
         <converters:PercentageNumberConverter x:Key="PercentageNumberConverter"/>
 
+        <!-- One selector represents the game's separate purchased and training-progress fields;
+             keeping that projection in a shared template prevents the three point pools from
+             drifting into different editing behavior. -->
         <DataTemplate x:Key="DogSkillTemplate" x:DataType="models:DogSkill">
             <Grid Margin="0,4" ColumnSpacing="12">
                 <Grid.ColumnDefinitions>
@@ -40,6 +43,8 @@
     </Page.Resources>
 
     <Grid x:Name="PageRoot">
+        <!-- The fixed-width training controls move below Basics before either card becomes too
+             narrow for its labels and inline number fields. -->
         <VisualStateManager.VisualStateGroups>
             <VisualStateGroup>
                 <VisualState x:Name="NarrowLayout">
@@ -256,6 +261,8 @@
                                             AutomationProperties.AutomationId="RemoveAllDogSkillsButton"/>
                                 </StackPanel>
 
+                                <!-- Each skill family owns a distinct saved point balance, so the
+                                     lists remain separate even though they share an item template. -->
                                 <StackPanel Spacing="8">
                                     <Grid ColumnSpacing="12">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="140"/></Grid.ColumnDefinitions>

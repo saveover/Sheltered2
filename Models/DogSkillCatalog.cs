@@ -12,6 +12,9 @@ public enum DogSkillCategory
     Combat,
 }
 
+/// <summary>
+/// Couples display metadata with the numeric key required for preservation-safe save matching.
+/// </summary>
 public sealed record DogSkillDefinition(
     int Key,
     string Name,
@@ -19,8 +22,8 @@ public sealed record DogSkillDefinition(
     int TrainingTimeRequired);
 
 /// <summary>
-/// Dog skill identities and display order. The order matches the 0.52 reference editor;
-/// the key is the stable identity used when reading and writing the save.
+/// Centralizes verified dog-skill identities so parsing, editing, and new-pet XML cannot drift into
+/// separate key tables. Display order follows the reference editor; write-back always uses keys.
 /// </summary>
 public static class DogSkillCatalog
 {

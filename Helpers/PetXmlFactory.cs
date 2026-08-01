@@ -8,9 +8,17 @@ using System.Xml.Linq;
 
 namespace SaveOver.Sheltered2.Helpers;
 
-/// <summary>Builds complete, inert pet records for insertion into an existing shelter.</summary>
+/// <summary>
+/// Materializes the verified minimum XML required for a newly added pet. Existing pets are edited
+/// in place by <see cref="SaveWriter"/>, but a new pet has no source subtree to preserve, so its
+/// species-specific state, manager entry, and inert world objects must be supplied together.
+/// </summary>
 internal static class PetXmlFactory
 {
+    /// <summary>
+    /// Places the pet at a known shelter position rather than inventing coordinates; zero is only
+    /// a fallback for saves with no usable donor transform.
+    /// </summary>
     internal static XElement CreatePetElement(Pet pet, XElement? shelterPosition)
     {
         XElement position = CopyVector(shelterPosition, "pos", ("x", "0"), ("y", "0"), ("z", "0"));
@@ -75,6 +83,10 @@ internal static class PetXmlFactory
         return petElement;
     }
 
+    /// <summary>
+    /// Keeps the PetManager index synchronized with the root <c>Pet_N</c> element; the game uses
+    /// both structures and cannot discover a newly appended root element on its own.
+    /// </summary>
     internal static XElement CreateManagerEntry(int index, Pet pet, XElement petPosition, XElement? spawnRotation) =>
         new($"i{index}",
             new XElement("uniqueId", pet.PetId.ToString(CultureInfo.InvariantCulture)),
@@ -156,10 +168,11 @@ internal static class PetXmlFactory
 
     private static XElement CreateDogSkillList(string name, Pet pet, DogSkillCategory category)
     {
-        DogSkill[] skills = pet.DogSkills
+        // The size attribute counts serialized entries and iN names are positional, so build both
+        // from one deterministic sequence rather than trusting collection insertion history.
+        DogSkill[] skills = [.. pet.DogSkills
             .Where(skill => skill.Category == category)
-            .OrderBy(skill => skill.Key)
-            .ToArray();
+            .OrderBy(skill => skill.Key)];
         XElement list = new(name, new XAttribute("size", skills.Length));
         for (int index = 0; index < skills.Length; index++)
         {
@@ -180,6 +193,8 @@ internal static class PetXmlFactory
         string targetName,
         params (string Name, string DefaultValue)[] attributes)
     {
+        // Copy only the schema's known axes. Cloning a donor element wholesale could carry its
+        // element name or future unrelated attributes into a different vector role.
         XElement result = new(targetName);
         foreach ((string name, string defaultValue) in attributes)
         {

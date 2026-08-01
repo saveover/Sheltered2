@@ -16,20 +16,27 @@ namespace SaveOver.Sheltered2.ViewModels;
 /// </summary>
 public sealed partial class InventoryItemViewModel : ObservableObject
 {
-    public InventoryItemViewModel(InventoryItem item)
+    // The game's 0-based enum (Poor, Good, Excellent) is shown as one to three stars.
+    // Unexpected raw values remain unset in the UI and untouched until the user edits them.
+    private const double UnsetRating = -1d;
+
+    public InventoryItemViewModel(InventoryItem item, int automationIndex = 0)
     {
         Item = item;
+        AutomationIndex = automationIndex;
 
         if (ItemCatalog.Find(item.DefinitionKey) is { } definition)
         {
-            Icon = new BitmapImage(definition.ImageUri);
+            Icon = new BitmapImage(new Uri(definition.ImageAssetPath));
         }
     }
 
     /// <summary>The underlying stack, retained by document order for safe save write-back.</summary>
     public InventoryItem Item { get; }
 
-    /// <summary>Locally packaged artwork for a catalogued item, if available.</summary>
+    private int AutomationIndex { get; }
+
+    /// <summary>Null deliberately selects a neutral icon so unknown defKeys remain non-misleading.</summary>
     public ImageSource? Icon { get; }
 
     public Visibility IconVisibility => Icon is null ? Visibility.Collapsed : Visibility.Visible;
@@ -42,19 +49,36 @@ public sealed partial class InventoryItemViewModel : ObservableObject
 
     public string CategoryLabel => Item.CategoryLabel;
 
-    public string QualityStars => Item.QualityStars;
-
-    public string QualityLabel => Item.QualityLabel;
+    public string QualityLabel => IsQualityReadOnly
+        ? "Excellent · fixed at 3 stars by the game"
+        : Item.QualityLabel;
 
     public string AmountAutomationName => $"{DisplayName} amount";
 
     public string IntegrityAutomationName => $"{DisplayName} integrity";
 
-    public string QualityAutomationName => $"{DisplayName} quality, one to three stars";
+    public string QualityAutomationName => IsQualityReadOnly
+        ? $"{DisplayName} quality, fixed at three stars by the game"
+        : $"{DisplayName} quality";
+
+    public string DeleteAutomationName => $"Delete {DisplayName}";
+
+    public string AmountAutomationId => $"InventoryItem{AutomationIndex}AmountNumberBox";
+
+    public string IntegrityAutomationId => $"InventoryItem{AutomationIndex}IntegrityNumberBox";
+
+    public string QualityAutomationId => $"InventoryItem{AutomationIndex}QualityRatingControl";
+
+    public string DeleteAutomationId => $"InventoryItem{AutomationIndex}DeleteButton";
+
+    public bool IsQualityReadOnly =>
+        ItemCatalog.Find(DefinitionKey)?.MinimumQuality >= 2;
+
+    public bool IsQualityEditable => !IsQualityReadOnly;
 
     /// <summary>
-    /// A <see cref="double"/> surface for <see cref="Microsoft.UI.Xaml.Controls.NumberBox"/>,
-    /// while retaining the game's integer representation.
+    /// Keeps NumberBox's double-valued binding at the presentation boundary so the save model
+    /// never acquires fractional stack amounts.
     /// </summary>
     public double Amount
     {
@@ -62,18 +86,38 @@ public sealed partial class InventoryItemViewModel : ObservableObject
         set => SetAmount(value);
     }
 
-    /// <summary>A non-negative integer integrity value exposed to a <c>NumberBox</c>.</summary>
+    /// <summary>Normalizes an edited percentage without touching an unusual unedited source value.</summary>
     public double Integrity
     {
         get => Item.Integrity;
         set => SetIntegrity(value);
     }
 
-    /// <summary>A one-to-three-star quality value exposed to a <c>NumberBox</c>.</summary>
-    public double Quality
+    /// <summary>
+    /// Offsets the game's zero-based enum for RatingControl and folds catalog minimums into the
+    /// displayed value so Petrol Can can never appear to accept an invalid rating.
+    /// </summary>
+    public double QualityRatingValue
     {
-        get => Item.Quality;
+        get
+        {
+            int minimumQuality = ItemCatalog.Find(DefinitionKey)?.MinimumQuality ?? 0;
+            int effectiveQuality = Math.Max(Item.Quality, minimumQuality);
+            return effectiveQuality is >= 0 and <= 2 ? effectiveQuality + 1 : UnsetRating;
+        }
         set => SetQuality(value);
+    }
+
+    public void SetExcellentQuality()
+    {
+        // Route visible items through the view model so the two-way RatingControl receives the
+        // notification; off-screen items can be changed directly by the page.
+        if (Item.Quality != 2)
+        {
+            Item.Quality = 2;
+            OnPropertyChanged(nameof(QualityRatingValue));
+            OnPropertyChanged(nameof(QualityLabel));
+        }
     }
 
     private void SetAmount(double requestedValue)
@@ -105,7 +149,7 @@ public sealed partial class InventoryItemViewModel : ObservableObject
             return;
         }
 
-        int value = Math.Max(0, int.CreateSaturating(requestedValue));
+        int value = Math.Clamp(int.CreateSaturating(requestedValue), 0, 100);
         bool changed = Item.Integrity != value;
         if (changed)
         {
@@ -125,17 +169,27 @@ public sealed partial class InventoryItemViewModel : ObservableObject
             return;
         }
 
-        int value = Math.Clamp(int.CreateSaturating(requestedValue), 1, 3);
+        int minimumQuality = ItemCatalog.Find(DefinitionKey)?.MinimumQuality ?? 0;
+        int value = requestedValue < 1
+            ? 0
+            : Math.Clamp(int.CreateSaturating(requestedValue) - 1, 0, 2);
+        value = Math.Max(value, minimumQuality);
         bool changed = Item.Quality != value;
         if (changed)
         {
             Item.Quality = value;
         }
 
-        if (changed || requestedValue != value)
+        // A canonical star click already left RatingControl.Value at value + 1. Avoid
+        // reassigning Value from inside its own two-way update, which can displace focus.
+        double normalizedRating = value + 1d;
+        if (requestedValue != normalizedRating)
         {
-            OnPropertyChanged(nameof(Quality));
-            OnPropertyChanged(nameof(QualityStars));
+            OnPropertyChanged(nameof(QualityRatingValue));
+        }
+
+        if (changed)
+        {
             OnPropertyChanged(nameof(QualityLabel));
         }
     }

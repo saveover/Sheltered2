@@ -7,7 +7,10 @@ using System;
 
 namespace SaveOver.Sheltered2.Converters;
 
-/// <summary>Bridges integer model values to the <see cref="double"/> surface of a NumberBox.</summary>
+/// <summary>
+/// Keeps integer save fields integer-backed even though <see cref="Microsoft.UI.Xaml.Controls.NumberBox"/>
+/// exposes doubles; invalid transient input is rejected instead of being written as zero.
+/// </summary>
 public sealed partial class Int32NumberConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language) =>

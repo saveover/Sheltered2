@@ -1,30 +1,217 @@
 # Inventory artwork attribution
 
-The PNG files in this directory are 128-pixel local copies of the corresponding images on the
+The PNG files in this directory are 128-pixel local copies of images from the
 [Sheltered 2 Wiki](https://sheltered-2.fandom.com/). They are packaged so the inventory editor
 works offline and does not contact a third-party site while a save is open.
 
-They are not covered by SaveOver's GPL-3.0-or-later source licence. Copyright and licensing remain
-with their respective rightsholders. The filenames below map the fixed, curated game definition key
-to its source Wiki file; no asset path is constructed from save-file input.
+The images are not covered by SaveOver's GPL-3.0-or-later source licence. Copyright and licensing
+remain with their respective rightsholders. Fandom identifies the wiki's community content as
+available under CC BY-SA unless otherwise noted on an individual file page.
 
-| Definition key | Local file | Wiki source |
+The filenames below map fixed, curated game definition keys to their source Wiki files. No asset
+path is constructed from save-file input.
+
+| Definition key(s) | Local file | Wiki source |
 | --- | --- | --- |
+| `PistolAmmo` | `item-ammunition-pistol-ammo.png` | [ItemAmmunitionPistolAmmo.webp](https://sheltered-2.fandom.com/wiki/File:ItemAmmunitionPistolAmmo.webp) |
+| `RifleAmmo` | `item-ammunition-rifle-ammo.png` | [ItemAmmunitionRifleAmmo.webp](https://sheltered-2.fandom.com/wiki/File:ItemAmmunitionRifleAmmo.webp) |
+| `ShotgunAmmo` | `item-ammunition-shotgun-ammo.png` | [ItemAmmunitionShotgunAmmo.webp](https://sheltered-2.fandom.com/wiki/File:ItemAmmunitionShotgunAmmo.webp) |
+| `bookintelligenceone`, `bookintelligencetwo`, `bookintelligencethree`, `bookintelligencefour` | `item-books-logic.png` | [ItemBooksLogic.webp](https://sheltered-2.fandom.com/wiki/File:ItemBooksLogic.webp) |
+| `bookcharismaone`, `bookcharismatwo`, `bookcharismathree`, `bookcharismafour` | `item-books-oratory.png` | [ItemBooksOratory.webp](https://sheltered-2.fandom.com/wiki/File:ItemBooksOratory.webp) |
+| `bookperceptionone`, `bookperceptiontwo`, `bookperceptionthree`, `bookperceptionfour` | `item-books-sleuthing.png` | [ItemBooksSleuthing.webp](https://sheltered-2.fandom.com/wiki/File:ItemBooksSleuthing.webp) |
+| `bookstoryone`, `bookstorytwo`, `bookstorythree`, `bookstoryfour`, `bookstoryfive`, `bookstorysix`, `bookstoryseven`, `bookstoryeight`, `bookstorynine`, `bookstoryten`, `bookstoryeleven`, `bookstorytwelve`, `bookstorythirteen`, `bookstoryfourteen`, `bookstoryfifteen`, `bookstorysixteen`, `bookstoryseventeen`, `bookstoryeighteen`, `bookstorynineteen`, `bookstorytwenty` | `item-books-story.png` | [ItemBooksStory.webp](https://sheltered-2.fandom.com/wiki/File:ItemBooksStory.webp) |
+| `waterBottle` | `item-consumables-bottled-water.png` | [ItemConsumablesBottledWater.webp](https://sheltered-2.fandom.com/wiki/File:ItemConsumablesBottledWater.webp) |
+| `Coal` | `item-consumables-coal.png` | [ItemConsumablesCoal.webp](https://sheltered-2.fandom.com/wiki/File:ItemConsumablesCoal.webp) |
+| `Fertilizer` | `item-consumables-fertilizer.png` | [ItemConsumablesFertilizer.webp](https://sheltered-2.fandom.com/wiki/File:ItemConsumablesFertilizer.webp) |
 | `PetrolCan` | `petrol-can.png` | [ItemConsumablesPetrolCan.webp](https://sheltered-2.fandom.com/wiki/File:ItemConsumablesPetrolCan.webp) |
-| `broccoliSeed` | `broccoli-seed.png` | [ItemSeedBroccoliSeed.webp](https://sheltered-2.fandom.com/wiki/File:ItemSeedBroccoliSeed.webp) |
+| `Soap` | `item-consumables-soap.png` | [ItemConsumablesSoap.webp](https://sheltered-2.fandom.com/wiki/File:ItemConsumablesSoap.webp) |
+| `Broccoli` | `item-crops-broccoli.png` | [ItemCropsBroccoli.webp](https://sheltered-2.fandom.com/wiki/File:ItemCropsBroccoli.webp) |
+| `Cabbage` | `item-crops-cabbage.png` | [ItemCropsCabbage.webp](https://sheltered-2.fandom.com/wiki/File:ItemCropsCabbage.webp) |
+| `Carrot` | `item-crops-carrot.png` | [ItemCropsCarrot.webp](https://sheltered-2.fandom.com/wiki/File:ItemCropsCarrot.webp) |
+| `fertilisedChickenEgg` | `item-crops-chicken-egg.png` | [ItemCropsChickenEgg.webp](https://sheltered-2.fandom.com/wiki/File:ItemCropsChickenEgg.webp) |
+| `mushroom` | `item-crops-mushrooms.png` | [ItemCropsMushrooms.webp](https://sheltered-2.fandom.com/wiki/File:ItemCropsMushrooms.webp) |
+| `Onion` | `item-crops-onion.png` | [ItemCropsOnion.webp](https://sheltered-2.fandom.com/wiki/File:ItemCropsOnion.webp) |
+| `Peas` | `item-crops-peas.png` | [ItemCropsPeas.webp](https://sheltered-2.fandom.com/wiki/File:ItemCropsPeas.webp) |
+| `Potato` | `item-crops-potato.png` | [ItemCropsPotato.webp](https://sheltered-2.fandom.com/wiki/File:ItemCropsPotato.webp) |
+| `Rice` | `item-crops-rice.png` | [ItemCropsRice.webp](https://sheltered-2.fandom.com/wiki/File:ItemCropsRice.webp) |
+| `Spinach` | `item-crops-spinach.png` | [ItemCropsSpinach.webp](https://sheltered-2.fandom.com/wiki/File:ItemCropsSpinach.webp) |
+| `Tomato` | `item-crops-tomato.png` | [ItemCropsTomato.webp](https://sheltered-2.fandom.com/wiki/File:ItemCropsTomato.webp) |
+| `Crunk` | `item-drugs-crunk.png` | [ItemDrugsCrunk.webp](https://sheltered-2.fandom.com/wiki/File:ItemDrugsCrunk.webp) |
+| `Feederral` | `item-drugs-feederral.png` | [ItemDrugsFeederral.webp](https://sheltered-2.fandom.com/wiki/File:ItemDrugsFeederral.webp) |
+| `Python` | `item-drugs-python.png` | [ItemDrugsPython.webp](https://sheltered-2.fandom.com/wiki/File:ItemDrugsPython.webp) |
+| `Sigma` | `item-drugs-sigma.png` | [ItemDrugsSigma.webp](https://sheltered-2.fandom.com/wiki/File:ItemDrugsSigma.webp) |
+| `Snodge` | `item-drugs-snodge.png` | [ItemDrugsSnodge.webp](https://sheltered-2.fandom.com/wiki/File:ItemDrugsSnodge.webp) |
+| `Swill` | `item-drugs-swill.png` | [ItemDrugsSwill.webp](https://sheltered-2.fandom.com/wiki/File:ItemDrugsSwill.webp) |
+| `Trankwill` | `item-drugs-trankwill.png` | [ItemDrugsTrankwill.webp](https://sheltered-2.fandom.com/wiki/File:ItemDrugsTrankwill.webp) |
+| `animalRepellent` | `item-equipment-animal-repellent.png` | [ItemEquipmentAnimalRepellent.webp](https://sheltered-2.fandom.com/wiki/File:ItemEquipmentAnimalRepellent.webp) |
+| `Binoculars` | `item-equipment-binoculars.png` | [ItemEquipmentBinoculars.webp](https://sheltered-2.fandom.com/wiki/File:ItemEquipmentBinoculars.webp) |
+| `BulletproofVest` | `item-equipment-bulletproof-vest.png` | [ItemEquipmentBulletproofVest.webp](https://sheltered-2.fandom.com/wiki/File:ItemEquipmentBulletproofVest.webp) |
+| `camouflage` | `item-equipment-camouflage.png` | [ItemEquipmentCamouflage.webp](https://sheltered-2.fandom.com/wiki/File:ItemEquipmentCamouflage.webp) |
+| `campingGear` | `item-equipment-camping-gear.png` | [ItemEquipmentCampingGear.webp](https://sheltered-2.fandom.com/wiki/File:ItemEquipmentCampingGear.webp) |
+| `CatBell` | `item-equipment-cat-bell.png` | [ItemEquipmentCatBell.webp](https://sheltered-2.fandom.com/wiki/File:ItemEquipmentCatBell.webp) |
+| `childsschoolbag` | `item-equipment-childs-schoolbag.png` | [ItemEquipmentChildsSchoolbag.webp](https://sheltered-2.fandom.com/wiki/File:ItemEquipmentChildsSchoolbag.webp) |
+| `climbingTethers` | `item-equipment-climbing-tethers.png` | [ItemEquipmentClimbingTethers.webp](https://sheltered-2.fandom.com/wiki/File:ItemEquipmentClimbingTethers.webp) |
+| `DogWhistle` | `item-equipment-dog-whistle.png` | [ItemEquipmentDogWhistle.webp](https://sheltered-2.fandom.com/wiki/File:ItemEquipmentDogWhistle.webp) |
+| `explorersBackpack` | `item-equipment-explorers-backpack.png` | [ItemEquipmentExplorersBackpack.webp](https://sheltered-2.fandom.com/wiki/File:ItemEquipmentExplorersBackpack.webp) |
+| `bulletProofVestImproved` | `item-equipment-improved-bulletproof-vest.png` | [ItemEquipmentImprovedBulletproofVest.webp](https://sheltered-2.fandom.com/wiki/File:ItemEquipmentImprovedBulletproofVest.webp) |
+| `stabVestImproved` | `item-equipment-improved-stab-proof-vest.png` | [ItemEquipmentImprovedStabProofVest.webp](https://sheltered-2.fandom.com/wiki/File:ItemEquipmentImprovedStabProofVest.webp) |
+| `inflatableRaft` | `item-equipment-inflatable-raft.png` | [ItemEquipmentInflatableRaft.webp](https://sheltered-2.fandom.com/wiki/File:ItemEquipmentInflatableRaft.webp) |
+| `militaryBackpackLarge` | `item-equipment-large-military-backpack.png` | [ItemEquipmentLargeMilitaryBackpack.webp](https://sheltered-2.fandom.com/wiki/File:ItemEquipmentLargeMilitaryBackpack.webp) |
+| `metalDetector` | `item-equipment-metal-detector.png` | [ItemEquipmentMetalDetector.webp](https://sheltered-2.fandom.com/wiki/File:ItemEquipmentMetalDetector.webp) |
+| `motionDetector` | `item-equipment-motion-detector.png` | [ItemEquipmentMotionDetector.webp](https://sheltered-2.fandom.com/wiki/File:ItemEquipmentMotionDetector.webp) |
+| `satchel` | `item-equipment-satchel.png` | [ItemEquipmentSatchel.webp](https://sheltered-2.fandom.com/wiki/File:ItemEquipmentSatchel.webp) |
+| `militaryBackpackSmall` | `item-equipment-small-military-backpack.png` | [ItemEquipmentSmallMilitaryBackpack.webp](https://sheltered-2.fandom.com/wiki/File:ItemEquipmentSmallMilitaryBackpack.webp) |
+| `stabVest` | `item-equipment-stab-proof-vest.png` | [ItemEquipmentStabProofVest.webp](https://sheltered-2.fandom.com/wiki/File:ItemEquipmentStabProofVest.webp) |
+| `bulletProofVestSuperior` | `item-equipment-superior-bulletproof-vest.png` | [ItemEquipmentSuperiorBulletproofVest.webp](https://sheltered-2.fandom.com/wiki/File:ItemEquipmentSuperiorBulletproofVest.webp) |
+| `stabVestSuperior` | `item-equipment-superior-stab-proof-vest.png` | [ItemEquipmentSuperiorStabProofVest.webp](https://sheltered-2.fandom.com/wiki/File:ItemEquipmentSuperiorStabProofVest.webp) |
+| `alfalfa` | `item-flora-alfalfa.png` | [ItemFloraAlfalfa.webp](https://sheltered-2.fandom.com/wiki/File:ItemFloraAlfalfa.webp) |
+| `aloevera` | `item-flora-aloe-vera.png` | [ItemFloraAloeVera.webp](https://sheltered-2.fandom.com/wiki/File:ItemFloraAloeVera.webp) |
+| `echinacea` | `item-flora-echinacea.png` | [ItemFloraEchinacea.webp](https://sheltered-2.fandom.com/wiki/File:ItemFloraEchinacea.webp) |
+| `garlic` | `item-flora-garlic.png` | [ItemFloraGarlic.webp](https://sheltered-2.fandom.com/wiki/File:ItemFloraGarlic.webp) |
+| `gingerroot` | `item-flora-ginger-root.png` | [ItemFloraGingerRoot.webp](https://sheltered-2.fandom.com/wiki/File:ItemFloraGingerRoot.webp) |
+| `holybasil` | `item-flora-holy-basil.png` | [ItemFloraHolyBasil.webp](https://sheltered-2.fandom.com/wiki/File:ItemFloraHolyBasil.webp) |
+| `oakbark` | `item-flora-oak-bark.png` | [ItemFloraOakBark.webp](https://sheltered-2.fandom.com/wiki/File:ItemFloraOakBark.webp) |
+| `passionflower` | `passion-flower.png` | [ItemFloraPassionFlower.webp](https://sheltered-2.fandom.com/wiki/File:ItemFloraPassionFlower.webp) |
+| `stjohnswort` | `item-flora-st-johns-wort.png` | [ItemFloraStJohnsWort.webp](https://sheltered-2.fandom.com/wiki/File:ItemFloraStJohnsWort.webp) |
+| `yellowjasmine` | `yellow-jasmine.png` | [ItemFloraYellowJasmine.webp](https://sheltered-2.fandom.com/wiki/File:ItemFloraYellowJasmine.webp) |
+| `BrokenGamesConsole` | `item-junk-broken-games-console.png` | [ItemJunkBrokenGamesConsole.webp](https://sheltered-2.fandom.com/wiki/File:ItemJunkBrokenGamesConsole.webp) |
+| `BrokenLaptop` | `item-junk-broken-laptop.png` | [ItemJunkBrokenLaptop.webp](https://sheltered-2.fandom.com/wiki/File:ItemJunkBrokenLaptop.webp) |
+| `BrokenRadio` | `item-junk-broken-radio.png` | [ItemJunkBrokenRadio.webp](https://sheltered-2.fandom.com/wiki/File:ItemJunkBrokenRadio.webp) |
+| `BrokenTV` | `item-junk-broken-tv.png` | [ItemJunkBrokenTV.webp](https://sheltered-2.fandom.com/wiki/File:ItemJunkBrokenTV.webp) |
+| `BrokenWoodenToys` | `item-junk-broken-wooden-toys.png` | [ItemJunkBrokenWoodenToys.webp](https://sheltered-2.fandom.com/wiki/File:ItemJunkBrokenWoodenToys.webp) |
+| `burnedClothes` | `item-junk-burned-clothes.png` | [ItemJunkBurnedClothes.webp](https://sheltered-2.fandom.com/wiki/File:ItemJunkBurnedClothes.webp) |
+| `EmptyPetrolCan` | `item-junk-empty-petrol-can.png` | [ItemJunkEmptyPetrolCan.webp](https://sheltered-2.fandom.com/wiki/File:ItemJunkEmptyPetrolCan.webp) |
+| `GlassJar` | `item-junk-glass-jar.png` | [ItemJunkGlassJar.webp](https://sheltered-2.fandom.com/wiki/File:ItemJunkGlassJar.webp) |
+| `Logs` | `item-junk-log.png` | [ItemJunkLog.webp](https://sheltered-2.fandom.com/wiki/File:ItemJunkLog.webp) |
+| `MineralOre` | `item-junk-mineral-ore.png` | [ItemJunkMineralOre.webp](https://sheltered-2.fandom.com/wiki/File:ItemJunkMineralOre.webp) |
+| `PoppedYogaBall` | `item-junk-popped-yoga-ball.png` | [ItemJunkPoppedYogaBall.webp](https://sheltered-2.fandom.com/wiki/File:ItemJunkPoppedYogaBall.webp) |
+| `PuncturedTyre` | `item-junk-punctured-tyre.png` | [ItemJunkPuncturedTyre.webp](https://sheltered-2.fandom.com/wiki/File:ItemJunkPuncturedTyre.webp) |
+| `RustyFryingPan` | `item-junk-rusty-frying-pan.png` | [ItemJunkRustyFryingPan.webp](https://sheltered-2.fandom.com/wiki/File:ItemJunkRustyFryingPan.webp) |
+| `ScrapPile` | `item-junk-scrap-pile.png` | [ItemJunkScrapPile.webp](https://sheltered-2.fandom.com/wiki/File:ItemJunkScrapPile.webp) |
+| `SmashedMicrowave` | `item-junk-smashed-microwave.png` | [ItemJunkSmashedMicrowave.webp](https://sheltered-2.fandom.com/wiki/File:ItemJunkSmashedMicrowave.webp) |
+| `SplinteredCrate` | `item-junk-splintered-crate.png` | [ItemJunkSplinteredCrate.webp](https://sheltered-2.fandom.com/wiki/File:ItemJunkSplinteredCrate.webp) |
+| `animalFat` | `animal-fat.png` | [ItemMaterialsAnimalFat.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsAnimalFat.webp) |
+| `Battery` | `item-materials-battery.png` | [ItemMaterialsBattery.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsBattery.webp) |
+| `Bone` | `item-materials-bone.png` | [ItemMaterialsBone.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsBone.webp) |
 | `Bucket` | `bucket.png` | [ItemMaterialsBucket.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsBucket.webp) |
 | `Bulb` | `bulb.png` | [ItemMaterialsBulb.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsBulb.webp) |
+| `Cement` | `item-materials-cement.png` | [ItemMaterialsCement.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsCement.webp) |
+| `Chain` | `item-materials-chain.png` | [ItemMaterialsChain.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsChain.webp) |
+| `CircuitBoard` | `item-materials-circuit-board.png` | [ItemMaterialsCircuitBoard.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsCircuitBoard.webp) |
+| `CircuitBreaker` | `item-materials-circuit-breaker.png` | [ItemMaterialsCircuitBreaker.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsCircuitBreaker.webp) |
+| `Cog` | `item-materials-cog.png` | [ItemMaterialsCog.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsCog.webp) |
+| `Cordite` | `item-materials-cordite.png` | [ItemMaterialsCordite.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsCordite.webp) |
+| `DuctTape` | `item-materials-duct-tape.png` | [ItemMaterialsDuctTape.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsDuctTape.webp) |
+| `Fuse` | `item-materials-fuse.png` | [ItemMaterialsFuse.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsFuse.webp) |
+| `Glass` | `item-materials-glass.png` | [ItemMaterialsGlass.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsGlass.webp) |
+| `Glue` | `item-materials-glue.png` | [ItemMaterialsGlue.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsGlue.webp) |
+| `Hinge` | `item-materials-hinge.png` | [ItemMaterialsHinge.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsHinge.webp) |
+| `Leather` | `item-materials-leather.png` | [ItemMaterialsLeather.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsLeather.webp) |
+| `lens` | `item-materials-lens.png` | [ItemMaterialsLens.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsLens.webp) |
 | `Limestone` | `limestone.png` | [ItemMaterialsLimestone.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsLimestone.webp) |
+| `Lubricant` | `item-materials-lubricant.png` | [ItemMaterialsLubricant.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsLubricant.webp) |
+| `Magnesium` | `item-materials-magnesium.png` | [ItemMaterialsMagnesium.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsMagnesium.webp) |
 | `Metal` | `metal.png` | [ItemMaterialsMetal.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsMetal.webp) |
+| `Motor` | `item-materials-motor.png` | [ItemMaterialsMotor.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsMotor.webp) |
 | `Nails` | `nails.png` | [ItemMaterialsNails.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsNails.webp) |
+| `nitroglycerin` | `item-materials-nitroglycerin.png` | [ItemMaterialsNitroglycerin.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsNitroglycerin.webp) |
+| `NutsAndBolts` | `item-materials-nuts-and-bolts.png` | [ItemMaterialsNutsAndBolts.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsNutsAndBolts.webp) |
 | `Nylon` | `nylon.png` | [ItemMaterialsNylon.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsNylon.webp) |
-| `passionflower` | `passion-flower.png` | [ItemFloraPassionFlower.webp](https://sheltered-2.fandom.com/wiki/File:ItemFloraPassionFlower.webp) |
+| `paintCan` | `item-materials-paint-can.png` | [ItemMaterialsPaintCan.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsPaintCan.webp) |
 | `Piping` | `piping.png` | [ItemMaterialsPipe.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsPipe.webp) |
+| `Piston` | `item-materials-piston.png` | [ItemMaterialsPiston.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsPiston.webp) |
+| `Plastic` | `item-materials-plastic.png` | [ItemMaterialsPlastic.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsPlastic.webp) |
+| `rawhoney` | `item-materials-raw-honey.png` | [ItemMaterialsRawHoney.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsRawHoney.webp) |
 | `Rock` | `rock.png` | [ItemMaterialsRock.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsRock.webp) |
+| `Rope` | `item-materials-rope.png` | [ItemMaterialsRope.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsRope.webp) |
+| `Rubber` | `item-materials-rubber.png` | [ItemMaterialsRubber.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsRubber.webp) |
 | `Sand` | `sand.png` | [ItemMaterialsSand.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsSand.webp) |
+| `Sensor` | `item-materials-sensor.png` | [ItemMaterialsSensor.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsSensor.webp) |
+| `silicon` | `item-materials-silicon.png` | [ItemMaterialsSilicon.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsSilicon.webp) |
+| `Spring` | `item-materials-spring.png` | [ItemMaterialsSpring.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsSpring.webp) |
+| `Switch` | `item-materials-switch.png` | [ItemMaterialsSwitch.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsSwitch.webp) |
+| `Transistor` | `item-materials-transistor.png` | [ItemMaterialsTransistor.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsTransistor.webp) |
+| `Valve` | `item-materials-valve.png` | [ItemMaterialsValve.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsValve.webp) |
 | `Wiring` | `wiring.png` | [ItemMaterialsWiring.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsWiring.webp) |
 | `Wood` | `wood.png` | [ItemMaterialsWood.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsWood.webp) |
 | `Wool` | `wool.png` | [ItemMaterialsWool.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsWool.webp) |
-| `yellowjasmine` | `yellow-jasmine.png` | [ItemFloraYellowJasmine.webp](https://sheltered-2.fandom.com/wiki/File:ItemFloraYellowJasmine.webp) |
+| `zinc` | `item-materials-zinc.png` | [ItemMaterialsZinc.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsZinc.webp) |
+| `antibiotics` | `item-medicine-antibiotics.png` | [ItemMedicineAntibiotics.webp](https://sheltered-2.fandom.com/wiki/File:ItemMedicineAntibiotics.webp) |
+| `antidepressant` | `item-medicine-antidepressant.png` | [ItemMedicineAntidepressant.webp](https://sheltered-2.fandom.com/wiki/File:ItemMedicineAntidepressant.webp) |
+| `antiemetic` | `item-medicine-antiemetic.png` | [ItemMedicineAntiemetic.webp](https://sheltered-2.fandom.com/wiki/File:ItemMedicineAntiemetic.webp) |
+| `antirad` | `item-medicine-anti-radiation-tablets.png` | [ItemMedicineAntiRadiationTablets.webp](https://sheltered-2.fandom.com/wiki/File:ItemMedicineAntiRadiationTablets.webp) |
+| `antiVenom` | `item-medicine-antivenom.png` | [ItemMedicineAntivenom.webp](https://sheltered-2.fandom.com/wiki/File:ItemMedicineAntivenom.webp) |
+| `bandages` | `item-medicine-bandages.png` | [ItemMedicineBandages.webp](https://sheltered-2.fandom.com/wiki/File:ItemMedicineBandages.webp) |
+| `firstAid` | `item-medicine-first-aid-kit.png` | [ItemMedicineFirstAidKit.webp](https://sheltered-2.fandom.com/wiki/File:ItemMedicineFirstAidKit.webp) |
+| `homemadeAntibiotics` | `item-medicine-homemade-antibiotic.png` | [ItemMedicineHomemadeAntibiotic.webp](https://sheltered-2.fandom.com/wiki/File:ItemMedicineHomemadeAntibiotic.webp) |
+| `homemadeAntidespressant` | `item-medicine-homemade-antidepressant.png` | [ItemMedicineHomemadeAntidepressant.webp](https://sheltered-2.fandom.com/wiki/File:ItemMedicineHomemadeAntidepressant.webp) |
+| `homemadeAntiemetics` | `item-medicine-homemade-antiemetic.png` | [ItemMedicineHomemadeAntiemetic.webp](https://sheltered-2.fandom.com/wiki/File:ItemMedicineHomemadeAntiemetic.webp) |
+| `homemadeAntiRadiationTablets` | `item-medicine-homemade-anti-radiation-tablet.png` | [ItemMedicineHomemadeAntiRadiationTablet.webp](https://sheltered-2.fandom.com/wiki/File:ItemMedicineHomemadeAntiRadiationTablet.webp) |
+| `splint` | `item-medicine-splint.png` | [ItemMedicineSplint.webp](https://sheltered-2.fandom.com/wiki/File:ItemMedicineSplint.webp) |
+| `stimulant` | `item-medicine-stimulant.png` | [ItemMedicineStimulant.webp](https://sheltered-2.fandom.com/wiki/File:ItemMedicineStimulant.webp) |
+| `batteryBankBlueprint`, `defibBlueprint`, `efficientPlanterBlueprint`, `electricityTrapBlueprint`, `flashbangMineBlueprint`, `gasMineBlueprint`, `industrialGenBlueprint`, `laboratoryBlueprint`, `medicalBedBlueprint`, `quantumBatteryBlueprint`, `recyclerBlueprint`, `solarPanelBlueprint` | `item-misc-blueprint.png` | [ItemMiscBlueprint.webp](https://sheltered-2.fandom.com/wiki/File:ItemMiscBlueprint.webp) |
+| `FloppyDisk` | `item-misc-floppy-disk.png` | [ItemMiscFloppyDisk.webp](https://sheltered-2.fandom.com/wiki/File:ItemMiscFloppyDisk.webp) |
+| `broccoliSeed` | `broccoli-seed.png` | [ItemSeedBroccoliSeed.webp](https://sheltered-2.fandom.com/wiki/File:ItemSeedBroccoliSeed.webp) |
+| `cabbageSeed` | `item-seed-cabbage-seed.png` | [ItemSeedCabbageSeed.webp](https://sheltered-2.fandom.com/wiki/File:ItemSeedCabbageSeed.webp) |
+| `carrotSeed` | `item-seed-carrot-seed.png` | [ItemSeedCarrotSeed.webp](https://sheltered-2.fandom.com/wiki/File:ItemSeedCarrotSeed.webp) |
+| `mushroomSpore` | `item-seed-mushroom-spore.png` | [ItemSeedMushroomSpore.webp](https://sheltered-2.fandom.com/wiki/File:ItemSeedMushroomSpore.webp) |
+| `onionSeed` | `item-seed-onion-seed.png` | [ItemSeedOnionSeed.webp](https://sheltered-2.fandom.com/wiki/File:ItemSeedOnionSeed.webp) |
+| `peaSeed` | `item-seed-pea-plant-seed.png` | [ItemSeedPeaPlantSeed.webp](https://sheltered-2.fandom.com/wiki/File:ItemSeedPeaPlantSeed.webp) |
+| `plantSeed` | `item-seed-plant-seed.png` | [ItemSeedPlantSeed.webp](https://sheltered-2.fandom.com/wiki/File:ItemSeedPlantSeed.webp) |
+| `potatoSeed` | `item-seed-potato-seed.png` | [ItemSeedPotatoSeed.webp](https://sheltered-2.fandom.com/wiki/File:ItemSeedPotatoSeed.webp) |
+| `riceSeed` | `item-seed-rice-seed.png` | [ItemSeedRiceSeed.webp](https://sheltered-2.fandom.com/wiki/File:ItemSeedRiceSeed.webp) |
+| `spinachSeed` | `item-seed-spinach-seed.png` | [ItemSeedSpinachSeed.webp](https://sheltered-2.fandom.com/wiki/File:ItemSeedSpinachSeed.webp) |
+| `tomatoSeed` | `item-seed-tomato-seed.png` | [ItemSeedTomatoSeed.webp](https://sheltered-2.fandom.com/wiki/File:ItemSeedTomatoSeed.webp) |
+| `Chisel` | `item-tools-chisel.png` | [ItemToolsChisel.webp](https://sheltered-2.fandom.com/wiki/File:ItemToolsChisel.webp) |
+| `Drill` | `item-tools-drill.png` | [ItemToolsDrill.webp](https://sheltered-2.fandom.com/wiki/File:ItemToolsDrill.webp) |
+| `Hammer` | `item-tools-hammer.png` | [ItemToolsHammer.webp](https://sheltered-2.fandom.com/wiki/File:ItemToolsHammer.webp) |
+| `Handsaw` | `item-tools-hand-saw.png` | [ItemToolsHandSaw.webp](https://sheltered-2.fandom.com/wiki/File:ItemToolsHandSaw.webp) |
+| `Nailgun` | `item-tools-nail-gun.png` | [ItemToolsNailGun.webp](https://sheltered-2.fandom.com/wiki/File:ItemToolsNailGun.webp) |
+| `Pliers` | `item-tools-pliers.png` | [ItemToolsPliers.webp](https://sheltered-2.fandom.com/wiki/File:ItemToolsPliers.webp) |
+| `Ratchet` | `item-tools-ratchet.png` | [ItemToolsRatchet.webp](https://sheltered-2.fandom.com/wiki/File:ItemToolsRatchet.webp) |
+| `Sander` | `item-tools-sander.png` | [ItemToolsSander.webp](https://sheltered-2.fandom.com/wiki/File:ItemToolsSander.webp) |
+| `Screwdriver` | `item-tools-screwdriver.png` | [ItemToolsScrewdriver.webp](https://sheltered-2.fandom.com/wiki/File:ItemToolsScrewdriver.webp) |
+| `Wrench` | `item-tools-wrench.png` | [ItemToolsWrench.webp](https://sheltered-2.fandom.com/wiki/File:ItemToolsWrench.webp) |
+| `goldingot` | `item-valuables-gold-ingot.png` | [ItemValuablesGoldIngot.webp](https://sheltered-2.fandom.com/wiki/File:ItemValuablesGoldIngot.webp) |
+| `goldnugget` | `item-valuables-gold-nugget.png` | [ItemValuablesGoldNugget.webp](https://sheltered-2.fandom.com/wiki/File:ItemValuablesGoldNugget.webp) |
+| `goldscrap` | `item-valuables-gold-scrap.png` | [ItemValuablesGoldScrap.webp](https://sheltered-2.fandom.com/wiki/File:ItemValuablesGoldScrap.webp) |
+| `silver` | `item-valuables-silver-ingot.png` | [ItemValuablesSilverIngot.webp](https://sheltered-2.fandom.com/wiki/File:ItemValuablesSilverIngot.webp) |
+| `silvernugget` | `item-valuables-silver-nugget.png` | [ItemValuablesSilverNugget.webp](https://sheltered-2.fandom.com/wiki/File:ItemValuablesSilverNugget.webp) |
+| `silverscrap` | `item-valuables-silver-scrap.png` | [ItemValuablesSilverScrap.webp](https://sheltered-2.fandom.com/wiki/File:ItemValuablesSilverScrap.webp) |
+| `Alternator` | `item-vehicle-part-alternator.png` | [ItemVehiclePartAlternator.webp](https://sheltered-2.fandom.com/wiki/File:ItemVehiclePartAlternator.webp) |
+| `BicycleFrame` | `item-vehicle-part-bicycle-frame.png` | [ItemVehiclePartBicycleFrame.webp](https://sheltered-2.fandom.com/wiki/File:ItemVehiclePartBicycleFrame.webp) |
+| `CarBattery` | `item-vehicle-part-car-battery.png` | [ItemVehiclePartCarBattery.webp](https://sheltered-2.fandom.com/wiki/File:ItemVehiclePartCarBattery.webp) |
+| `ClutchCable` | `item-vehicle-part-clutch-cable.png` | [ItemVehiclePartClutchCable.webp](https://sheltered-2.fandom.com/wiki/File:ItemVehiclePartClutchCable.webp) |
+| `Distributor` | `item-vehicle-part-distributor.png` | [ItemVehiclePartDistributor.webp](https://sheltered-2.fandom.com/wiki/File:ItemVehiclePartDistributor.webp) |
+| `FanBelt` | `item-vehicle-part-fan-belt.png` | [ItemVehiclePartFanBelt.webp](https://sheltered-2.fandom.com/wiki/File:ItemVehiclePartFanBelt.webp) |
+| `MotorcycleChassis` | `item-vehicle-part-motorcycle-chassis.png` | [ItemVehiclePartMotorcycleChassis.webp](https://sheltered-2.fandom.com/wiki/File:ItemVehiclePartMotorcycleChassis.webp) |
+| `SparkPlug` | `item-vehicle-part-spark-plug.png` | [ItemVehiclePartSparkPlug.webp](https://sheltered-2.fandom.com/wiki/File:ItemVehiclePartSparkPlug.webp) |
+| `StarterMotor` | `item-vehicle-part-starter-motor.png` | [ItemVehiclePartStarterMotor.webp](https://sheltered-2.fandom.com/wiki/File:ItemVehiclePartStarterMotor.webp) |
+| `Tyre` | `item-vehicle-part-tyre.png` | [ItemVehiclePartTyre.webp](https://sheltered-2.fandom.com/wiki/File:ItemVehiclePartTyre.webp) |
+| `BaseballBat` | `item-weapons-baseball-bat.png` | [ItemWeaponsBaseballBat.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsBaseballBat.webp) |
+| `bladedBaseballBat` | `item-weapons-bladed-baseball-bat.png` | [ItemWeaponsBladedBaseballBat.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsBladedBaseballBat.webp) |
+| `brutalMorningstar` | `item-weapons-brutal-morningstar.png` | [ItemWeaponsBrutalMorningstar.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsBrutalMorningstar.webp) |
+| `cementedRebar` | `item-weapons-cemented-rebar.png` | [ItemWeaponsCementedRebar.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsCementedRebar.webp) |
+| `Crossbow` | `item-weapons-crossbow.png` | [ItemWeaponsCrossbow.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsCrossbow.webp) |
+| `Crowbar` | `item-weapons-crowbar.png` | [ItemWeaponsCrowbar.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsCrowbar.webp) |
+| `electrifiedKnife` | `item-weapons-electrified-knife.png` | [ItemWeaponsElectrifiedKnife.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsElectrifiedKnife.webp) |
+| `empGrenade` | `item-weapons-emp-grenade.png` | [ItemWeaponsEMPGrenade.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsEMPGrenade.webp) |
+| `extendedHatchet` | `item-weapons-extended-hatchet.png` | [ItemWeaponsExtendedHatchet.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsExtendedHatchet.webp) |
+| `flashBang` | `item-weapons-flashbang.png` | [ItemWeaponsFlashbang.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsFlashbang.webp) |
+| `Grenade` | `item-weapons-grenade.png` | [ItemWeaponsGrenade.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsGrenade.webp) |
+| `Hatchet` | `item-weapons-hatchet.png` | [ItemWeaponsHatchet.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsHatchet.webp) |
+| `Knife` | `item-weapons-knife.png` | [ItemWeaponsKnife.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsKnife.webp) |
+| `megaHammer` | `item-weapons-mega-hammer.png` | [ItemWeaponsMegaHammer.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsMegaHammer.webp) |
+| `Morningstar` | `item-weapons-morningstar.png` | [ItemWeaponsMorningstar.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsMorningstar.webp) |
+| `nailedWood` | `item-weapons-nailed-wood.png` | [ItemWeaponsNailedWood.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsNailedWood.webp) |
+| `pipeBomb` | `item-weapons-pipe-bomb.png` | [ItemWeaponsPipeBomb.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsPipeBomb.webp) |
+| `pistol` | `item-weapons-pistol.png` | [ItemWeaponsPistol.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsPistol.webp) |
+| `pitchForkedPipe` | `item-weapons-pitchforked-pipe.png` | [ItemWeaponsPitchforkedPipe.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsPitchforkedPipe.webp) |
+| `Rebar` | `item-weapons-rebar.png` | [ItemWeaponsRebar.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsRebar.webp) |
+| `rifle` | `item-weapons-rifle.png` | [ItemWeaponsRifle.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsRifle.webp) |
+| `rockClub` | `item-weapons-rock-club.png` | [ItemWeaponsRockClub.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsRockClub.webp) |
+| `shotgun` | `item-weapons-shotgun.png` | [ItemWeaponsShotgun.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsShotgun.webp) |
+| `SledgeHammer` | `item-weapons-sledgehammer.png` | [ItemWeaponsSledgehammer.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsSledgehammer.webp) |
+| `spikedKnuckleDuster` | `item-weapons-spiked-knuckle-duster.png` | [ItemWeaponsSpikedKnuckleDuster.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsSpikedKnuckleDuster.webp) |
+| `toxicMorningstar` | `item-weapons-toxic-morningstar.png` | [ItemWeaponsToxicMorningstar.webp](https://sheltered-2.fandom.com/wiki/File:ItemWeaponsToxicMorningstar.webp) |
 | `KnuckleDuster` | `knuckle-duster.png` | [KnuckleDuster_300.png](https://sheltered-2.fandom.com/wiki/File:KnuckleDuster_300.png) |
-| `animalFat` | `animal-fat.png` | [ItemMaterialsAnimalFat.webp](https://sheltered-2.fandom.com/wiki/File:ItemMaterialsAnimalFat.webp) |

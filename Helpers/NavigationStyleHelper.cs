@@ -4,7 +4,8 @@
 namespace SaveOver.Sheltered2.Helpers;
 
 /// <summary>
-/// Whether the navigation items sit down the left edge or across the top, remembered between runs.
+/// Persists only the navigation preference while leaving control ownership in MainWindow. This
+/// avoids storing XAML elements in a static helper and keeps startup and live changes on one path.
 /// </summary>
 internal static class NavigationStyleHelper
 {
@@ -13,8 +14,8 @@ internal static class NavigationStyleHelper
     private static bool _isTopStyle;
 
     /// <summary>
-    /// True when the items run across the top of the window. Assigning moves them and stores the
-    /// choice for the next launch.
+    /// Applying before persistence ensures the current window and the next launch cannot disagree
+    /// after a successful assignment.
     /// </summary>
     internal static bool IsTopStyle
     {
@@ -27,7 +28,7 @@ internal static class NavigationStyleHelper
         }
     }
 
-    /// <summary>Applies the stored preference. Call once the startup window exists.</summary>
+    /// <summary>Defers restoration until the startup window owns the controls that must move.</summary>
     internal static void Initialize()
     {
         _isTopStyle = UserSettings.ReadBool(TopStyleSettingKey, false);

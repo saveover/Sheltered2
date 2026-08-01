@@ -15,20 +15,15 @@ using Windows.ApplicationModel.DataTransfer;
 namespace SaveOver.Sheltered2.Pages;
 
 /// <summary>
-/// One membership tier in the donate page's Memberships grid.
+/// Keeps tier copy immutable and template-ready so responsive layout can move cards without
+/// duplicating their content in visual states.
 /// </summary>
-/// <param name="Name">Tier name shown at the top of the card, e.g. "Supporter".</param>
-/// <param name="Price">Price as displayed, e.g. "$5 / month".</param>
-/// <param name="Summary">One line on what the tier pays for.</param>
-/// <param name="Perks">Rewards listed under the divider, in display order.</param>
 public sealed record DonationTier(string Name, string Price, string Summary, IReadOnlyList<string> Perks);
 
 /// <summary>
-/// One membership platform in the donate page's Join card.
+/// Couples fixed brand artwork with its trusted destination and accessible label so an image-only
+/// link never loses meaning for assistive technology.
 /// </summary>
-/// <param name="Name">Platform name, shown as the plate's tooltip.</param>
-/// <param name="Url">Where the plate links to.</param>
-/// <param name="Logo">Brand artwork from Assets/Donation.</param>
 public sealed record DonationPlatform(string Name, Uri Url, ImageSource Logo)
 {
     /// <summary>Accessible name for the plate, which is otherwise only an image.</summary>
@@ -36,11 +31,9 @@ public sealed record DonationPlatform(string Name, Uri Url, ImageSource Logo)
 }
 
 /// <summary>
-/// One off-app link in the donate page's "Other ways to help" card.
+/// Separates concise visible copy from the destination announced to screen readers, where leaving
+/// the application must be explicit.
 /// </summary>
-/// <param name="Label">Link text.</param>
-/// <param name="Url">Where the link goes.</param>
-/// <param name="Destination">Where the link leads, spelled out for screen readers.</param>
 public sealed record HelpLink(string Label, Uri Url, string Destination)
 {
     /// <summary>Accessible name: the destination, plus a warning that it leaves the app.</summary>
@@ -48,11 +41,9 @@ public sealed record HelpLink(string Label, Uri Url, string Destination)
 }
 
 /// <summary>
-/// One wallet in the donate page's Cryptocurrency card.
+/// Keeps each exact address bound to its own copy action; treating addresses as opaque strings
+/// avoids normalization that could redirect a donation.
 /// </summary>
-/// <param name="Name">Coin name shown above the address, e.g. "Bitcoin".</param>
-/// <param name="Address">Receiving address, copied to the clipboard verbatim.</param>
-/// <param name="Icon">Coin logo from Assets/Donation.</param>
 public sealed record CryptoWallet(string Name, string Address, ImageSource Icon)
 {
     /// <summary>Accessible name and tooltip for the row's copy button.</summary>
@@ -101,7 +92,7 @@ public sealed partial class DonatePage : Page
             "Share your ideas for new and existing editor features",
         ]);
 
-    /// <summary>Platforms bound to the Join card's repeater, in display order.</summary>
+    /// <summary>Fixed order keeps the branded links predictable across responsive layouts.</summary>
     public IReadOnlyList<DonationPlatform> Platforms { get; } =
     [
         new("Buy Me a Coffee", new("https://buymeacoffee.com/saveover"), Logo("bmc")),
@@ -109,7 +100,7 @@ public sealed partial class DonatePage : Page
         new("Patreon", new("https://www.patreon.com/cw/saveover"), Logo("patreon")),
     ];
 
-    /// <summary>Wallets bound to the Cryptocurrency card's repeater, in display order.</summary>
+    /// <summary>Explicit data keeps security-sensitive addresses out of visual markup and converters.</summary>
     public IReadOnlyList<CryptoWallet> Wallets { get; } =
     [
         new("Bitcoin", "bc1qqf3sdgc3l2hqmx0uw0xgul9cmnuanekmwk3ad3", Logo("bitcoin")),
@@ -119,7 +110,7 @@ public sealed partial class DonatePage : Page
         new("Litecoin", "ltc1q7amegshwzavg7vgqvd7nhx4u4xl3sw70j24chn", Logo("litecoin")),
     ];
 
-    /// <summary>Links bound to the "Other ways to help" card's repeater, in display order.</summary>
+    /// <summary>Central data ensures visible labels and screen-reader destinations are reviewed together.</summary>
     public IReadOnlyList<HelpLink> HelpLinks { get; } =
     [
         new("Join the Discord", new("https://discord.gg/nzQSeGcta8"), "Join the SaveOver Discord"),

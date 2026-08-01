@@ -4,7 +4,8 @@
 namespace SaveOver.Sheltered2.Helpers;
 
 /// <summary>
-/// Owns preferences that control how edited save files are written.
+/// Separates save-workflow policy from page state so confirmation and resume behavior remain
+/// consistent when HomePage is recreated.
 /// </summary>
 internal static class SaveSettings
 {
@@ -42,6 +43,7 @@ internal static class SaveSettings
             UserSettings.Write(RememberLastOpenedSaveSettingKey, value);
             if (!value)
             {
+                // Opting out also removes the sensitive path already retained by an earlier opt-in.
                 LastOpenedSavePath = null;
             }
         }

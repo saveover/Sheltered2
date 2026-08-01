@@ -18,14 +18,16 @@ using System.Text.RegularExpressions;
 namespace SaveOver.Sheltered2.Helpers;
 
 /// <summary>
-/// Configures the application-wide <see cref="ILoggerFactory"/> and its rolling file provider.
+/// Provides persistent diagnostics without making logging a startup dependency. Logs are bounded
+/// for disk safety and sanitized before persistence because exception messages often contain
+/// local save paths.
 /// </summary>
 internal static class ApplicationLogging
 {
     private const int MaxRetainedLogs = 10;
     private const long MaxLogFileSize = 5L * 1024 * 1024;
 
-    /// <summary>Gets the folder containing the retained application logs.</summary>
+    /// <summary>Kept outside the package install directory so packaged and portable builds agree.</summary>
     internal static string LogDirectoryPath { get; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "SaveOver",
@@ -36,8 +38,6 @@ internal static class ApplicationLogging
     /// Creates an <see cref="ILoggerFactory"/> backed by rolling, privacy-filtered text files.
     /// Failure falls back to a no-op factory so diagnostics can never prevent application startup.
     /// </summary>
-    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification =
-        "Logging initialization must never prevent the application from starting.")]
     internal static ILoggerFactory CreateLoggerFactory()
     {
         try
@@ -75,7 +75,8 @@ internal static class ApplicationLogging
 }
 
 /// <summary>
-/// Removes local paths from the final rendered event before the file sink persists it.
+/// Sanitizes the fully rendered event so paths from message templates and exception text receive
+/// the same treatment before the file sink persists them.
 /// </summary>
 internal sealed partial class PrivacyTextFormatter : ITextFormatter
 {

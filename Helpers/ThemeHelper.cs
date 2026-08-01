@@ -10,7 +10,8 @@ using System.Linq;
 namespace SaveOver.Sheltered2.Helpers;
 
 /// <summary>
-/// Reads and writes the app's light/dark preference, and remembers it between runs.
+/// Keeps live theme switching and persistence on the window root, the only WinUI theme scope that
+/// remains writable after application startup.
 /// </summary>
 /// <remarks>
 /// The theme is set on the window's root element rather than on <see cref="Application"/>:
@@ -40,7 +41,7 @@ internal static class ThemeHelper
         }
     }
 
-    /// <summary>Applies the stored preference. Call once the startup window has its content.</summary>
+    /// <summary>Defers restoration until a root exists so the stored choice reaches the visual tree.</summary>
     internal static void Initialize()
     {
         if (RootElement is { } root)

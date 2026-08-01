@@ -26,7 +26,8 @@ public enum PetSkillKind
 }
 
 /// <summary>
-/// Provides the canonical, ordered save-format identities for character stats and pet skills.
+/// Gives parser, writer, and UI one ordered set of field identities. Deriving XML names here avoids
+/// silent casing drift between otherwise symmetric read and write loops.
 /// </summary>
 internal static class SaveFieldKind
 {

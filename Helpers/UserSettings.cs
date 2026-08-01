@@ -9,7 +9,8 @@ using System.Threading;
 namespace SaveOver.Sheltered2.Helpers;
 
 /// <summary>
-/// Stores the handful of preferences the settings page owns, so they survive a restart.
+/// Isolates deployment-specific ApplicationData access and makes preferences non-fatal. A damaged
+/// settings store should fall back to defaults rather than prevent save recovery or app startup.
 /// </summary>
 internal static class UserSettings
 {
@@ -72,6 +73,8 @@ internal static class UserSettings
 
     private static ApplicationData? GetSettings()
     {
+        // Settings are used from UI continuations and startup helpers; serialize lazy creation so
+        // both cannot race into different unpackaged stores.
         lock (SettingsLock)
         {
             return _settings ??= CreateApplicationData();

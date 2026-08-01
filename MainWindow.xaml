@@ -43,13 +43,11 @@
                         SelectionChanged="OnNavigationViewSelectionChanged"
                         BackRequested="OnNavigationViewBackRequested">
 
-            <!-- Content frame -->
             <Frame x:Name="RootFrame"
                    Navigated="OnNavigated"
                    NavigationFailed="OnNavigationFailed">
             </Frame>
 
-            <!-- Navigation menu -->
             <NavigationView.MenuItems>
                 <NavigationViewItem Tag="Home" 
                                     Content="Home">
@@ -96,7 +94,6 @@
                 </NavigationViewItem>
             </NavigationView.MenuItems>
 
-            <!-- Footer -->
             <NavigationView.FooterMenuItems>
                 <NavigationViewItemSeparator />
                 <NavigationViewItem Tag="Donate"

@@ -12,7 +12,8 @@ using System.Linq;
 namespace SaveOver.Sheltered2.Pages;
 
 /// <summary>
-/// Lets the user pick a pet and edit its basics, condition and training skills.
+/// Keeps parsed and session-created pets on the same editing surface. Species-specific panels are
+/// presentation only; model identity and XML materialization remain in SaveSession/SaveWriter.
 /// </summary>
 public sealed partial class PetsPage : Page
 {
@@ -21,7 +22,7 @@ public sealed partial class PetsPage : Page
 
     public PetsPage() => InitializeComponent();
 
-    /// <summary>The pet whose observable properties are bound to the editor fields.</summary>
+    /// <summary>Public because compiled page bindings need to switch roots when selection changes.</summary>
     public Pet? SelectedPet { get; private set; }
 
     /// <inheritdoc />
@@ -111,6 +112,8 @@ public sealed partial class PetsPage : Page
 
     private void AddPet(PetSpecies species)
     {
+        // Rebind rather than appending to the ComboBox directly: SaveSession replaces its immutable
+        // list so every page receives the same collection identity and selected instance.
         Pet pet = App.CurrentSaveData.AddPet(species);
         boundPets = null;
         PopulatePetComboBox();
@@ -118,11 +121,9 @@ public sealed partial class PetsPage : Page
         TrainingFeedbackTextBlock.Text = $"Added a new {pet.SpeciesName.ToLowerInvariant()}. Save the file to write it into the shelter.";
     }
 
-    /// <summary>Sets every training skill's level to its cap and clears its experience.</summary>
     private void MaxTrainingButton_Click(object sender, RoutedEventArgs e) =>
         SetAllTraining(skill => skill.LevelCap, "All training skills raised to their level cap.");
 
-    /// <summary>Sets every training skill back to level 1 and clears its experience.</summary>
     private void MinTrainingButton_Click(object sender, RoutedEventArgs e) =>
         SetAllTraining(_ => 1, "All training skills reset to level 1.");
 

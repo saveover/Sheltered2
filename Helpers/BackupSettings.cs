@@ -7,7 +7,8 @@ using System.IO;
 namespace SaveOver.Sheltered2.Helpers;
 
 /// <summary>
-/// Owns the folder used for timestamped save-file backups.
+/// Keeps backup policy independent from the settings page. The default deliberately lives outside
+/// the game's Steam Cloud tree so retention cleanup cannot fight cloud synchronization.
 /// </summary>
 internal static class BackupSettings
 {
@@ -66,6 +67,8 @@ internal static class BackupSettings
     {
         get
         {
+            // A child folder is equally unsafe: Steam Cloud can still synchronize it beneath the
+            // managed game-save root.
             string folder = Path.TrimEndingDirectorySeparator(Path.GetFullPath(FolderPath));
             string gameFolder = Path.TrimEndingDirectorySeparator(Path.GetFullPath(GameSaveFolderPath));
             return string.Equals(folder, gameFolder, StringComparison.OrdinalIgnoreCase) ||

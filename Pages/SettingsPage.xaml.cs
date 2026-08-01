@@ -16,13 +16,16 @@ using Windows.System;
 namespace SaveOver.Sheltered2.Pages;
 
 /// <summary>
-/// App preferences.
+/// Projects persisted helper policies into controls without letting control initialization masquerade
+/// as user intent. Helpers own behavior; this page only coordinates pickers, warnings, and feedback.
 /// </summary>
 public sealed partial class SettingsPage : Page
 {
     /// <summary>Drives the copy-to-checkmark swap on the clone command's copy button.</summary>
     private readonly CopyIconFeedback _copyFeedback = new();
     private readonly ILogger<SettingsPage> logger = App.LoggerFactory.CreateLogger<SettingsPage>();
+    // Loaded can run again on this cached page. Keep the warning latched until the unsafe setting
+    // changes, otherwise ordinary navigation can produce repeated modal interruptions.
     private bool cloudFolderDialogShown;
 
     public SettingsPage()
@@ -82,6 +85,8 @@ public sealed partial class SettingsPage : Page
                 bool isSteamCloudFolder = BackupSettings.IsGameSaveFolder;
                 if (isSteamCloudFolder)
                 {
+                    // Never persist an unsafe choice even briefly beyond this handler; reset first,
+                    // then explain why the requested folder was refused.
                     BackupSettings.ResetFolder();
                 }
 
@@ -176,6 +181,8 @@ public sealed partial class SettingsPage : Page
 
     private async void SettingsPage_Loaded(object sender, RoutedEventArgs e)
     {
+        // Re-read mutable settings on cached-page entry because HomePage dialogs can change save
+        // confirmation without visiting Settings.
         SaveConfirmationToggleSwitch.IsOn = SaveSettings.ConfirmBeforeSaving;
         ResumeLastSaveToggleSwitch.IsOn = SaveSettings.RememberLastOpenedSave;
 

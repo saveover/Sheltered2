@@ -10,18 +10,18 @@ using Windows.ApplicationModel;
 namespace SaveOver.Sheltered2;
 
 /// <summary>
-/// Provides application-specific behaviour to supplement the default Application class.
+/// Owns process-lifetime services that must survive page caching and navigation. Keeping the
+/// logger factory and save session here prevents pages from creating competing baselines or
+/// diagnostic pipelines.
 /// </summary>
 public partial class App : Application
 {
     private readonly ILogger<App> logger;
 
-    /// <summary>Creates category-based loggers for application components.</summary>
+    /// <summary>Shared so every component writes through the same retention and privacy policy.</summary>
     internal static ILoggerFactory LoggerFactory { get; } = ApplicationLogging.CreateLoggerFactory();
 
-    /// <summary>
-    /// Gets the initial window created for this app.
-    /// </summary>
+    /// <summary>Exposed because desktop pickers and helpers require the owning window identity.</summary>
     internal static Window? StartupWindow { get; private set; }
 
     /// <summary>
@@ -30,10 +30,7 @@ public partial class App : Application
     /// </summary>
     internal static SaveSession CurrentSaveData { get; } = new();
 
-    /// <summary>
-    /// Initializes the singleton application object. This is the first line of authored code
-    /// executed, and as such is the logical equivalent of main() or WinMain().
-    /// </summary>
+    /// <summary>Registers failure logging before XAML initialization can execute user code.</summary>
     public App()
     {
         logger = LoggerFactory.CreateLogger<App>();
@@ -48,9 +45,9 @@ public partial class App : Application
     }
 
     /// <summary>
-    /// Invoked when the application is launched.
+    /// Creates the window before applying helpers that depend on its XAML root, but applies them
+    /// before activation so the first rendered frame already has the stored appearance.
     /// </summary>
-    /// <param name="args">Details about the launch request and process.</param>
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         logger.LogInformation("Application launch started.");
@@ -116,6 +113,8 @@ public partial class App : Application
         }
         catch (Exception ex) when (ex is COMException or InvalidOperationException)
         {
+            // Package.Current is the authoritative signal, but it throws rather than returning
+            // null when this same binary is launched from an unpackaged build.
             return "Unpackaged";
         }
     }

@@ -12,7 +12,10 @@ using System.Xml.Linq;
 
 namespace SaveOver.Sheltered2.Helpers;
 
-/// <summary>The editable data extracted from one save file.</summary>
+/// <summary>
+/// Carries one coherent parse result so <see cref="SaveSession"/> never mixes models or identity
+/// counters originating from different XML documents.
+/// </summary>
 internal sealed record ParsedSave(
     IReadOnlyList<Character> Characters,
     IReadOnlyList<Pet> Pets,
@@ -21,12 +24,15 @@ internal sealed record ParsedSave(
     bool HasPetManager);
 
 /// <summary>
-/// Parses the decrypted save-file XML into model objects.
+/// Projects only supported fields into editable models while leaving the original XML as the
+/// writer's preservation baseline. Missing optional sections therefore disable features instead
+/// of being guessed into existence.
 /// </summary>
 internal static class SaveParser
 {
     /// <summary>
-    /// Parses the whole save in one pass over a single <see cref="XDocument"/>.
+    /// Uses one whitespace-preserving document so every positional model has the same document
+    /// order that <see cref="SaveWriter"/> later uses for write-back.
     /// </summary>
     /// <exception cref="InvalidDataException">The content is not valid XML.</exception>
     internal static ParsedSave Parse(string decryptedContent)
@@ -81,6 +87,8 @@ internal static class SaveParser
 
     private static IReadOnlyList<Pet> ParsePets(XElement root)
     {
+        // Species normally lives in PetManager rather than the Pet_N subtree. Structural inference
+        // is a fallback for older or damaged saves, and Unknown keeps unsupported shapes editable.
         List<Pet> pets = [];
         Dictionary<int, PetSpecies> speciesById = ParsePetSpecies(root.Element("PetManager"));
         foreach (XElement petElement in root.Elements())
@@ -165,6 +173,7 @@ internal static class SaveParser
             {
                 items.Add(new InventoryItem
                 {
+                    SourceIndex = items.Count,
                     DefinitionKey = entry.Element("defKey")?.Value ?? string.Empty,
                     Amount = ParseInt(entry.Element("amount"), 0),
                     Integrity = ParseInt(entry.Element("integrity"), 0),
@@ -388,7 +397,7 @@ internal static class SaveParser
     private static double ParseNeedValue(XElement needsElement, string needName) =>
         ParsePercentage(needsElement.Element(needName)?.Element("value"));
 
-    // Extracts the numeric suffix of names like Member_2 or Pet_0.
+    // Element order can change, so identity comes from the numeric suffix rather than traversal index.
     private static int ParseIdSuffix(string elementName, string prefix) =>
         elementName.StartsWith(prefix, StringComparison.Ordinal)
             && TryParseInt(elementName.AsSpan(prefix.Length), out int id)
