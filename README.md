@@ -1,10 +1,19 @@
+<div align="center">
+  <img src="Assets/AppIcons/AppIcon-Dark.png"
+       width="112"
+       alt="SaveOver Application Logo">
+
 # SaveOver for Sheltered 2
+
+**Free, open-source tools for editing game saves—built with care for the files behind your progress.**
 
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/saveover/sheltered2/release.yml)
 [![Latest release](https://img.shields.io/github/v/release/saveover/Sheltered2)](https://github.com/saveover/Sheltered2/releases/latest)
 [![GitHub License](https://img.shields.io/github/license/saveover/sheltered2)](LICENSE.txt)
 [![Windows](https://img.shields.io/badge/platform-Windows-0078D4?logo=windows)](#requirements)
 [![Discord](https://img.shields.io/discord/1529883189861158923?logo=discord&logoColor=white&color=%235865F2)](https://discord.gg/nzQSeGcta8)
+
+</div>
 
 This free, open-source save editor for **Sheltered 2** on Windows allows you to 
 edit characters, pets, and inventory through a modern graphical interface. 
