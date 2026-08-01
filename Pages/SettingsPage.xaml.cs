@@ -1,24 +1,28 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 SaveOver
 
+using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using SaveOver.Sheltered2.Helpers;
 using System;
+using System.Globalization;
+using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.System;
 
 namespace SaveOver.Sheltered2.Pages;
 
 /// <summary>
-/// App preferences. One setting for now - the light/dark theme - plus the version, which is the
-/// first thing anyone filing a bug gets asked for.
+/// App preferences.
 /// </summary>
 public sealed partial class SettingsPage : Page
 {
     /// <summary>Drives the copy-to-checkmark swap on the clone command's copy button.</summary>
     private readonly CopyIconFeedback _copyFeedback = new();
+    private readonly ILogger<SettingsPage> logger = App.LoggerFactory.CreateLogger<SettingsPage>();
     private bool cloudFolderDialogShown;
 
     public SettingsPage()
@@ -91,7 +95,7 @@ public sealed partial class SettingsPage : Page
         catch (Exception ex)
         {
             BackupFolderTextBlock.Text = $"Could not select a backup folder: {ex.Message}";
-            System.Diagnostics.Debug.WriteLine($"Backup folder picker error: {ex}");
+            logger.LogError(ex, "Could not select a backup folder.");
         }
         finally
         {
@@ -103,7 +107,7 @@ public sealed partial class SettingsPage : Page
     {
         try
         {
-            System.IO.Directory.CreateDirectory(BackupSettings.FolderPath);
+            _ = Directory.CreateDirectory(BackupSettings.FolderPath);
             if (!await Launcher.LaunchFolderPathAsync(BackupSettings.FolderPath))
             {
                 BackupFolderTextBlock.Text = "Windows could not open the backup folder.";
@@ -112,7 +116,26 @@ public sealed partial class SettingsPage : Page
         catch (Exception ex)
         {
             BackupFolderTextBlock.Text = $"Could not open the backup folder: {ex.Message}";
-            System.Diagnostics.Debug.WriteLine($"Open backup folder error: {ex}");
+            logger.LogError(ex, "Could not open the backup folder.");
+        }
+    }
+
+    private async void OpenApplicationLogsFolderButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            _ = Directory.CreateDirectory(ApplicationLogging.LogDirectoryPath);
+            if (!await Launcher.LaunchFolderPathAsync(ApplicationLogging.LogDirectoryPath))
+            {
+                ApplicationLogsDescriptionTextBlock.Text = "Windows could not open the application logs folder.";
+                logger.LogWarning("Windows declined the request to open the application logs folder.");
+            }
+        }
+        catch (Exception ex) when (
+            ex is IOException or UnauthorizedAccessException or COMException or InvalidOperationException)
+        {
+            ApplicationLogsDescriptionTextBlock.Text = $"Could not open the application logs folder: {ex.Message}";
+            logger.LogError(ex, "Could not open the application logs folder.");
         }
     }
 
@@ -124,7 +147,7 @@ public sealed partial class SettingsPage : Page
 
     private void BackupRetentionComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (BackupRetentionComboBox.SelectedItem is ComboBoxItem { Tag: string tag } &&
+        if (BackupRetentionComboBox.SelectedValue is string tag &&
             int.TryParse(tag, out int retentionCount))
         {
             BackupSettings.RetentionCount = retentionCount;
@@ -147,15 +170,8 @@ public sealed partial class SettingsPage : Page
             cloudFolderDialogShown = false;
         }
 
-        string retention = BackupSettings.RetentionCount.ToString();
-        foreach (object item in BackupRetentionComboBox.Items)
-        {
-            if (item is ComboBoxItem { Tag: string tag } && tag == retention)
-            {
-                BackupRetentionComboBox.SelectedItem = item;
-                break;
-            }
-        }
+        BackupRetentionComboBox.SelectedValue =
+            BackupSettings.RetentionCount.ToString(CultureInfo.InvariantCulture);
     }
 
     private async void SettingsPage_Loaded(object sender, RoutedEventArgs e)
@@ -189,7 +205,7 @@ public sealed partial class SettingsPage : Page
             CloseButtonText = "Got it",
             DefaultButton = ContentDialogButton.Close,
         };
-        await dialog.ShowAsync();
+        _ = await dialog.ShowAsync();
     }
 
     /// <summary>
@@ -206,7 +222,7 @@ public sealed partial class SettingsPage : Page
             return assembly.GetName().Version?.ToString() ?? string.Empty;
         }
 
-        int buildMetadata = informational.IndexOf('+');
+        int buildMetadata = informational.IndexOf('+', StringComparison.Ordinal);
         return buildMetadata < 0 ? informational : informational[..buildMetadata];
     }
 
@@ -228,7 +244,7 @@ public sealed partial class SettingsPage : Page
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Copy clone command error: {ex}");
+            logger.LogWarning(ex, "Could not copy the repository clone command.");
             return;
         }
 
@@ -239,23 +255,11 @@ public sealed partial class SettingsPage : Page
     /// Ticks the item matching the theme in force. Done before the handler can run, so opening the
     /// page doesn't count as the user choosing a theme.
     /// </summary>
-    private void SelectStoredTheme()
-    {
-        string current = ThemeHelper.RootTheme.ToString();
-
-        foreach (object item in ThemeComboBox.Items)
-        {
-            if (item is ComboBoxItem { Tag: string tag } && tag == current)
-            {
-                ThemeComboBox.SelectedItem = item;
-                return;
-            }
-        }
-    }
+    private void SelectStoredTheme() => ThemeComboBox.SelectedValue = ThemeHelper.RootTheme.ToString();
 
     private void ThemeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (ThemeComboBox.SelectedItem is ComboBoxItem { Tag: string tag }
+        if (ThemeComboBox.SelectedValue is string tag
             && Enum.TryParse(tag, out ElementTheme theme))
         {
             ThemeHelper.RootTheme = theme;

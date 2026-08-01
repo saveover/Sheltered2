@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 SaveOver
 
+using Microsoft.Extensions.Logging;
 using Microsoft.Windows.Storage;
 using System;
-using System.Diagnostics;
 using System.Threading;
 
 namespace SaveOver.Sheltered2.Helpers;
@@ -13,6 +13,7 @@ namespace SaveOver.Sheltered2.Helpers;
 /// </summary>
 internal static class UserSettings
 {
+    private static readonly ILogger Logger = App.LoggerFactory.CreateLogger(typeof(UserSettings).FullName!);
     private static readonly Lock SettingsLock = new();
     private static ApplicationData? _settings;
 
@@ -33,7 +34,7 @@ internal static class UserSettings
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Could not store the '{key}' preference: {ex}");
+            Logger.LogWarning(ex, "Could not store the {PreferenceKey} preference.", key);
         }
     }
 
@@ -45,7 +46,7 @@ internal static class UserSettings
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Could not remove the '{key}' preference: {ex}");
+            Logger.LogWarning(ex, "Could not remove the {PreferenceKey} preference.", key);
         }
     }
 
@@ -62,7 +63,7 @@ internal static class UserSettings
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Could not read the '{key}' preference: {ex}");
+            Logger.LogWarning(ex, "Could not read the {PreferenceKey} preference.", key);
         }
 
         value = default;
@@ -89,7 +90,7 @@ internal static class UserSettings
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Could not initialize application settings: {ex}");
+            Logger.LogWarning(ex, "Could not initialize application settings.");
             return null;
         }
     }

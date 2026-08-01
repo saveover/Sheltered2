@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 SaveOver
 
+using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
@@ -9,7 +10,6 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using SaveOver.Sheltered2.Helpers;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Windows.ApplicationModel.DataTransfer;
 
 namespace SaveOver.Sheltered2.Pages;
@@ -65,6 +65,8 @@ public sealed record CryptoWallet(string Name, string Address, ImageSource Icon)
 /// </summary>
 public sealed partial class DonatePage : Page
 {
+    private readonly ILogger<DonatePage> logger = App.LoggerFactory.CreateLogger<DonatePage>();
+
     /// <summary>The three tier cards, in ascending order. Bound one per card rather than as a
     /// list because the adaptive states below have to address each card by name.</summary>
     public DonationTier Supporter { get; } = new(
@@ -157,7 +159,7 @@ public sealed partial class DonatePage : Page
             CopyErrorInfoBar.Message = failure;
             CopyErrorInfoBar.IsOpen = true;
             Announce(failure);
-            Debug.WriteLine($"Copy address error: {ex}");
+            logger.LogError(ex, "Could not copy a donation address to the clipboard.");
             return;
         }
 
@@ -176,10 +178,10 @@ public sealed partial class DonatePage : Page
     /// </remarks>
     private void Announce(string message)
     {
-        AutomationPeer? peer = FrameworkElementAutomationPeer.FromElement(this)
+        AutomationPeer peer = FrameworkElementAutomationPeer.FromElement(this)
             ?? FrameworkElementAutomationPeer.CreatePeerForElement(this);
 
-        peer?.RaiseNotificationEvent(
+        peer.RaiseNotificationEvent(
             AutomationNotificationKind.ActionCompleted,
             AutomationNotificationProcessing.MostRecent,
             message,

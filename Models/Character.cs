@@ -19,11 +19,8 @@ public sealed partial class Character : ObservableObject
     /// </summary>
     public int UniqueId { get; set; } = -1;
 
-    public bool IsPsycho
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
+    [ObservableProperty]
+    public partial bool IsPsycho { get; set; }
 
     public string FirstName
     {
@@ -49,57 +46,33 @@ public sealed partial class Character : ObservableObject
         }
     } = string.Empty;
 
-    public int CurrentHealth
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
+    [ObservableProperty]
+    public partial int CurrentHealth { get; set; }
 
-    public int MaxHealth
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
+    [ObservableProperty]
+    public partial int MaxHealth { get; set; }
 
-    public bool Interacting
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
+    [ObservableProperty]
+    public partial bool Interacting { get; set; }
 
-    public bool InteractingWithObj
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
+    [ObservableProperty]
+    public partial bool InteractingWithObj { get; set; }
 
-    public bool HasBeenDefibbed
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
+    [ObservableProperty]
+    public partial bool HasBeenDefibbed { get; set; }
 
-    public bool PassedOut
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
+    [ObservableProperty]
+    public partial bool PassedOut { get; set; }
 
-    public bool IsUnconscious
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
+    [ObservableProperty]
+    public partial bool IsUnconscious { get; set; }
 
     /// <summary>
     /// Session-only flag, never stored in the save: when set, the writer moves this
     /// member onto a sibling's transform on save, freeing a member stuck in the world.
     /// </summary>
-    public bool ResetPositionRequested
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
+    [ObservableProperty]
+    public partial bool ResetPositionRequested { get; set; }
 
     public Stat Strength { get; } = new();
     public Stat Dexterity { get; } = new();
@@ -117,41 +90,23 @@ public sealed partial class Character : ObservableObject
     public ObservableCollection<SkillInstance> FortitudeSkills { get; } = [];
 
     // Needs (from NeedsStats). 0-100 floats in the save; lower is better in-game.
-    public double Hunger
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
+    [ObservableProperty]
+    public partial double Hunger { get; set; }
 
-    public double Thirst
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
+    [ObservableProperty]
+    public partial double Thirst { get; set; }
 
-    public double Fatigue
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
+    [ObservableProperty]
+    public partial double Fatigue { get; set; }
 
-    public double Dirtiness
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
+    [ObservableProperty]
+    public partial double Dirtiness { get; set; }
 
-    public double Toilet
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
+    [ObservableProperty]
+    public partial double Toilet { get; set; }
 
-    public double Stress
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
+    [ObservableProperty]
+    public partial double Stress { get; set; }
 
     public ObservableCollection<Relationship> Relationships { get; } = [];
 
@@ -164,15 +119,26 @@ public sealed partial class Character : ObservableObject
         }
     }
 
-    public ObservableCollection<SkillInstance>? GetSkillTree(string statName) => statName switch
+    internal Stat GetStat(CharacterStat stat) => stat switch
     {
-        "Strength" => StrengthSkills,
-        "Dexterity" => DexteritySkills,
-        "Intelligence" => IntelligenceSkills,
-        "Charisma" => CharismaSkills,
-        "Perception" => PerceptionSkills,
-        "Fortitude" => FortitudeSkills,
-        _ => null,
+        CharacterStat.Strength => Strength,
+        CharacterStat.Dexterity => Dexterity,
+        CharacterStat.Intelligence => Intelligence,
+        CharacterStat.Charisma => Charisma,
+        CharacterStat.Perception => Perception,
+        CharacterStat.Fortitude => Fortitude,
+        _ => throw new ArgumentOutOfRangeException(nameof(stat)),
+    };
+
+    internal ObservableCollection<SkillInstance> GetSkillTree(CharacterStat stat) => stat switch
+    {
+        CharacterStat.Strength => StrengthSkills,
+        CharacterStat.Dexterity => DexteritySkills,
+        CharacterStat.Intelligence => IntelligenceSkills,
+        CharacterStat.Charisma => CharismaSkills,
+        CharacterStat.Perception => PerceptionSkills,
+        CharacterStat.Fortitude => FortitudeSkills,
+        _ => throw new ArgumentOutOfRangeException(nameof(stat)),
     };
 }
 
@@ -213,11 +179,8 @@ public sealed partial class Relationship(int memberId, int level) : ObservableOb
 {
     public int MemberId { get; } = memberId;
 
-    public int Level
-    {
-        get;
-        set => SetProperty(ref field, value);
-    } = level;
+    [ObservableProperty]
+    public partial int Level { get; set; } = level;
 }
 
 /// <summary>
@@ -227,9 +190,6 @@ public sealed partial class SkillInstance(int key, int level) : ObservableObject
 {
     public int Key { get; } = key;
 
-    public int Level
-    {
-        get;
-        set => SetProperty(ref field, value);
-    } = level;
+    [ObservableProperty]
+    public partial int Level { get; set; } = level;
 }

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 SaveOver
 
+using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using System;
-using System.Diagnostics;
 using Windows.Foundation;
 
 namespace SaveOver.Sheltered2.Helpers;
@@ -54,6 +54,10 @@ internal sealed class CopyIconFeedback
     private const double CopyReturnsMs = CheckLeavesMs + OverlapMs;
     private const double CycleMs = CopyReturnsMs + FadeInMs;
 
+    private const string OpacityPath = "Opacity";
+    private const string ScaleXPath = "ScaleX";
+    private const string ScaleYPath = "ScaleY";
+
     /// <summary>Scale a glyph shrinks to when it steps aside.</summary>
     private const double TuckedScale = 0.8;
 
@@ -62,6 +66,7 @@ internal sealed class CopyIconFeedback
     private const double EnteringScale = 0.6;
 
     private static readonly Point Centre = new(0.5, 0.5);
+    private readonly ILogger<CopyIconFeedback> logger = App.LoggerFactory.CreateLogger<CopyIconFeedback>();
 
     /// <summary>The row currently showing a checkmark, and the timeline driving it.</summary>
     private (Storyboard Storyboard, Action? OnSettled)? _shown;
@@ -126,7 +131,7 @@ internal sealed class CopyIconFeedback
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Copy feedback animation error: {ex}");
+            logger.LogWarning(ex, "Copy feedback animation failed.");
             onSettled?.Invoke();
         }
     }
@@ -164,10 +169,6 @@ internal sealed class CopyIconFeedback
         element.RenderTransformOrigin = Centre;
         return transform;
     }
-
-    private const string OpacityPath = "Opacity";
-    private const string ScaleXPath = "ScaleX";
-    private const string ScaleYPath = "ScaleY";
 
     /// <summary>
     /// Adds one property's whole timeline, as offsets in milliseconds from the click. A null easing

@@ -203,6 +203,7 @@
 
         <!-- Outside the scroller, so it stays put while the cards move under it. -->
         <TextBlock Margin="36,24,36,0"
+                   MaxWidth="{StaticResource PageContentMaxWidth}"
                    Text="Donate"
                    Style="{StaticResource TitleTextBlockStyle}"
                    AutomationProperties.HeadingLevel="Level1"/>
@@ -210,7 +211,9 @@
         <!-- The inset goes on the content, not on the ScrollView: ScrollView.Padding shrinks the
              viewport instead, which clips the content short of the edges and leaves dead bands. -->
         <ScrollView Grid.Row="1">
-            <StackPanel Margin="36,16,36,36" Spacing="32">
+            <StackPanel Margin="36,16,36,36"
+                        MaxWidth="{StaticResource PageContentMaxWidth}"
+                        Spacing="32">
 
                 <TextBlock TextWrapping="Wrap"
                            Text="SaveOver is free, and stays that way. Donations pay for the time behind new editors, for keeping the existing ones working when a patch changes a save format, and for helping people whose saves won't open."/>

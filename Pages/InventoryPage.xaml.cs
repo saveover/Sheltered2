@@ -215,7 +215,7 @@ public sealed partial class InventoryPage : Page
             return;
         }
 
-        int value = ToNonNegativeInteger(args.NewValue);
+        int value = Math.Max(0, int.CreateSaturating(args.NewValue));
         if (value != boundInventory.StoredWater)
         {
             boundInventory.StoredWater = value;
@@ -226,16 +226,6 @@ public sealed partial class InventoryPage : Page
 
     private static InventoryCategory? ParseCategory(string tag) =>
         Enum.TryParse(tag, ignoreCase: false, out InventoryCategory category) ? category : null;
-
-    private static int ToNonNegativeInteger(double value)
-    {
-        if (value <= 0 || double.IsNaN(value))
-        {
-            return 0;
-        }
-
-        return value >= int.MaxValue ? int.MaxValue : (int)value;
-    }
 
     private static void SetNormalizedValue(NumberBox numberBox, int value)
     {

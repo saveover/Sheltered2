@@ -1,5 +1,6 @@
 ﻿using Microsoft.UI.Windowing;
 using Microsoft.UI;
+using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
@@ -17,6 +18,12 @@ namespace SaveOver.Sheltered2;
 /// </summary>
 public sealed partial class MainWindow : Window
 {
+    private const double MinimumWindowWidth = 640;
+    private const double MinimumWindowHeight = 500;
+
+    private readonly ILogger<MainWindow> logger = App.LoggerFactory.CreateLogger<MainWindow>();
+    private bool isWorkspaceBusy;
+
     /// <summary>
     /// Maps page tags to their corresponding page types for navigation.
     /// </summary>
@@ -69,15 +76,45 @@ public sealed partial class MainWindow : Window
         // The TitleBar control sizes to its content, which here is just an icon and a caption -
         // about 32px. The caption buttons are 48 under Tall, so left alone the strip ends up
         // shorter than the buttons drawn over it and the content starts underneath them.
-        AppTitleBar.Loaded += (_, _) =>
-        {
-            if (AppTitleBar.XamlRoot is { } xamlRoot)
-            {
-                xamlRoot.Changed += (_, _) => MatchWindowTitleBarHeight();
-            }
+        AppTitleBar.Loaded += OnAppTitleBarLoaded;
+    }
 
-            MatchWindowTitleBarHeight();
-        };
+    private void OnAppTitleBarLoaded(object sender, RoutedEventArgs e)
+    {
+        AppTitleBar.Loaded -= OnAppTitleBarLoaded;
+
+        if (AppTitleBar.XamlRoot is { } xamlRoot)
+        {
+            xamlRoot.Changed += OnXamlRootChanged;
+        }
+
+        UpdateWindowMetrics();
+    }
+
+    private void OnXamlRootChanged(XamlRoot sender, XamlRootChangedEventArgs args) =>
+        UpdateWindowMetrics();
+
+    private void UpdateWindowMetrics()
+    {
+        MatchWindowTitleBarHeight();
+        ApplyMinimumWindowSize();
+    }
+
+    /// <summary>
+    /// Keeps the resizable window large enough for the navigation shell and the pages' compact
+    /// layouts. Presenter limits use physical pixels, so the effective-pixel minimum follows DPI.
+    /// </summary>
+    private void ApplyMinimumWindowSize()
+    {
+        if (Content is not FrameworkElement { XamlRoot: { } xamlRoot } ||
+            AppWindow.Presenter is not OverlappedPresenter presenter)
+        {
+            return;
+        }
+
+        double scale = xamlRoot.RasterizationScale > 0 ? xamlRoot.RasterizationScale : 1;
+        presenter.PreferredMinimumWidth = (int)Math.Ceiling(MinimumWindowWidth * scale);
+        presenter.PreferredMinimumHeight = (int)Math.Ceiling(MinimumWindowHeight * scale);
     }
 
     private void UpdateCaptionButtonTheme(ElementTheme theme)
@@ -123,12 +160,26 @@ public sealed partial class MainWindow : Window
         AppTitleBar.IsPaneToggleButtonVisible = !isTopStyle;
     }
 
-    private void OnTitleBarPaneToggleRequested(TitleBar sender, object args) =>
-        NavigationViewControl.IsPaneOpen = !NavigationViewControl.IsPaneOpen;
+    /// <summary>
+    /// Prevents navigation while a background load or save operation is reading the shared model.
+    /// </summary>
+    internal void SetWorkspaceBusy(bool isBusy)
+    {
+        isWorkspaceBusy = isBusy;
+        NavigationViewControl.IsEnabled = !isBusy;
+    }
+
+    private void OnTitleBarPaneToggleRequested(TitleBar sender, object args)
+    {
+        if (!isWorkspaceBusy)
+        {
+            NavigationViewControl.IsPaneOpen = !NavigationViewControl.IsPaneOpen;
+        }
+    }
 
     private void OnTitleBarBackRequested(TitleBar sender, object args)
     {
-        if (RootFrame.CanGoBack)
+        if (!isWorkspaceBusy && RootFrame.CanGoBack)
         {
             RootFrame.GoBack();
         }
@@ -185,7 +236,7 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private void OnNavigationViewBackRequested(NavigationView sender, NavigationViewBackRequestedEventArgs args)
     {
-        if (RootFrame.CanGoBack)
+        if (!isWorkspaceBusy && RootFrame.CanGoBack)
         {
             RootFrame.GoBack();
         }
@@ -252,7 +303,7 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private void OnNavigationFailed(object sender, NavigationFailedEventArgs e)
     {
-        System.Diagnostics.Debug.WriteLine($"Navigation failed to {e.SourcePageType.FullName}: {e.Exception}");
+        logger.LogError(e.Exception, "Navigation failed to {PageType}.", e.SourcePageType.FullName);
         throw new InvalidOperationException($"Failed to load page {e.SourcePageType.FullName}.", e.Exception);
     }
 

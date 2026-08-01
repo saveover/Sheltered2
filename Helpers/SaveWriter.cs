@@ -19,11 +19,6 @@ namespace SaveOver.Sheltered2.Helpers;
 /// </summary>
 internal static class SaveWriter
 {
-    private static readonly string[] StatNames =
-        ["Strength", "Dexterity", "Intelligence", "Charisma", "Perception", "Fortitude"];
-
-    private static readonly string[] PetSkillNames = ["PreyDrive", "Scavenging", "Affection"];
-
     internal static string ApplyEdits(
         string originalXml,
         IReadOnlyList<Character> characters,
@@ -137,15 +132,16 @@ internal static class SaveWriter
             return;
         }
 
-        foreach (string statName in StatNames)
+        foreach (CharacterStat statKind in SaveFieldKind.CharacterStats)
         {
+            string statName = statKind.XmlName();
             XElement? statElement = baseStatsElement.Element(statName);
             if (statElement is null)
             {
                 continue;
             }
 
-            Stat stat = GetStat(character, statName);
+            Stat stat = character.GetStat(statKind);
             SetValue(statElement, "level", Int(stat.Level));
             SetValue(statElement, "cap", Int(stat.Cap));
         }
@@ -250,14 +246,16 @@ internal static class SaveWriter
             SetValue(petElement, "poisoned", Bool(pet.Poisoned));
             SetValue(petElement, "immune", Bool(pet.Immune));
 
-            foreach (string skillName in PetSkillNames)
+            foreach (PetSkillKind skillKind in SaveFieldKind.PetSkills)
             {
+                string skillName = skillKind.XmlName();
                 XElement? skillElement = petElement.Element(skillName);
-                PetSkill? skill = pet.GetSkill(skillName);
-                if (skillElement is null || skill is null)
+                if (skillElement is null)
                 {
                     continue;
                 }
+
+                PetSkill skill = pet.GetSkill(skillKind);
 
                 SetValue(skillElement, "level", Int(skill.Level));
                 SetValue(skillElement, "levelCap", Int(skill.LevelCap));
@@ -273,16 +271,18 @@ internal static class SaveWriter
             return;
         }
 
-        foreach (string statName in StatNames)
+        foreach (CharacterStat statKind in SaveFieldKind.CharacterStats)
         {
+            string statName = statKind.XmlName();
             XElement? listElement = professionElement
                 .Element($"{statName}Skills")?
-                .Element($"{ToCamelCase(statName)}Skills");
-            ObservableCollection<SkillInstance>? tree = character.GetSkillTree(statName);
-            if (listElement is null || tree is null)
+                .Element(statKind.SkillListXmlName());
+            if (listElement is null)
             {
                 continue;
             }
+
+            ObservableCollection<SkillInstance> tree = character.GetSkillTree(statKind);
 
             // Keep the extra per-skill fields (accuracy/damage/...) of skills that already
             // existed, keyed by skillKey, so re-saving doesn't wipe in-game upgrades.
@@ -307,7 +307,7 @@ internal static class SaveWriter
 
             listElement.SetAttributeValue("size", index);
 
-            UpdatePointsSpentCounter(baseStatsElement?.Element(statName), statName, tree);
+            UpdatePointsSpentCounter(baseStatsElement?.Element(statName), statKind, tree);
         }
     }
 
@@ -316,7 +316,7 @@ internal static class SaveWriter
     /// this counter to unlock tiers 2 and 3 (at 5 and 10 points); without it, skills added
     /// to a locked tier appear locked in-game.
     /// </summary>
-    private static void UpdatePointsSpentCounter(XElement? statElement, string statName, ObservableCollection<SkillInstance> tree)
+    private static void UpdatePointsSpentCounter(XElement? statElement, CharacterStat stat, ObservableCollection<SkillInstance> tree)
     {
         XElement? counterElement = statElement?.Element("pointsSpent_tierOne");
         if (counterElement is null)
@@ -324,7 +324,7 @@ internal static class SaveWriter
             return;
         }
 
-        Dictionary<int, int> tierByKey = SkillCatalog.ForStat(statName).ToDictionary(d => d.Key, d => d.Tier);
+        Dictionary<int, int> tierByKey = SkillCatalog.ForStat(stat).ToDictionary(d => d.Key, d => d.Tier);
 
         int tierOnePoints = 0;
         bool hasTierTwo = false;
@@ -357,12 +357,12 @@ internal static class SaveWriter
             : new XElement(existing);
 
         entry.Name = $"i{index}";
-        SetOrAddValue(entry, "skillKey", Int(skill.Key));
-        SetOrAddValue(entry, "skillLevel", Int(skill.Level));
-        SetOrAddValue(entry, "accuracyLevel", Int(ChildInt(existing, "accuracyLevel")));
-        SetOrAddValue(entry, "damageLevel", Int(ChildInt(existing, "damageLevel")));
-        SetOrAddValue(entry, "staminaLevel", Int(ChildInt(existing, "staminaLevel")));
-        SetOrAddValue(entry, "chanceLevel", Int(ChildInt(existing, "chanceLevel")));
+        entry.SetElementValue("skillKey", Int(skill.Key));
+        entry.SetElementValue("skillLevel", Int(skill.Level));
+        entry.SetElementValue("accuracyLevel", Int(ChildInt(existing, "accuracyLevel")));
+        entry.SetElementValue("damageLevel", Int(ChildInt(existing, "damageLevel")));
+        entry.SetElementValue("staminaLevel", Int(ChildInt(existing, "staminaLevel")));
+        entry.SetElementValue("chanceLevel", Int(ChildInt(existing, "chanceLevel")));
         return entry;
     }
 
@@ -414,19 +414,6 @@ internal static class SaveWriter
         child?.Value = value;
     }
 
-    private static void SetOrAddValue(XElement parent, string childName, string value)
-    {
-        XElement? child = parent.Element(childName);
-        if (child is null)
-        {
-            parent.Add(new XElement(childName, value));
-        }
-        else
-        {
-            child.Value = value;
-        }
-    }
-
     private static void SetNeedValue(XElement needsElement, string needName, double value)
     {
         XElement? valueElement = needsElement.Element(needName)?.Element("value");
@@ -435,17 +422,6 @@ internal static class SaveWriter
 
     private static double NormalizePercentage(double value) =>
         double.IsFinite(value) ? Math.Clamp(value, 0, 100) : 0;
-
-    private static Stat GetStat(Character character, string statName) => statName switch
-    {
-        "Strength" => character.Strength,
-        "Dexterity" => character.Dexterity,
-        "Intelligence" => character.Intelligence,
-        "Charisma" => character.Charisma,
-        "Perception" => character.Perception,
-        "Fortitude" => character.Fortitude,
-        _ => throw new ArgumentOutOfRangeException(nameof(statName), statName, "Unknown stat name."),
-    };
 
     private static int ChildInt(XElement? parent, string childName) =>
         TryParseInt(parent?.Element(childName)?.Value, out int value) ? value : 0;
@@ -464,6 +440,4 @@ internal static class SaveWriter
     // Round-trip format keeps the game's float precision without locale surprises.
     private static string Dbl(double value) => value.ToString("R", CultureInfo.InvariantCulture);
 
-    private static string ToCamelCase(string value) =>
-        string.IsNullOrEmpty(value) ? value : char.ToLowerInvariant(value[0]) + value[1..];
 }

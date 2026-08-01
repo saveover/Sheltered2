@@ -53,6 +53,10 @@ game saves. The Settings page lets you choose, open or reset the backup folder a
 backups to retain per save file. The app also confirms before overwriting a save unless you turn
 that confirmation off in the dialog or Settings.
 
+SaveOver writes small rolling diagnostic logs. If something goes wrong, open
+**Settings > Diagnostics > Application logs** and attach the newest `.log` file to the bug report.
+Logs include application and error details, but never decrypted save contents or local file paths.
+
 ## Installation
 
 ### Portable release

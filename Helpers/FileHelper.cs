@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 SaveOver
 
+using Microsoft.Extensions.Logging;
 using Microsoft.Windows.Storage.Pickers;
 using System;
 using System.Globalization;
@@ -18,12 +19,11 @@ namespace SaveOver.Sheltered2.Helpers;
 /// </summary>
 internal static class FileHelper
 {
-    private const string ExpectedHeader = "<root>";
-    private const string ExpectedFooter = "</root>";
     private const long MaxFileSize = 25L * 1024 * 1024; // 25 MB
     private const int BackupCopyBufferSize = 80 * 1024;
     private const string BackupFileSuffix = "_backup_";
     private const string BackupDateFormat = "yyyyMMdd_HHmmss";
+    private static readonly ILogger Logger = App.LoggerFactory.CreateLogger(typeof(FileHelper).FullName!);
     private static readonly UTF8Encoding StrictUtf8 = new(
         encoderShouldEmitUTF8Identifier: false,
         throwOnInvalidBytes: true);
@@ -97,13 +97,9 @@ internal static class FileHelper
 
         try
         {
-            // Decrypt exactly once, then validate the resulting text.
+            // Decrypt exactly once; SaveParser performs structural XML validation.
             byte[] decryptedData = await XorCipherHelper.LoadAndDecryptAsync(filePath, cancellationToken).ConfigureAwait(false);
-            string content = StrictUtf8.GetString(decryptedData);
-
-            return !HasValidSignature(content.AsSpan().Trim())
-                ? throw new InvalidDataException($"The file '{fileName}' is not a valid Sheltered 2 save file.")
-                : content;
+            return StrictUtf8.GetString(decryptedData);
         }
         catch (DecoderFallbackException ex)
         {
@@ -150,8 +146,10 @@ internal static class FileHelper
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            // Replace the destination with the fully written temp file in a single move.
-            File.Move(tempPath, destinationPath, overwrite: true);
+            // The destination already exists because saves are loaded before they are edited.
+            // File.Replace expresses the intended same-volume staged replacement and preserves
+            // destination metadata instead of treating the operation as an ordinary move.
+            File.Replace(tempPath, destinationPath, destinationBackupFileName: null, ignoreMetadataErrors: false);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -216,12 +214,11 @@ internal static class FileHelper
 
         try
         {
-            FileInfo[] backups = new DirectoryInfo(backupDirectory)
+            FileInfo[] backups = [.. new DirectoryInfo(backupDirectory)
                 .EnumerateFiles($"{prefix}*{extension}", SearchOption.TopDirectoryOnly)
                 .Where(file => IsRecognizedBackup(file, prefix, extension))
                 .OrderByDescending(file => file.LastWriteTimeUtc)
-                .ThenByDescending(file => file.Name, StringComparer.OrdinalIgnoreCase)
-                .ToArray();
+                .ThenByDescending(file => file.Name, StringComparer.OrdinalIgnoreCase)];
 
             foreach (FileInfo backup in backups.Skip(retentionCount))
             {
@@ -231,13 +228,13 @@ internal static class FileHelper
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Could not prune backup '{backup.FullName}': {ex}");
+                    Logger.LogWarning(ex, "Could not prune an old backup.");
                 }
             }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            System.Diagnostics.Debug.WriteLine($"Could not enumerate backups in '{backupDirectory}': {ex}");
+            Logger.LogWarning(ex, "Could not enumerate backups for retention cleanup.");
         }
     }
 
@@ -317,13 +314,6 @@ internal static class FileHelper
     }
 
     /// <summary>
-    /// Checks whether decrypted content carries the expected XML header and footer.
-    /// </summary>
-    private static bool HasValidSignature(ReadOnlySpan<char> decryptedContent) =>
-        decryptedContent.StartsWith(ExpectedHeader, StringComparison.Ordinal) &&
-        decryptedContent.EndsWith(ExpectedFooter, StringComparison.Ordinal);
-
-    /// <summary>
     /// Attempts to delete the temporary staging file from <see cref="EncryptAndSaveSaveFileAsync"/>
     /// at the given <paramref name="path"/> as a best-effort cleanup.
     /// Any IO- or permission-related failures are caught and ignored so callers do not fail if
@@ -337,7 +327,7 @@ internal static class FileHelper
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // Best-effort cleanup; ignore failures.
+            Logger.LogWarning(ex, "Could not remove a temporary staging file.");
         }
     }
 }

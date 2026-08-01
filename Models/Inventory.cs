@@ -28,32 +28,18 @@ public sealed partial class InventoryItem : ObservableObject
     public string DefinitionKey { get; init; } = string.Empty;
 
     /// <summary>Number of units in this stack.</summary>
-    public int Amount
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
+    [ObservableProperty]
+    public partial int Amount { get; set; }
 
     /// <summary>The raw integrity value stored for this stack.</summary>
-    public int Integrity
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
+    [ObservableProperty]
+    public partial int Integrity { get; set; }
 
     /// <summary>The raw quality value stored for this stack.</summary>
-    public int Quality
-    {
-        get;
-        set
-        {
-            if (SetProperty(ref field, value))
-            {
-                OnPropertyChanged(nameof(QualityStars));
-                OnPropertyChanged(nameof(QualityLabel));
-            }
-        }
-    }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(QualityStars))]
+    [NotifyPropertyChangedFor(nameof(QualityLabel))]
+    public partial int Quality { get; set; }
 
     /// <summary>A friendly catalog name, or the raw definition key when it is not catalogued yet.</summary>
     public string DisplayName => ItemCatalog.Find(DefinitionKey)?.DisplayName ?? DefinitionKey;
@@ -95,11 +81,8 @@ public sealed partial class ShelterInventory : ObservableObject
     public bool HasStoredWater { get; init; }
 
     /// <summary>The raw <c>StoredWater</c> value at the save root.</summary>
-    public int StoredWater
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
+    [ObservableProperty]
+    public partial int StoredWater { get; set; }
 
     public InventoryContainer? Storage { get; init; }
 

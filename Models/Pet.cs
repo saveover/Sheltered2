@@ -27,53 +27,35 @@ public sealed partial class Pet : ObservableObject
 
     public string DisplayName => string.IsNullOrWhiteSpace(Name) ? $"(unnamed pet {PetId})" : Name;
 
-    public int Age
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
+    [ObservableProperty]
+    public partial int Age { get; set; }
 
-    public int Health
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
+    [ObservableProperty]
+    public partial int Health { get; set; }
 
     // 0-100 float in the save; lower is better.
-    public double Hunger
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
+    [ObservableProperty]
+    public partial double Hunger { get; set; }
 
-    public bool Starving
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
+    [ObservableProperty]
+    public partial bool Starving { get; set; }
 
-    public bool Poisoned
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
+    [ObservableProperty]
+    public partial bool Poisoned { get; set; }
 
-    public bool Immune
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
+    [ObservableProperty]
+    public partial bool Immune { get; set; }
 
     public PetSkill PreyDrive { get; } = new();
     public PetSkill Scavenging { get; } = new();
     public PetSkill Affection { get; } = new();
 
-    public PetSkill? GetSkill(string name) => name switch
+    internal PetSkill GetSkill(PetSkillKind skill) => skill switch
     {
-        "PreyDrive" => PreyDrive,
-        "Scavenging" => Scavenging,
-        "Affection" => Affection,
-        _ => null,
+        PetSkillKind.PreyDrive => PreyDrive,
+        PetSkillKind.Scavenging => Scavenging,
+        PetSkillKind.Affection => Affection,
+        _ => throw new System.ArgumentOutOfRangeException(nameof(skill)),
     };
 }
 
@@ -82,21 +64,12 @@ public sealed partial class Pet : ObservableObject
 /// </summary>
 public sealed partial class PetSkill : ObservableObject
 {
-    public int Level
-    {
-        get;
-        set => SetProperty(ref field, value);
-    } = 1;
+    [ObservableProperty]
+    public partial int Level { get; set; } = 1;
 
-    public int LevelCap
-    {
-        get;
-        set => SetProperty(ref field, value);
-    } = 9;
+    [ObservableProperty]
+    public partial int LevelCap { get; set; } = 9;
 
-    public int Experience
-    {
-        get;
-        set => SetProperty(ref field, value);
-    }
+    [ObservableProperty]
+    public partial int Experience { get; set; }
 }

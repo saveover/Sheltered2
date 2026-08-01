@@ -16,11 +16,9 @@ namespace SaveOver.Sheltered2.ViewModels;
 /// </summary>
 public sealed partial class InventoryItemViewModel : ObservableObject
 {
-    private readonly InventoryItem item;
-
     public InventoryItemViewModel(InventoryItem item)
     {
-        this.item = item;
+        Item = item;
 
         if (ItemCatalog.Find(item.DefinitionKey) is { } definition)
         {
@@ -29,7 +27,7 @@ public sealed partial class InventoryItemViewModel : ObservableObject
     }
 
     /// <summary>The underlying stack, retained by document order for safe save write-back.</summary>
-    public InventoryItem Item => item;
+    public InventoryItem Item { get; }
 
     /// <summary>Locally packaged artwork for a catalogued item, if available.</summary>
     public ImageSource? Icon { get; }
@@ -38,15 +36,15 @@ public sealed partial class InventoryItemViewModel : ObservableObject
 
     public Visibility FallbackIconVisibility => Icon is null ? Visibility.Visible : Visibility.Collapsed;
 
-    public string DisplayName => item.DisplayName;
+    public string DisplayName => Item.DisplayName;
 
-    public string DefinitionKey => item.DefinitionKey;
+    public string DefinitionKey => Item.DefinitionKey;
 
-    public string CategoryLabel => item.CategoryLabel;
+    public string CategoryLabel => Item.CategoryLabel;
 
-    public string QualityStars => item.QualityStars;
+    public string QualityStars => Item.QualityStars;
 
-    public string QualityLabel => item.QualityLabel;
+    public string QualityLabel => Item.QualityLabel;
 
     public string AmountAutomationName => $"{DisplayName} amount";
 
@@ -60,21 +58,21 @@ public sealed partial class InventoryItemViewModel : ObservableObject
     /// </summary>
     public double Amount
     {
-        get => item.Amount;
+        get => Item.Amount;
         set => SetAmount(value);
     }
 
     /// <summary>A non-negative integer integrity value exposed to a <c>NumberBox</c>.</summary>
     public double Integrity
     {
-        get => item.Integrity;
+        get => Item.Integrity;
         set => SetIntegrity(value);
     }
 
     /// <summary>A one-to-three-star quality value exposed to a <c>NumberBox</c>.</summary>
     public double Quality
     {
-        get => item.Quality;
+        get => Item.Quality;
         set => SetQuality(value);
     }
 
@@ -85,11 +83,11 @@ public sealed partial class InventoryItemViewModel : ObservableObject
             return;
         }
 
-        int value = ToNonNegativeInteger(requestedValue);
-        bool changed = item.Amount != value;
+        int value = Math.Max(0, int.CreateSaturating(requestedValue));
+        bool changed = Item.Amount != value;
         if (changed)
         {
-            item.Amount = value;
+            Item.Amount = value;
         }
 
         // A NumberBox may send 1.5 while the stored value is already 1. Notify in that case so
@@ -107,11 +105,11 @@ public sealed partial class InventoryItemViewModel : ObservableObject
             return;
         }
 
-        int value = ToNonNegativeInteger(requestedValue);
-        bool changed = item.Integrity != value;
+        int value = Math.Max(0, int.CreateSaturating(requestedValue));
+        bool changed = Item.Integrity != value;
         if (changed)
         {
-            item.Integrity = value;
+            Item.Integrity = value;
         }
 
         if (changed || requestedValue != value)
@@ -127,11 +125,11 @@ public sealed partial class InventoryItemViewModel : ObservableObject
             return;
         }
 
-        int value = Math.Clamp(ToNonNegativeInteger(requestedValue), 1, 3);
-        bool changed = item.Quality != value;
+        int value = Math.Clamp(int.CreateSaturating(requestedValue), 1, 3);
+        bool changed = Item.Quality != value;
         if (changed)
         {
-            item.Quality = value;
+            Item.Quality = value;
         }
 
         if (changed || requestedValue != value)
@@ -140,15 +138,5 @@ public sealed partial class InventoryItemViewModel : ObservableObject
             OnPropertyChanged(nameof(QualityStars));
             OnPropertyChanged(nameof(QualityLabel));
         }
-    }
-
-    private static int ToNonNegativeInteger(double value)
-    {
-        if (value <= 0 || double.IsNaN(value))
-        {
-            return 0;
-        }
-
-        return value >= int.MaxValue ? int.MaxValue : (int)value;
     }
 }

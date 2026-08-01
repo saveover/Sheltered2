@@ -29,8 +29,8 @@ public sealed class SkillDefinition(string id, int key, string stat, int tier, s
     /// <summary>Gets the save-file <c>skillKey</c> for this skill.</summary>
     public int Key { get; } = key;
 
-    /// <summary>Gets the owning stat tree name.</summary>
-    public string Stat { get; } = stat;
+    /// <summary>Gets the owning stat tree.</summary>
+    public CharacterStat Stat { get; } = Enum.Parse<CharacterStat>(stat, ignoreCase: false);
 
     /// <summary>Gets the tier (1-3) this skill belongs to.</summary>
     public int Tier { get; } = tier;
@@ -64,10 +64,10 @@ public sealed class SkillDefinition(string id, int key, string stat, int tier, s
 public static class SkillCatalog
 {
     /// <summary>The stat trees, in display order.</summary>
-    public static readonly IReadOnlyList<string> Stats =
-        ["Strength", "Dexterity", "Intelligence", "Charisma", "Perception", "Fortitude"];
+    public static IReadOnlyList<CharacterStat> Stats => SaveFieldKind.CharacterStats;
 
-    private static readonly IReadOnlyList<SkillDefinition> AllSkills =
+    /// <summary>Gets every skill definition.</summary>
+    public static IReadOnlyList<SkillDefinition> All { get; } =
     [
         // Strength
         new("SkillStrengthCrushWindpipe", 15, "Strength", 1, "Crush Windpipe", 3),
@@ -175,14 +175,11 @@ public static class SkillCatalog
         new("SkillFortitudePatchYourselfUp", 516, "Fortitude", 3, "Patch Yourself Up", 3),
     ];
 
-    private static readonly Dictionary<string, IReadOnlyList<SkillDefinition>> ByStat =
-        AllSkills.GroupBy(s => s.Stat)
-                 .ToDictionary(g => g.Key, g => (IReadOnlyList<SkillDefinition>)[.. g]);
-
-    /// <summary>Gets every skill definition.</summary>
-    public static IReadOnlyList<SkillDefinition> All => AllSkills;
+    private static readonly Dictionary<CharacterStat, IReadOnlyList<SkillDefinition>> ByStat =
+        All.GroupBy(s => s.Stat)
+           .ToDictionary(g => g.Key, g => (IReadOnlyList<SkillDefinition>)[.. g]);
 
     /// <summary>Gets the skills for a stat tree, in tier order, or an empty list if unknown.</summary>
-    public static IReadOnlyList<SkillDefinition> ForStat(string stat) =>
+    public static IReadOnlyList<SkillDefinition> ForStat(CharacterStat stat) =>
         ByStat.TryGetValue(stat, out IReadOnlyList<SkillDefinition>? skills) ? skills : [];
 }

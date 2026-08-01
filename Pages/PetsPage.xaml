@@ -5,9 +5,15 @@
     x:Class="SaveOver.Sheltered2.Pages.PetsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="using:SaveOver.Sheltered2.Converters"
     xmlns:models="using:SaveOver.Sheltered2.Models"
     xmlns:toolkit="using:CommunityToolkit.WinUI"
     NavigationCacheMode="Enabled">
+
+    <Page.Resources>
+        <converters:Int32NumberConverter x:Key="Int32NumberConverter"/>
+        <converters:PercentageNumberConverter x:Key="PercentageNumberConverter"/>
+    </Page.Resources>
 
     <!-- Basics and Training sit side by side once this page is 950 wide, stacked below that. The
          breakpoint is the page's width, not the window's, so the navigation pane opening or
@@ -21,10 +27,10 @@
                         <toolkit:ControlSizeTrigger TargetElement="{x:Bind PageRoot}" MinWidth="0" MaxWidth="950"/>
                     </VisualState.StateTriggers>
                     <VisualState.Setters>
-                        <Setter Target="BasicsCard.(Grid.ColumnSpan)" Value="2"/>
-                        <Setter Target="TrainingCard.(Grid.Row)" Value="2"/>
-                        <Setter Target="TrainingCard.(Grid.Column)" Value="0"/>
-                        <Setter Target="TrainingCard.(Grid.ColumnSpan)" Value="2"/>
+                        <Setter Target="BasicsCardHost.(Grid.ColumnSpan)" Value="2"/>
+                        <Setter Target="TrainingCardHost.(Grid.Row)" Value="2"/>
+                        <Setter Target="TrainingCardHost.(Grid.Column)" Value="0"/>
+                        <Setter Target="TrainingCardHost.(Grid.ColumnSpan)" Value="2"/>
                     </VisualState.Setters>
                 </VisualState>
                 <VisualState x:Name="WideLayout">
@@ -43,13 +49,17 @@
 
         <!-- Outside the scroller, so it stays put while the cards move under it. -->
         <TextBlock Margin="36,24,36,0"
+                   MaxWidth="{StaticResource PageContentMaxWidth}"
                    Text="Pets"
                    Style="{StaticResource TitleTextBlockStyle}"
                    AutomationProperties.HeadingLevel="Level1"/>
 
         <ScrollView Grid.Row="1">
-        <Grid x:Name="RootGrid" Margin="36,16,36,36" ColumnSpacing="24" RowSpacing="24"
-              MaxWidth="1100" HorizontalAlignment="Left">
+        <Grid x:Name="RootGrid"
+              Margin="36,16,36,36"
+              MaxWidth="{StaticResource PageContentMaxWidth}"
+              ColumnSpacing="24"
+              RowSpacing="24">
 
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -77,10 +87,11 @@
             </ComboBox>
 
             <!-- Basics -->
-            <Border x:Name="BasicsCard"
-                    Grid.Row="1" Grid.Column="0"
-                    VerticalAlignment="Top"
-                    Style="{StaticResource CardBorderStyle}">
+            <ContentControl x:Name="BasicsCardHost"
+                            Grid.Row="1" Grid.Column="0"
+                            VerticalAlignment="Top"
+                            HorizontalContentAlignment="Stretch">
+            <Border x:Name="BasicsCard" Style="{StaticResource CardBorderStyle}">
                 <StackPanel Spacing="12">
                     <TextBlock Text="Basics"
                                Style="{StaticResource SubtitleTextBlockStyle}"
@@ -91,7 +102,9 @@
                              HorizontalAlignment="Left"
                              Header="Name:"
                              PlaceholderText="Daisy"
-                             MaxLength="15"/>
+                             MaxLength="15"
+                             LostFocus="TrimTextBox_LostFocus"
+                             Text="{x:Bind SelectedPet.Name, Mode=TwoWay, FallbackValue=''}"/>
                     <NumberBox x:Name="PetAgeNumberBox"
                                MaxWidth="250"
                                MinWidth="180"
@@ -100,7 +113,8 @@
                                Minimum="0"
                                Maximum="30"
                                SpinButtonPlacementMode="Inline"
-                               SmallChange="1"/>
+                               SmallChange="1"
+                               Value="{x:Bind SelectedPet.Age, Mode=TwoWay, FallbackValue=0, Converter={StaticResource Int32NumberConverter}}"/>
                     <NumberBox x:Name="PetHealthNumberBox"
                                MaxWidth="250"
                                MinWidth="180"
@@ -109,7 +123,8 @@
                                Minimum="1"
                                Maximum="1000"
                                SpinButtonPlacementMode="Inline"
-                               SmallChange="10"/>
+                               SmallChange="10"
+                               Value="{x:Bind SelectedPet.Health, Mode=TwoWay, FallbackValue=1, Converter={StaticResource Int32NumberConverter}}"/>
                     <NumberBox x:Name="PetHungerNumberBox"
                                MaxWidth="250"
                                MinWidth="180"
@@ -118,18 +133,24 @@
                                Minimum="0"
                                Maximum="100"
                                SpinButtonPlacementMode="Inline"
-                               SmallChange="5"/>
-                    <CheckBox x:Name="PetStarvingCheckBox" Content="Is starving"/>
-                    <CheckBox x:Name="PetPoisonedCheckBox" Content="Is poisoned"/>
-                    <CheckBox x:Name="PetImmuneCheckBox" Content="Is immune"/>
+                               SmallChange="5"
+                               Value="{x:Bind SelectedPet.Hunger, Mode=TwoWay, FallbackValue=0, Converter={StaticResource PercentageNumberConverter}}"/>
+                    <CheckBox x:Name="PetStarvingCheckBox" Content="Is starving"
+                              IsChecked="{x:Bind SelectedPet.Starving, Mode=TwoWay, FallbackValue=False}"/>
+                    <CheckBox x:Name="PetPoisonedCheckBox" Content="Is poisoned"
+                              IsChecked="{x:Bind SelectedPet.Poisoned, Mode=TwoWay, FallbackValue=False}"/>
+                    <CheckBox x:Name="PetImmuneCheckBox" Content="Is immune"
+                              IsChecked="{x:Bind SelectedPet.Immune, Mode=TwoWay, FallbackValue=False}"/>
                 </StackPanel>
             </Border>
+            </ContentControl>
 
             <!-- Training -->
-            <Border x:Name="TrainingCard"
-                    Grid.Row="1" Grid.Column="1"
-                    VerticalAlignment="Top"
-                    Style="{StaticResource CardBorderStyle}">
+            <ContentControl x:Name="TrainingCardHost"
+                            Grid.Row="1" Grid.Column="1"
+                            VerticalAlignment="Top"
+                            HorizontalContentAlignment="Stretch">
+            <Border x:Name="TrainingCard" Style="{StaticResource CardBorderStyle}">
                 <StackPanel Spacing="12">
                     <TextBlock Text="Training"
                                Style="{StaticResource SubtitleTextBlockStyle}"
@@ -173,38 +194,48 @@
                         <TextBlock Grid.Row="1" Grid.Column="0" Text="Prey drive" VerticalAlignment="Center"/>
                         <NumberBox x:Name="PreyDriveLevelBox" Grid.Row="1" Grid.Column="1" Width="110"
                                    Minimum="1" Maximum="10" SpinButtonPlacementMode="Compact" SmallChange="1"
+                                   Value="{x:Bind SelectedPet.PreyDrive.Level, Mode=TwoWay, FallbackValue=1, Converter={StaticResource Int32NumberConverter}}"
                                    AutomationProperties.Name="Prey drive level"/>
                         <NumberBox x:Name="PreyDriveCapBox" Grid.Row="1" Grid.Column="2" Width="110"
                                    Minimum="1" Maximum="10" SpinButtonPlacementMode="Compact" SmallChange="1"
+                                   Value="{x:Bind SelectedPet.PreyDrive.LevelCap, Mode=TwoWay, FallbackValue=1, Converter={StaticResource Int32NumberConverter}}"
                                    AutomationProperties.Name="Prey drive level cap"/>
                         <NumberBox x:Name="PreyDriveXpBox" Grid.Row="1" Grid.Column="3" Width="130"
                                    Minimum="0" Maximum="100000" SpinButtonPlacementMode="Compact" SmallChange="50"
+                                   Value="{x:Bind SelectedPet.PreyDrive.Experience, Mode=TwoWay, FallbackValue=0, Converter={StaticResource Int32NumberConverter}}"
                                    AutomationProperties.Name="Prey drive experience"/>
 
                         <TextBlock Grid.Row="2" Grid.Column="0" Text="Scavenging" VerticalAlignment="Center"/>
                         <NumberBox x:Name="ScavengingLevelBox" Grid.Row="2" Grid.Column="1" Width="110"
                                    Minimum="1" Maximum="10" SpinButtonPlacementMode="Compact" SmallChange="1"
+                                   Value="{x:Bind SelectedPet.Scavenging.Level, Mode=TwoWay, FallbackValue=1, Converter={StaticResource Int32NumberConverter}}"
                                    AutomationProperties.Name="Scavenging level"/>
                         <NumberBox x:Name="ScavengingCapBox" Grid.Row="2" Grid.Column="2" Width="110"
                                    Minimum="1" Maximum="10" SpinButtonPlacementMode="Compact" SmallChange="1"
+                                   Value="{x:Bind SelectedPet.Scavenging.LevelCap, Mode=TwoWay, FallbackValue=1, Converter={StaticResource Int32NumberConverter}}"
                                    AutomationProperties.Name="Scavenging level cap"/>
                         <NumberBox x:Name="ScavengingXpBox" Grid.Row="2" Grid.Column="3" Width="130"
                                    Minimum="0" Maximum="100000" SpinButtonPlacementMode="Compact" SmallChange="50"
+                                   Value="{x:Bind SelectedPet.Scavenging.Experience, Mode=TwoWay, FallbackValue=0, Converter={StaticResource Int32NumberConverter}}"
                                    AutomationProperties.Name="Scavenging experience"/>
 
                         <TextBlock Grid.Row="3" Grid.Column="0" Text="Affection" VerticalAlignment="Center"/>
                         <NumberBox x:Name="AffectionLevelBox" Grid.Row="3" Grid.Column="1" Width="110"
                                    Minimum="1" Maximum="10" SpinButtonPlacementMode="Compact" SmallChange="1"
+                                   Value="{x:Bind SelectedPet.Affection.Level, Mode=TwoWay, FallbackValue=1, Converter={StaticResource Int32NumberConverter}}"
                                    AutomationProperties.Name="Affection level"/>
                         <NumberBox x:Name="AffectionCapBox" Grid.Row="3" Grid.Column="2" Width="110"
                                    Minimum="1" Maximum="10" SpinButtonPlacementMode="Compact" SmallChange="1"
+                                   Value="{x:Bind SelectedPet.Affection.LevelCap, Mode=TwoWay, FallbackValue=1, Converter={StaticResource Int32NumberConverter}}"
                                    AutomationProperties.Name="Affection level cap"/>
                         <NumberBox x:Name="AffectionXpBox" Grid.Row="3" Grid.Column="3" Width="130"
                                    Minimum="0" Maximum="100000" SpinButtonPlacementMode="Compact" SmallChange="50"
+                                   Value="{x:Bind SelectedPet.Affection.Experience, Mode=TwoWay, FallbackValue=0, Converter={StaticResource Int32NumberConverter}}"
                                    AutomationProperties.Name="Affection experience"/>
                     </Grid>
                 </StackPanel>
             </Border>
+            </ContentControl>
         </Grid>
         </ScrollView>
     </Grid>

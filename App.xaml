@@ -20,6 +20,11 @@
             <Thickness x:Key="NavigationViewContentGridBorderThickness">1,1,0,0</Thickness>
             <CornerRadius x:Key="NavigationViewContentGridCornerRadius">8,0,0,0</CornerRadius>
 
+            <!-- Keep page content readable on large windows without constraining the shell or
+                 responsive page roots. Inventory uses the wider value for its dense card grid. -->
+            <x:Double x:Key="PageContentMaxWidth">1100</x:Double>
+            <x:Double x:Key="WidePageContentMaxWidth">1280</x:Double>
+
             <!-- A page section: the standard Fluent card. Every card in the app uses this, so the
                  editor pages and Home/Donate read as one surface. -->
             <Style x:Key="CardBorderStyle" TargetType="Border">

@@ -18,14 +18,8 @@ namespace SaveOver.Sheltered2.Pages;
 /// </summary>
 public sealed partial class CharactersPage : Page
 {
-    private readonly ObservableCollection<Character> characters = [];
-
-    // Guards the field -> model write-back handlers while we are pushing model values
-    // into the controls, so populating the UI doesn't look like a user edit.
-    private bool isPopulating;
-
     // The stat tree currently shown in the Skills section (driven by the SelectorBar).
-    private string currentSkillStat = SkillCatalog.Stats[0];
+    private CharacterStat currentSkillStat = SkillCatalog.Stats[0];
 
     // The character list currently bound to the combo box, so we can tell an unchanged
     // revisit (keep the selection) from newly loaded data (rebuild).
@@ -34,14 +28,10 @@ public sealed partial class CharactersPage : Page
     // The relationship rows currently shown, so the min/max buttons can drive them.
     private IReadOnlyList<RelationshipRowViewModel> relationshipRows = [];
 
-    public CharactersPage()
-    {
-        InitializeComponent();
+    public CharactersPage() => InitializeComponent();
 
-        // The page is cached, so wire handlers once here rather than in Loaded.
-        CharacterComboBox.ItemsSource = characters;
-        WireEditingHandlers();
-    }
+    /// <summary>The character whose observable properties are bound to the editor fields.</summary>
+    public Character? SelectedCharacter { get; private set; }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
@@ -59,6 +49,14 @@ public sealed partial class CharactersPage : Page
     private void OnSaveDataChanged(object? sender, EventArgs e) =>
         DispatcherQueue.TryEnqueue(PopulateCharacterComboBox);
 
+    private void TrimTextBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (sender is TextBox textBox)
+        {
+            textBox.Text = textBox.Text.Trim();
+        }
+    }
+
     /// <summary>
     /// Fills the combo box from the shared save data, or disables editing if none exists.
     /// </summary>
@@ -72,7 +70,7 @@ public sealed partial class CharactersPage : Page
             return;
         }
 
-        characters.Clear();
+        CharacterComboBox.ItemsSource = null;
         boundCharacters = null;
 
         if (!App.CurrentSaveData.IsLoaded || source.Count == 0)
@@ -81,19 +79,15 @@ public sealed partial class CharactersPage : Page
             return;
         }
 
-        foreach (Character character in source)
-        {
-            characters.Add(character);
-        }
-
+        CharacterComboBox.ItemsSource = source;
         boundCharacters = source;
         CharacterComboBox.IsEnabled = true;
 
         // Restore the last selected character if still present, else the first.
-        int rememberedIndex = App.CurrentSaveData.SelectedCharacter is Character remembered
-            ? characters.IndexOf(remembered)
-            : -1;
-        CharacterComboBox.SelectedIndex = rememberedIndex >= 0 ? rememberedIndex : 0;
+        Character? remembered = App.CurrentSaveData.SelectedCharacter;
+        CharacterComboBox.SelectedItem = remembered is not null && source.Contains(remembered)
+            ? remembered
+            : source[0];
     }
 
     /// <summary>Handles selection changes in the character combo box.</summary>
@@ -101,59 +95,25 @@ public sealed partial class CharactersPage : Page
     {
         if (CharacterComboBox.SelectedItem is Character selectedCharacter)
         {
+            SelectedCharacter = selectedCharacter;
             App.CurrentSaveData.SelectedCharacter = selectedCharacter;
-            UpdateCharacterUi(selectedCharacter);
-        }
-        else
-        {
-            DisableAllFields();
-            SkillTiersItemsControl.ItemsSource = null;
-        }
-    }
-
-    /// <summary>Pushes a character's values into the editor controls.</summary>
-    private void UpdateCharacterUi(Character character)
-    {
-        isPopulating = true;
-        try
-        {
+            Bindings.Update();
             EnableAllFields();
 
-            FirstNameTextBox.Text = character.FirstName;
-            LastNameTextBox.Text = character.LastName;
-
-            CurrentHealthNumberBox.Value = character.CurrentHealth;
-            MaxHealthNumberBox.Value = character.MaxHealth;
-
-            InteractingCheckBox.IsChecked = character.Interacting;
-            InteractingWithObjCheckBox.IsChecked = character.InteractingWithObj;
-            IsPsychoCheckBox.IsChecked = character.IsPsycho;
-            HasBeenDefibbedCheckBox.IsChecked = character.HasBeenDefibbed;
-            PassedOutCheckBox.IsChecked = character.PassedOut;
-            IsUnconsciousCheckBox.IsChecked = character.IsUnconscious;
-            ResetPositionCheckBox.IsChecked = character.ResetPositionRequested;
-
-            // Needs display as whole numbers; an untouched need keeps its exact saved value.
-            HungerNumberBox.Value = RoundNeed(character.Hunger);
-            ThirstNumberBox.Value = RoundNeed(character.Thirst);
-            FatigueNumberBox.Value = RoundNeed(character.Fatigue);
-            DirtinessNumberBox.Value = RoundNeed(character.Dirtiness);
-            ToiletNumberBox.Value = RoundNeed(character.Toilet);
-            StressNumberBox.Value = RoundNeed(character.Stress);
-
-            // Per-action feedback shouldn't linger across a character switch.
             StatsFeedbackTextBlock.Text = string.Empty;
             SkillsFeedbackTextBlock.Text = string.Empty;
             NeedsFeedbackTextBlock.Text = string.Empty;
             RelationshipsFeedbackTextBlock.Text = string.Empty;
 
-            PopulateStatsData(character);
-            PopulateRelationships(character);
+            PopulateRelationships(selectedCharacter);
             RefreshSkillTree();
         }
-        finally
+        else
         {
-            isPopulating = false;
+            SelectedCharacter = null;
+            Bindings.Update();
+            DisableAllFields();
+            SkillTiersItemsControl.ItemsSource = null;
         }
     }
 
@@ -172,24 +132,6 @@ public sealed partial class CharactersPage : Page
         NoRelationshipsTextBlock.Visibility = rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    /// <summary>Pushes a character's stat levels and derived caps into the stat grid.</summary>
-    private void PopulateStatsData(Character character)
-    {
-        StrengthLevelBox.Value = character.Strength.Level;
-        DexterityLevelBox.Value = character.Dexterity.Level;
-        IntelligenceLevelBox.Value = character.Intelligence.Level;
-        CharismaLevelBox.Value = character.Charisma.Level;
-        PerceptionLevelBox.Value = character.Perception.Level;
-        FortitudeLevelBox.Value = character.Fortitude.Level;
-
-        StrengthCapBox.Value = character.Strength.Cap;
-        DexterityCapBox.Value = character.Dexterity.Cap;
-        IntelligenceCapBox.Value = character.Intelligence.Cap;
-        CharismaCapBox.Value = character.Charisma.Cap;
-        PerceptionCapBox.Value = character.Perception.Cap;
-        FortitudeCapBox.Value = character.Fortitude.Cap;
-    }
-
     /// <summary>Sets every stat to its maximum level and refreshes the grid.</summary>
     private void MaxStatsButton_Click(object sender, RoutedEventArgs e)
     {
@@ -204,16 +146,6 @@ public sealed partial class CharactersPage : Page
         selectedCharacter.Charisma.Level = Stat.MaxLevel;
         selectedCharacter.Perception.Level = Stat.MaxLevel;
         selectedCharacter.Fortitude.Level = Stat.MaxLevel;
-
-        isPopulating = true;
-        try
-        {
-            PopulateStatsData(selectedCharacter);
-        }
-        finally
-        {
-            isPopulating = false;
-        }
 
         StatsFeedbackTextBlock.Text = $"All stats maximised to level {Stat.MaxLevel}.";
     }
@@ -232,16 +164,6 @@ public sealed partial class CharactersPage : Page
         selectedCharacter.Charisma.Level = Stat.MinLevel;
         selectedCharacter.Perception.Level = Stat.MinLevel;
         selectedCharacter.Fortitude.Level = Stat.MinLevel;
-
-        isPopulating = true;
-        try
-        {
-            PopulateStatsData(selectedCharacter);
-        }
-        finally
-        {
-            isPopulating = false;
-        }
 
         StatsFeedbackTextBlock.Text = $"All stats minimised to level {Stat.MinLevel}.";
     }
@@ -292,21 +214,6 @@ public sealed partial class CharactersPage : Page
         character.Toilet = value;
         character.Stress = value;
 
-        isPopulating = true;
-        try
-        {
-            HungerNumberBox.Value = value;
-            ThirstNumberBox.Value = value;
-            FatigueNumberBox.Value = value;
-            DirtinessNumberBox.Value = value;
-            ToiletNumberBox.Value = value;
-            StressNumberBox.Value = value;
-        }
-        finally
-        {
-            isPopulating = false;
-        }
-
         NeedsFeedbackTextBlock.Text = feedback;
     }
 
@@ -327,16 +234,13 @@ public sealed partial class CharactersPage : Page
     /// <summary>
     /// Builds the tier view models for a stat, seeded from the character's saved levels.
     /// </summary>
-    private List<SkillTierViewModel> BuildSkillTree(Character character, string stat)
+    private List<SkillTierViewModel> BuildSkillTree(Character character, CharacterStat stat)
     {
         Dictionary<int, int> levelsByKey = [];
-        ObservableCollection<SkillInstance>? tree = character.GetSkillTree(stat);
-        if (tree is not null)
+        ObservableCollection<SkillInstance> tree = character.GetSkillTree(stat);
+        foreach (SkillInstance skill in tree)
         {
-            foreach (SkillInstance skill in tree)
-            {
-                levelsByKey[skill.Key] = skill.Level;
-            }
+            levelsByKey[skill.Key] = skill.Level;
         }
 
         // Ignore late changes from recycled template items after a character switch.
@@ -360,11 +264,7 @@ public sealed partial class CharactersPage : Page
     // The save only lists unlocked skills, so level 0 removes the entry.
     private static void ApplySkillLevel(Character character, SkillDefinition definition, int level)
     {
-        ObservableCollection<SkillInstance>? tree = character.GetSkillTree(definition.Stat);
-        if (tree is null)
-        {
-            return;
-        }
+        ObservableCollection<SkillInstance> tree = character.GetSkillTree(definition.Stat);
 
         int clampedLevel = Math.Clamp(level, 0, definition.MaxLevel);
         SkillInstance? existing = tree.FirstOrDefault(skill => skill.Key == definition.Key);
@@ -389,7 +289,8 @@ public sealed partial class CharactersPage : Page
     /// <summary>Switches the visible skill tree when the stat selector changes.</summary>
     private void SelectorBar_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
-        if (sender.SelectedItem?.Tag is string stat)
+        if (sender.SelectedItem?.Tag is string tag &&
+            Enum.TryParse(tag, ignoreCase: false, out CharacterStat stat))
         {
             currentSkillStat = stat;
             SkillsFeedbackTextBlock.Text = string.Empty;
@@ -449,118 +350,10 @@ public sealed partial class CharactersPage : Page
 
     #endregion
 
-    /// <summary>Attaches the control -> model write-back handlers exactly once.</summary>
-    private void WireEditingHandlers()
-    {
-        FirstNameTextBox.TextChanged += (s, e) =>
-        {
-            if (!isPopulating && CharacterComboBox.SelectedItem is Character character)
-            {
-                character.FirstName = FirstNameTextBox.Text;
-            }
-        };
-        FirstNameTextBox.LostFocus += (_, _) =>
-            FirstNameTextBox.Text = FirstNameTextBox.Text.Trim();
-
-        LastNameTextBox.TextChanged += (s, e) =>
-        {
-            if (!isPopulating && CharacterComboBox.SelectedItem is Character character)
-            {
-                character.LastName = LastNameTextBox.Text;
-            }
-        };
-        LastNameTextBox.LostFocus += (_, _) =>
-            LastNameTextBox.Text = LastNameTextBox.Text.Trim();
-
-        WireIntegerNumber(CurrentHealthNumberBox, (character, value) => character.CurrentHealth = value);
-        WireIntegerNumber(MaxHealthNumberBox, (character, value) => character.MaxHealth = value);
-
-        WireStatLevel(StrengthLevelBox, StrengthCapBox, c => c.Strength);
-        WireStatLevel(DexterityLevelBox, DexterityCapBox, c => c.Dexterity);
-        WireStatLevel(IntelligenceLevelBox, IntelligenceCapBox, c => c.Intelligence);
-        WireStatLevel(CharismaLevelBox, CharismaCapBox, c => c.Charisma);
-        WireStatLevel(PerceptionLevelBox, PerceptionCapBox, c => c.Perception);
-        WireStatLevel(FortitudeLevelBox, FortitudeCapBox, c => c.Fortitude);
-
-        WireCheckBox(InteractingCheckBox, (c, v) => c.Interacting = v);
-        WireCheckBox(InteractingWithObjCheckBox, (c, v) => c.InteractingWithObj = v);
-        WireCheckBox(IsPsychoCheckBox, (c, v) => c.IsPsycho = v);
-        WireCheckBox(HasBeenDefibbedCheckBox, (c, v) => c.HasBeenDefibbed = v);
-        WireCheckBox(PassedOutCheckBox, (c, v) => c.PassedOut = v);
-        WireCheckBox(IsUnconsciousCheckBox, (c, v) => c.IsUnconscious = v);
-        WireCheckBox(ResetPositionCheckBox, (c, v) => c.ResetPositionRequested = v);
-
-        WireNeed(HungerNumberBox, (c, v) => c.Hunger = v);
-        WireNeed(ThirstNumberBox, (c, v) => c.Thirst = v);
-        WireNeed(FatigueNumberBox, (c, v) => c.Fatigue = v);
-        WireNeed(DirtinessNumberBox, (c, v) => c.Dirtiness = v);
-        WireNeed(ToiletNumberBox, (c, v) => c.Toilet = v);
-        WireNeed(StressNumberBox, (c, v) => c.Stress = v);
-    }
-
-    private void WireNeed(NumberBox box, Action<Character, double> apply) => box.ValueChanged += (s, e) =>
-    {
-        if (isPopulating || CharacterComboBox.SelectedItem is not Character character || double.IsNaN(e.NewValue))
-        {
-            return;
-        }
-
-        // Edits commit whole numbers; snap the box in case the user typed a fraction.
-        double whole = RoundNeed(Math.Clamp(e.NewValue, 0, 100));
-        apply(character, whole);
-        if (box.Value != whole)
-        {
-            box.Value = whole;
-        }
-    };
-
-    private void WireIntegerNumber(NumberBox box, Action<Character, int> apply) => box.ValueChanged += (s, e) =>
-    {
-        if (isPopulating || CharacterComboBox.SelectedItem is not Character character || double.IsNaN(e.NewValue))
-        {
-            return;
-        }
-
-        int value = (int)e.NewValue;
-        apply(character, value);
-        if (box.Value != value)
-        {
-            box.Value = value;
-        }
-    };
-
-    /// <summary>Rounds a raw 0-100 need to the nearest whole number for display/editing.</summary>
-    private static double RoundNeed(double value) =>
-        Math.Round(Math.Clamp(value, 0, 100), MidpointRounding.AwayFromZero);
-
-    private void WireStatLevel(NumberBox levelBox, NumberBox capBox, Func<Character, Stat> selectStat) => levelBox.ValueChanged += (s, e) =>
-    {
-        if (isPopulating || CharacterComboBox.SelectedItem is not Character character || double.IsNaN(e.NewValue))
-        {
-            return;
-        }
-
-        Stat stat = selectStat(character);
-        stat.Level = (int)e.NewValue;
-        capBox.Value = stat.Cap; // Keep the derived cap in sync as the level changes.
-    };
-
-    private void WireCheckBox(CheckBox checkBox, Action<Character, bool> apply)
-    {
-        void Handler(object sender, RoutedEventArgs e)
-        {
-            if (!isPopulating && CharacterComboBox.SelectedItem is Character character)
-            {
-                apply(character, checkBox.IsChecked ?? false);
-            }
-        }
-
-        checkBox.Checked += Handler;
-        checkBox.Unchecked += Handler;
-    }
-
     private void DisableCharacterEditing(string message)
     {
+        SelectedCharacter = null;
+        Bindings.Update();
         CharacterComboBox.IsEnabled = false;
         CharacterComboBox.PlaceholderText = message;
         DisableAllFields();
@@ -575,42 +368,7 @@ public sealed partial class CharactersPage : Page
 
     private void SetFieldsEnabled(bool enabled)
     {
-        FirstNameTextBox.IsEnabled = enabled;
-        LastNameTextBox.IsEnabled = enabled;
-        CurrentHealthNumberBox.IsEnabled = enabled;
-        MaxHealthNumberBox.IsEnabled = enabled;
-        MaxStatsButton.IsEnabled = enabled;
-        MinStatsButton.IsEnabled = enabled;
-
-        InteractingCheckBox.IsEnabled = enabled;
-        InteractingWithObjCheckBox.IsEnabled = enabled;
-        IsPsychoCheckBox.IsEnabled = enabled;
-        HasBeenDefibbedCheckBox.IsEnabled = enabled;
-        PassedOutCheckBox.IsEnabled = enabled;
-        IsUnconsciousCheckBox.IsEnabled = enabled;
-        ResetPositionCheckBox.IsEnabled = enabled;
-
-        HungerNumberBox.IsEnabled = enabled;
-        ThirstNumberBox.IsEnabled = enabled;
-        FatigueNumberBox.IsEnabled = enabled;
-        DirtinessNumberBox.IsEnabled = enabled;
-        ToiletNumberBox.IsEnabled = enabled;
-        StressNumberBox.IsEnabled = enabled;
-        SatisfyNeedsButton.IsEnabled = enabled;
-        DepleteNeedsButton.IsEnabled = enabled;
-        RelationshipsItemsControl.IsEnabled = enabled;
-        MaxRelationshipsButton.IsEnabled = enabled;
-        MinRelationshipsButton.IsEnabled = enabled;
-
-        StrengthLevelBox.IsEnabled = enabled;
-        DexterityLevelBox.IsEnabled = enabled;
-        IntelligenceLevelBox.IsEnabled = enabled;
-        CharismaLevelBox.IsEnabled = enabled;
-        PerceptionLevelBox.IsEnabled = enabled;
-        FortitudeLevelBox.IsEnabled = enabled;
-
-        SelectorBar.IsEnabled = enabled;
-        SkillActionsButton.IsEnabled = enabled;
-        SkillTiersItemsControl.IsEnabled = enabled;
+        LeftColumnHost.IsEnabled = enabled;
+        RightColumnHost.IsEnabled = enabled;
     }
 }

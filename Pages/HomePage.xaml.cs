@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 SaveOver
 
+using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using SaveOver.Sheltered2.Helpers;
@@ -8,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 
@@ -46,6 +48,7 @@ public sealed partial class HomePage : Page
 
     /// <summary>Drives the copy-to-checkmark swap on the copy button.</summary>
     private readonly CopyIconFeedback _copyFeedback = new();
+    private readonly ILogger<HomePage> logger = App.LoggerFactory.CreateLogger<HomePage>();
 
     /// <summary>The copy button's resting tooltip, taken from the markup so the wording lives in
     /// one place even though the copy swaps it out for a moment.</summary>
@@ -92,11 +95,12 @@ public sealed partial class HomePage : Page
         catch (Exception ex) when (ex is FileNotFoundException or InvalidDataException)
         {
             LoadFileTextBlock.Text = $"Error loading file: {ex.Message}";
+            logger.LogWarning(ex, "A selected save file could not be loaded.");
         }
         catch (Exception ex)
         {
             LoadFileTextBlock.Text = $"Unexpected error: {ex.Message}";
-            System.Diagnostics.Debug.WriteLine($"LoadFile error: {ex}");
+            logger.LogError(ex, "An unexpected error occurred while loading a selected save file.");
         }
         finally
         {
@@ -121,16 +125,19 @@ public sealed partial class HomePage : Page
         try
         {
             // A timestamped backup is created first and the write itself is atomic.
-            string updatedXml = SaveWriter.ApplyEdits(
+            logger.LogInformation("Save operation started.");
+            SetWorkspaceBusy(true);
+            string updatedXml = await Task.Run(() => SaveWriter.ApplyEdits(
                 saveData.DecryptedContent,
                 saveData.Characters,
                 saveData.Pets,
-                saveData.Inventory);
+                saveData.Inventory));
 
             if (string.Equals(updatedXml, saveData.DecryptedContent, StringComparison.Ordinal))
             {
                 saveData.CommitSavedContent(updatedXml);
                 LoadFileTextBlock.Text = "There are no changes to save.";
+                logger.LogInformation("Save operation ended because there were no changes.");
                 return;
             }
 
@@ -138,11 +145,13 @@ public sealed partial class HomePage : Page
                 !await ConfirmSaveAsync(sourceFilePath))
             {
                 LoadFileTextBlock.Text = "Save cancelled.";
+                logger.LogInformation("Save operation cancelled by the user.");
                 return;
             }
 
             await FileHelper.EncryptAndSaveSaveFileAsync(sourceFilePath, updatedXml);
             saveData.CommitSavedContent(updatedXml);
+            logger.LogInformation("Save operation completed successfully.");
 
             LoadFileTextBlock.Text =
                 $"Saved '{Path.GetFileName(sourceFilePath)}'. A timestamped backup was created in '{BackupSettings.FolderPath}'.";
@@ -150,10 +159,11 @@ public sealed partial class HomePage : Page
         catch (Exception ex)
         {
             LoadFileTextBlock.Text = $"Error saving file: {ex.Message}";
-            System.Diagnostics.Debug.WriteLine($"SaveFile error: {ex}");
+            logger.LogError(ex, "The save operation failed.");
         }
         finally
         {
+            SetWorkspaceBusy(false);
             UpdateSaveButtonState();
             LoadFileButton.IsEnabled = true;
         }
@@ -215,11 +225,12 @@ public sealed partial class HomePage : Page
         catch (Exception ex) when (ex is FileNotFoundException or InvalidDataException)
         {
             LoadFileTextBlock.Text = $"Error loading dropped file: {ex.Message}";
+            logger.LogWarning(ex, "A dropped save file could not be loaded.");
         }
         catch (Exception ex)
         {
             LoadFileTextBlock.Text = $"Unexpected error loading dropped file: {ex.Message}";
-            System.Diagnostics.Debug.WriteLine($"Drop save error: {ex}");
+            logger.LogError(ex, "An unexpected error occurred while loading a dropped save file.");
         }
         finally
         {
@@ -308,11 +319,12 @@ public sealed partial class HomePage : Page
         {
             SaveSettings.LastOpenedSavePath = null;
             LoadFileTextBlock.Text = $"Could not reopen the previous save: {ex.Message}";
+            logger.LogWarning(ex, "The previously opened save could not be reopened.");
         }
         catch (Exception ex)
         {
             LoadFileTextBlock.Text = $"Unexpected error reopening the previous save: {ex.Message}";
-            System.Diagnostics.Debug.WriteLine($"Resume save error: {ex}");
+            logger.LogError(ex, "An unexpected error occurred while reopening the previous save.");
         }
         finally
         {
@@ -321,23 +333,33 @@ public sealed partial class HomePage : Page
         }
     }
 
-    private async System.Threading.Tasks.Task LoadSaveAsync(string filePath)
+    private async Task LoadSaveAsync(string filePath)
     {
-        string fileName = Path.GetFileName(filePath);
-        LoadFileTextBlock.Text = $"Loading {fileName}...";
-
-        string decryptedContent = await FileHelper.LoadAndDecryptSaveFileAsync(filePath);
-        ParsedSave parsed = SaveParser.Parse(decryptedContent);
-
-        // Raises SaveDataChanged, which unlocks navigation and refreshes the editor pages.
-        App.CurrentSaveData.Load(filePath, decryptedContent, parsed);
-        if (SaveSettings.RememberLastOpenedSave)
+        logger.LogInformation("Save load started.");
+        SetWorkspaceBusy(true);
+        try
         {
-            SaveSettings.LastOpenedSavePath = filePath;
-        }
+            string fileName = Path.GetFileName(filePath);
+            LoadFileTextBlock.Text = $"Loading {fileName}...";
 
-        LoadFileTextBlock.Text =
-            $"File '{fileName}' loaded successfully. You can now navigate to other pages to edit your save.";
+            string decryptedContent = await FileHelper.LoadAndDecryptSaveFileAsync(filePath);
+            ParsedSave parsed = await Task.Run(() => SaveParser.Parse(decryptedContent));
+
+            // Raises SaveDataChanged, which unlocks navigation and refreshes the editor pages.
+            App.CurrentSaveData.Load(filePath, decryptedContent, parsed);
+            if (SaveSettings.RememberLastOpenedSave)
+            {
+                SaveSettings.LastOpenedSavePath = filePath;
+            }
+
+            LoadFileTextBlock.Text =
+                $"File '{fileName}' loaded successfully. You can now navigate to other pages to edit your save.";
+            logger.LogInformation("Save load completed successfully.");
+        }
+        finally
+        {
+            SetWorkspaceBusy(false);
+        }
     }
 
     private void CurrentSaveData_DirtyStateChanged(object? sender, EventArgs e) => UpdateSaveButtonState();
@@ -356,17 +378,10 @@ public sealed partial class HomePage : Page
             return;
         }
 
-        if (session.HasUnsavedChanges)
-        {
-            WorkspaceTitleTextBlock.Text = "Changes ready to save";
-        }
-        else
-        {
-            WorkspaceTitleTextBlock.Text = "Save loaded";
-        }
+        WorkspaceTitleTextBlock.Text = session.HasUnsavedChanges ? "Changes ready to save" : "Save loaded";
     }
 
-    private async System.Threading.Tasks.Task<bool> ConfirmDiscardChangesAsync(string replacementFilePath)
+    private async Task<bool> ConfirmDiscardChangesAsync(string replacementFilePath)
     {
         ContentDialog dialog = new()
         {
@@ -383,7 +398,7 @@ public sealed partial class HomePage : Page
         return await dialog.ShowAsync() == ContentDialogResult.Primary;
     }
 
-    private async System.Threading.Tasks.Task<bool> ConfirmSaveAsync(string sourceFilePath)
+    private async Task<bool> ConfirmSaveAsync(string sourceFilePath)
     {
         CheckBox neverShowAgainCheckBox = new()
         {
@@ -444,7 +459,7 @@ public sealed partial class HomePage : Page
         catch (Exception ex)
         {
             LoadFileTextBlock.Text = $"Failed to copy path: {ex.Message}";
-            System.Diagnostics.Debug.WriteLine($"Copy path error: {ex}");
+            logger.LogWarning(ex, "Could not copy the save-folder path.");
             return;
         }
 
@@ -467,12 +482,13 @@ public sealed partial class HomePage : Page
             if (!await Windows.System.Launcher.LaunchFolderPathAsync(saveFolderPath))
             {
                 LoadFileTextBlock.Text = "Windows could not open the Sheltered 2 save folder.";
+                logger.LogWarning("Windows declined the request to open the save folder.");
             }
         }
         catch (Exception ex)
         {
             LoadFileTextBlock.Text = $"Could not open the Sheltered 2 save folder: {ex.Message}";
-            System.Diagnostics.Debug.WriteLine($"Open save folder error: {ex}");
+            logger.LogWarning(ex, "Could not open the Sheltered 2 save folder.");
         }
     }
 
@@ -484,6 +500,14 @@ public sealed partial class HomePage : Page
         if (App.StartupWindow is MainWindow mainWindow)
         {
             mainWindow.NavigateToPageByTag("Donate");
+        }
+    }
+
+    private static void SetWorkspaceBusy(bool isBusy)
+    {
+        if (App.StartupWindow is MainWindow mainWindow)
+        {
+            mainWindow.SetWorkspaceBusy(isBusy);
         }
     }
 }

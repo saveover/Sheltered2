@@ -23,11 +23,6 @@ internal sealed record ParsedSave(
 /// </summary>
 internal static class SaveParser
 {
-    private static readonly string[] StatNames =
-        ["Strength", "Dexterity", "Intelligence", "Charisma", "Perception", "Fortitude"];
-
-    private static readonly string[] PetSkillNames = ["PreyDrive", "Scavenging", "Affection"];
-
     /// <summary>
     /// Parses the whole save in one pass over a single <see cref="XDocument"/>.
     /// </summary>
@@ -39,19 +34,19 @@ internal static class SaveParser
         XDocument document;
         try
         {
-            document = XDocument.Parse(decryptedContent);
+            document = XDocument.Parse(decryptedContent, LoadOptions.PreserveWhitespace);
         }
         catch (XmlException ex)
         {
             throw new InvalidDataException("Failed to parse the decrypted content into valid XML.", ex);
         }
 
-        return document.Root is null
-            ? new ParsedSave([], [], null)
+        return document.Root?.Name != "root"
+            ? throw new InvalidDataException("The decrypted content does not have the expected root element.")
             : new ParsedSave(
-                ParseCharacters(document.Root),
-                ParsePets(document.Root),
-                ParseShelterInventory(document.Root));
+            ParseCharacters(document.Root),
+            ParsePets(document.Root),
+            ParseShelterInventory(document.Root));
     }
 
     private static IReadOnlyList<Character> ParseCharacters(XElement root)
@@ -102,12 +97,9 @@ internal static class SaveParser
     {
         XElement? storedWaterElement = root.Element("StoredWater");
         XElement? shelterInventoryElement = root.Element("ShelterInventory");
-        if (storedWaterElement is null && shelterInventoryElement is null)
-        {
-            return null;
-        }
-
-        return new ShelterInventory
+        return storedWaterElement is null && shelterInventoryElement is null
+            ? null
+            : new ShelterInventory
         {
             HasStoredWater = storedWaterElement is not null,
             StoredWater = ParseInt(storedWaterElement, 0),
@@ -202,12 +194,12 @@ internal static class SaveParser
             return;
         }
 
-        foreach (string statName in StatNames)
+        foreach (CharacterStat stat in SaveFieldKind.CharacterStats)
         {
-            XElement? statElement = baseStatsElement.Element(statName);
+            XElement? statElement = baseStatsElement.Element(stat.XmlName());
             if (statElement is not null)
             {
-                GetStat(character, statName).Level = ParseInt(statElement.Element("level"), Stat.MinLevel);
+                character.GetStat(stat).Level = ParseInt(statElement.Element("level"), Stat.MinLevel);
             }
         }
     }
@@ -221,16 +213,18 @@ internal static class SaveParser
 
         // Each tree is <StrengthSkills><strengthSkills size="n">: an outer element
         // wrapping an inner camel-cased list.
-        foreach (string statName in StatNames)
+        foreach (CharacterStat stat in SaveFieldKind.CharacterStats)
         {
+            string statName = stat.XmlName();
             XElement? listElement = professionElement
                 .Element($"{statName}Skills")?
-                .Element($"{ToCamelCase(statName)}Skills");
-            ObservableCollection<SkillInstance>? target = character.GetSkillTree(statName);
-            if (listElement is null || target is null)
+                .Element(stat.SkillListXmlName());
+            if (listElement is null)
             {
                 continue;
             }
+
+            ObservableCollection<SkillInstance> target = character.GetSkillTree(stat);
 
             foreach (XElement skillElement in listElement.Elements())
             {
@@ -292,14 +286,16 @@ internal static class SaveParser
             Immune = ParseBool(petElement.Element("immune")),
         };
 
-        foreach (string skillName in PetSkillNames)
+        foreach (PetSkillKind skillKind in SaveFieldKind.PetSkills)
         {
+            string skillName = skillKind.XmlName();
             XElement? skillElement = petElement.Element(skillName);
-            PetSkill? skill = pet.GetSkill(skillName);
-            if (skillElement is null || skill is null)
+            if (skillElement is null)
             {
                 continue;
             }
+
+            PetSkill skill = pet.GetSkill(skillKind);
 
             skill.Level = ParseInt(skillElement.Element("level"), 1);
             skill.LevelCap = ParseInt(skillElement.Element("levelCap"), 9);
@@ -311,17 +307,6 @@ internal static class SaveParser
 
     private static double ParseNeedValue(XElement needsElement, string needName) =>
         ParsePercentage(needsElement.Element(needName)?.Element("value"));
-
-    private static Stat GetStat(Character character, string statName) => statName switch
-    {
-        "Strength" => character.Strength,
-        "Dexterity" => character.Dexterity,
-        "Intelligence" => character.Intelligence,
-        "Charisma" => character.Charisma,
-        "Perception" => character.Perception,
-        "Fortitude" => character.Fortitude,
-        _ => throw new ArgumentOutOfRangeException(nameof(statName), statName, "Unknown stat name."),
-    };
 
     // Extracts the numeric suffix of names like Member_2 or Pet_0.
     private static int ParseIdSuffix(string elementName, string prefix) =>
@@ -351,6 +336,4 @@ internal static class SaveParser
     private static bool ParseBool(XElement? element) =>
         bool.TryParse(element?.Value, out bool value) && value;
 
-    private static string ToCamelCase(string value) =>
-        string.IsNullOrEmpty(value) ? value : char.ToLowerInvariant(value[0]) + value[1..];
 }

@@ -18,7 +18,7 @@
         <!-- Title and rows share a MaxWidth and stretch, so the pair centres as one block on a wide
              window and the title stays lined up with the cards under it. -->
         <TextBlock Margin="36,24,36,0"
-                   MaxWidth="1064"
+                   MaxWidth="{StaticResource PageContentMaxWidth}"
                    Text="Settings"
                    Style="{StaticResource TitleTextBlockStyle}"
                    AutomationProperties.HeadingLevel="Level1"/>
@@ -26,7 +26,9 @@
         <!-- The inset goes on the content, not on the ScrollView: ScrollView.Padding shrinks the
              viewport instead, which clips the content short of the edges and leaves dead bands. -->
         <ScrollView Grid.Row="1">
-            <StackPanel Margin="36,0,36,36" MaxWidth="1064" Spacing="4">
+            <StackPanel Margin="36,0,36,36"
+                        MaxWidth="{StaticResource PageContentMaxWidth}"
+                        Spacing="4">
 
                 <TextBlock Text="Appearance and behaviour"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
@@ -39,6 +41,7 @@
                     </toolkit:SettingsCard.HeaderIcon>
                     <!-- Tags are ElementTheme names, parsed back on selection. -->
                     <ComboBox x:Name="ThemeComboBox"
+                              SelectedValuePath="Tag"
                               AutomationProperties.Name="App theme"
                               SelectionChanged="ThemeComboBox_SelectionChanged">
                         <ComboBoxItem Content="Light" Tag="Light"/>
@@ -118,6 +121,7 @@
                         <FontIcon Glyph="&#xE823;"/>
                     </toolkit:SettingsCard.HeaderIcon>
                     <ComboBox x:Name="BackupRetentionComboBox"
+                              SelectedValuePath="Tag"
                               SelectionChanged="BackupRetentionComboBox_SelectionChanged"
                               AutomationProperties.Name="Backup retention">
                         <ComboBoxItem Content="Keep latest 5" Tag="5"/>
@@ -145,6 +149,26 @@
                     <ToggleSwitch x:Name="ResumeLastSaveToggleSwitch"
                                   Toggled="ResumeLastSaveToggleSwitch_Toggled"
                                   AutomationProperties.Name="Remember last opened save"/>
+                </toolkit:SettingsCard>
+
+                <TextBlock Text="Diagnostics"
+                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
+                           AutomationProperties.HeadingLevel="Level2"/>
+
+                <toolkit:SettingsCard Header="Application logs">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <SymbolIcon Symbol="Document"
+                                    AutomationProperties.AccessibilityView="Raw"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <toolkit:SettingsCard.Description>
+                        <TextBlock x:Name="ApplicationLogsDescriptionTextBlock"
+                                   Text="Open the logs folder and attach the newest .log file when reporting a problem. Save contents are never logged."
+                                   TextWrapping="Wrap"/>
+                    </toolkit:SettingsCard.Description>
+                    <Button Content="Open logs folder"
+                            Click="OpenApplicationLogsFolderButton_Click"
+                            AutomationProperties.Name="Open application logs folder"
+                            AutomationProperties.AutomationId="OpenApplicationLogsFolderButton"/>
                 </toolkit:SettingsCard>
 
                 <TextBlock Text="About"
@@ -190,6 +214,7 @@
                         </toolkit:SettingsCard>
 
                         <toolkit:SettingsCard Header="Report a bug or request a feature"
+                                              Description="Attach the newest application log if something went wrong"
                                               IsClickEnabled="True"
                                               Click="ReportIssueCard_Click">
                             <toolkit:SettingsCard.ActionIcon>

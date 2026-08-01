@@ -15,12 +15,15 @@
         </Grid.RowDefinitions>
 
         <TextBlock Margin="36,24,36,0"
+                   MaxWidth="{StaticResource PageContentMaxWidth}"
                    Text="Crafting"
                    Style="{StaticResource TitleTextBlockStyle}"
                    AutomationProperties.HeadingLevel="Level1"/>
 
         <ScrollView Grid.Row="1">
-            <StackPanel Margin="36,16,36,36" Spacing="24" MaxWidth="1100" HorizontalAlignment="Left">
+            <StackPanel Margin="36,16,36,36"
+                        MaxWidth="{StaticResource PageContentMaxWidth}"
+                        Spacing="24">
 
             <InfoBar IsOpen="True"
                      IsClosable="False"

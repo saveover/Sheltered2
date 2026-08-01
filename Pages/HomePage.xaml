@@ -44,23 +44,29 @@
         </DataTemplate>
     </Page.Resources>
 
-    <ScrollView>
-        <StackPanel Margin="36,28,36,40"
-                    MaxWidth="1120"
-                    HorizontalAlignment="Center"
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Match the other pages: the page title stays visible while its content scrolls. -->
+        <TextBlock Margin="36,24,36,0"
+                   MaxWidth="{StaticResource PageContentMaxWidth}"
+                   Text="Home"
+                   Style="{StaticResource TitleTextBlockStyle}"
+                   AutomationProperties.HeadingLevel="Level1"/>
+
+        <ScrollView Grid.Row="1">
+        <StackPanel Margin="36,16,36,40"
+                    MaxWidth="{StaticResource PageContentMaxWidth}"
                     Spacing="28">
 
-            <StackPanel Spacing="6">
-                <TextBlock Text="Home"
-                           Style="{StaticResource TitleTextBlockStyle}"
-                           AutomationProperties.HeadingLevel="Level1"/>
-                <TextBlock Text="Open, edit, and safely back up your Sheltered 2 saves."
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                           TextWrapping="Wrap"/>
-            </StackPanel>
+            <TextBlock Text="Open, edit, and safely back up your Sheltered 2 saves."
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       TextWrapping="Wrap"/>
 
-            <!-- Primary workspace. The right-hand visual disappears on compact windows so the
-                 state, actions and feedback retain a straightforward reading and tab order. -->
+            <!-- Primary workspace -->
             <Border Style="{StaticResource CardBorderStyle}">
                 <Grid x:Name="WorkspaceGrid" ColumnSpacing="36">
                     <Grid.ColumnDefinitions>
@@ -98,12 +104,12 @@
                     <StackPanel Spacing="20">
                         <TextBlock x:Name="WorkspaceTitleTextBlock"
                                    Text="Choose a save file"
-                                   FontSize="28"
+                                   FontSize="22"
                                    FontWeight="SemiBold"
                                    TextWrapping="Wrap"
                                    AutomationProperties.HeadingLevel="Level2"/>
 
-                        <!-- One control for both pointer workflows: click to browse, or drop a
+                        <!-- One control for both click to browse, or drop a
                              local .dat file anywhere on its surface. -->
                         <Button x:Name="LoadFileButton"
                                 Padding="16,14"
@@ -123,13 +129,11 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <FontIcon Glyph="&#xE898;"
-                                          FontSize="22"
-                                          Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                                          VerticalAlignment="Center"
-                                          AutomationProperties.AccessibilityView="Raw"/>
+                                <SymbolIcon Symbol="Upload"
+                                            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                            AutomationProperties.AccessibilityView="Raw"/>
+
                                 <StackPanel Grid.Column="1" Spacing="2">
                                     <TextBlock Text="Open or drop a save file"
                                                Style="{StaticResource BodyStrongTextBlockStyle}"/>
@@ -138,17 +142,12 @@
                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                                TextWrapping="Wrap"/>
                                 </StackPanel>
-                                <FontIcon Grid.Column="2"
-                                          Glyph="&#xE76C;"
-                                          FontSize="14"
-                                          Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                          VerticalAlignment="Center"
-                                          AutomationProperties.AccessibilityView="Raw"/>
                             </Grid>
                         </Button>
 
                         <Button x:Name="SaveFileButton"
-                                MinWidth="164"
+                                BorderThickness="1"
+                                CornerRadius="{StaticResource ControlCornerRadius}"
                                 HorizontalAlignment="Left"
                                 HorizontalContentAlignment="Center"
                                 IsEnabled="False"
@@ -401,5 +400,6 @@
                 </Grid>
             </Border>
         </StackPanel>
-    </ScrollView>
+        </ScrollView>
+    </Grid>
 </Page>
