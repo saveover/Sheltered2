@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 
@@ -217,35 +218,77 @@ internal static class SaveWriter
 
     private static void ApplyPets(XElement? root, IReadOnlyList<Pet> pets)
     {
-        if (root is null || pets.Count == 0)
+        if (root is null)
         {
             return;
         }
 
-        Dictionary<int, Pet> petsById = [];
-        foreach (Pet pet in pets.Where(p => p.PetId >= 0))
-        {
-            petsById[pet.PetId] = pet;
-        }
-
-        foreach (XElement petElement in root.Elements())
+        Dictionary<int, XElement> elementsById = [];
+        XElement? lastPetElement = null;
+        foreach (XElement petElement in root.Elements().ToArray())
         {
             string name = petElement.Name.LocalName;
-            if (!name.StartsWith("Pet_", StringComparison.Ordinal)
-                || !TryParseInt(name.AsSpan(4), out int petId)
-                || !petsById.TryGetValue(petId, out Pet? pet))
+            if (name.StartsWith("Pet_", StringComparison.Ordinal)
+                && TryParseInt(name.AsSpan(4), out int petId))
             {
-                continue;
+                elementsById[petId] = petElement;
+                lastPetElement = petElement;
+            }
+        }
+
+        bool hasNewPets = pets.Any(pet => pet.PetId >= 0 && !elementsById.ContainsKey(pet.PetId));
+        if (hasNewPets && root.Element("PetManager")?.Element("pets") is null)
+        {
+            throw new InvalidDataException("This save does not contain the PetManager list required to add a pet.");
+        }
+
+        XElement? shelterPosition = elementsById.Values.FirstOrDefault()?
+            .Element("transform")?
+            .Element("pos")
+            ?? root.Element("FamilyMembers")?.Elements().FirstOrDefault()?
+                .Element("transform")?
+                .Element("pos");
+
+        foreach (Pet pet in pets.Where(pet => pet.PetId >= 0))
+        {
+            if (!elementsById.TryGetValue(pet.PetId, out XElement? petElement))
+            {
+                petElement = PetXmlFactory.CreatePetElement(pet, shelterPosition);
+                if (lastPetElement is not null)
+                {
+                    lastPetElement.AddAfterSelf(petElement);
+                }
+                else if (root.Element("FamilyMembers") is { } familyMembers)
+                {
+                    familyMembers.AddBeforeSelf(petElement);
+                }
+                else
+                {
+                    root.Add(petElement);
+                }
+
+                elementsById[pet.PetId] = petElement;
+                lastPetElement = petElement;
             }
 
-            SetValue(petElement, "name", pet.Name);
-            SetValue(petElement, "age", Int(pet.Age));
-            SetValue(petElement, "health", Int(pet.Health));
-            SetValue(petElement, "hunger", Dbl(NormalizePercentage(pet.Hunger)));
-            SetValue(petElement, "starving", Bool(pet.Starving));
-            SetValue(petElement, "poisoned", Bool(pet.Poisoned));
-            SetValue(petElement, "immune", Bool(pet.Immune));
+            ApplyPet(petElement, pet);
+        }
 
+        ApplyPetManager(root.Element("PetManager"), pets, elementsById);
+    }
+
+    private static void ApplyPet(XElement petElement, Pet pet)
+    {
+        SetValue(petElement, "name", pet.Name);
+        SetValue(petElement, "age", Int(pet.Age));
+        SetValue(petElement, "health", Int(pet.Health));
+        SetValue(petElement, "hunger", Dbl(NormalizePercentage(pet.Hunger)));
+        SetValue(petElement, "starving", Bool(pet.Starving));
+        SetValue(petElement, "poisoned", Bool(pet.Poisoned));
+        SetValue(petElement, "immune", Bool(pet.Immune));
+
+        if (pet.IsCat)
+        {
             foreach (PetSkillKind skillKind in SaveFieldKind.PetSkills)
             {
                 string skillName = skillKind.XmlName();
@@ -262,6 +305,136 @@ internal static class SaveWriter
                 SetValue(skillElement, "experience", Int(skill.Experience));
             }
         }
+
+        if (pet.IsDog)
+        {
+            ApplyDogSkills(petElement.Element("Dog_Skills"), pet);
+        }
+    }
+
+    private static void ApplyDogSkills(XElement? dogSkillsElement, Pet pet)
+    {
+        if (dogSkillsElement is null)
+        {
+            return;
+        }
+
+        ApplyDogSkillList(dogSkillsElement.Element("shelterSkills"), pet.ShelterSkills);
+        ApplyDogSkillList(dogSkillsElement.Element("utilitySkills"), pet.UtilitySkills);
+        ApplyDogSkillList(dogSkillsElement.Element("combatSkills"), pet.CombatSkills);
+        SetValue(dogSkillsElement, "shelterPoints", Int(Math.Max(0, pet.ShelterSkillPoints)));
+        SetValue(dogSkillsElement, "utilityPoints", Int(Math.Max(0, pet.UtilitySkillPoints)));
+        SetValue(dogSkillsElement, "combatPoints", Int(Math.Max(0, pet.CombatSkillPoints)));
+    }
+
+    private static void ApplyDogSkillList(XElement? listElement, IReadOnlyList<DogSkill> skills)
+    {
+        if (listElement is null)
+        {
+            return;
+        }
+
+        Dictionary<int, XElement> existingByKey = [];
+        foreach (XElement entry in listElement.Elements())
+        {
+            if (TryParseInt(entry.Element("skillKey")?.Value, out int key))
+            {
+                existingByKey[key] = entry;
+            }
+        }
+
+        foreach (DogSkill skill in skills)
+        {
+            if (!existingByKey.TryGetValue(skill.Key, out XElement? entry))
+            {
+                entry = new XElement($"i{listElement.Elements().Count()}",
+                    new XElement("skillKey", Int(skill.Key)),
+                    new XElement("skillName", Int(skill.Key)),
+                    new XElement("trainingTimeRequired", Dbl(skill.TrainingTimeRequired)),
+                    new XElement("currentTrainingTime", "0"),
+                    new XElement("purchased", "False"));
+                listElement.Add(entry);
+            }
+
+            entry.SetElementValue("currentTrainingTime", Dbl(skill.CurrentTrainingTime));
+            entry.SetElementValue("purchased", Bool(skill.Purchased));
+        }
+
+        listElement.SetAttributeValue("size", listElement.Elements().Count());
+    }
+
+    private static void ApplyPetManager(
+        XElement? petManagerElement,
+        IReadOnlyList<Pet> pets,
+        IReadOnlyDictionary<int, XElement> petElementsById)
+    {
+        XElement? entries = petManagerElement?.Element("pets");
+        if (entries is null)
+        {
+            return;
+        }
+
+        Dictionary<int, XElement> entriesById = [];
+        foreach (XElement entry in entries.Elements())
+        {
+            if (TryParseInt(entry.Element("uniqueId")?.Value, out int id))
+            {
+                entriesById[id] = entry;
+            }
+        }
+
+        XElement? fallbackRotation = entries.Elements().FirstOrDefault()?.Element("spawnRot");
+        bool addedEntry = false;
+        foreach (Pet pet in pets.Where(pet => pet.PetId >= 0))
+        {
+            if (entriesById.TryGetValue(pet.PetId, out XElement? entry))
+            {
+                if (pet.Species != PetSpecies.Unknown)
+                {
+                    SetValue(entry, "petSpecies", Int((int)pet.Species));
+                }
+
+                continue;
+            }
+
+            if (!petElementsById.TryGetValue(pet.PetId, out XElement? petElement))
+            {
+                continue;
+            }
+
+            int index = NextEntryIndex(entries);
+            entry = PetXmlFactory.CreateManagerEntry(
+                index,
+                pet,
+                petElement.Element("transform")?.Element("pos") ?? new XElement("pos"),
+                fallbackRotation);
+            entries.Add(entry);
+            entriesById[pet.PetId] = entry;
+            addedEntry = true;
+        }
+
+        if (!addedEntry)
+        {
+            return;
+        }
+
+        entries.SetAttributeValue("size", entries.Elements().Count());
+
+        int nextId = pets.Count == 0 ? 0 : pets.Max(pet => pet.PetId) + 1;
+        int savedNextId = TryParseInt(petManagerElement?.Element("uniqueID")?.Value, out int value) ? value : 0;
+        petManagerElement?.SetElementValue("uniqueID", Int(Math.Max(savedNextId, nextId)));
+    }
+
+    private static int NextEntryIndex(XElement entries)
+    {
+        HashSet<string> names = [.. entries.Elements().Select(entry => entry.Name.LocalName)];
+        int index = 0;
+        while (names.Contains($"i{index}"))
+        {
+            index++;
+        }
+
+        return index;
     }
 
     private static void ApplySkills(XElement? professionElement, XElement? baseStatsElement, Character character)

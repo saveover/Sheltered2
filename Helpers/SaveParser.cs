@@ -16,7 +16,9 @@ namespace SaveOver.Sheltered2.Helpers;
 internal sealed record ParsedSave(
     IReadOnlyList<Character> Characters,
     IReadOnlyList<Pet> Pets,
-    ShelterInventory? Inventory);
+    ShelterInventory? Inventory,
+    int NextPetId,
+    bool HasPetManager);
 
 /// <summary>
 /// Parses the decrypted save-file XML into model objects.
@@ -46,7 +48,9 @@ internal static class SaveParser
             : new ParsedSave(
             ParseCharacters(document.Root),
             ParsePets(document.Root),
-            ParseShelterInventory(document.Root));
+            ParseShelterInventory(document.Root),
+            ParseInt(document.Root.Element("PetManager")?.Element("uniqueID"), 0),
+            document.Root.Element("PetManager")?.Element("pets") is not null);
     }
 
     private static IReadOnlyList<Character> ParseCharacters(XElement root)
@@ -78,16 +82,50 @@ internal static class SaveParser
     private static IReadOnlyList<Pet> ParsePets(XElement root)
     {
         List<Pet> pets = [];
+        Dictionary<int, PetSpecies> speciesById = ParsePetSpecies(root.Element("PetManager"));
         foreach (XElement petElement in root.Elements())
         {
             if (petElement.Name.LocalName.StartsWith("Pet_", StringComparison.Ordinal))
             {
-                pets.Add(ParsePet(petElement));
+                int petId = ParseIdSuffix(petElement.Name.LocalName, "Pet_");
+                PetSpecies species = speciesById.GetValueOrDefault(petId, InferPetSpecies(petElement));
+                pets.Add(ParsePet(petElement, species));
             }
         }
 
         return pets;
     }
+
+    private static Dictionary<int, PetSpecies> ParsePetSpecies(XElement? petManagerElement)
+    {
+        Dictionary<int, PetSpecies> speciesById = [];
+        XElement? entries = petManagerElement?.Element("pets");
+        if (entries is null)
+        {
+            return speciesById;
+        }
+
+        foreach (XElement entry in entries.Elements())
+        {
+            if (!TryParseInt(entry.Element("uniqueId")?.Value, out int id)
+                || !TryParseInt(entry.Element("petSpecies")?.Value, out int rawSpecies)
+                || !Enum.IsDefined((PetSpecies)rawSpecies))
+            {
+                continue;
+            }
+
+            speciesById[id] = (PetSpecies)rawSpecies;
+        }
+
+        return speciesById;
+    }
+
+    private static PetSpecies InferPetSpecies(XElement petElement) =>
+        petElement.Element("Dog_Skills") is not null
+            ? PetSpecies.Dog
+            : petElement.Element("PreyDrive") is not null
+                ? PetSpecies.Cat
+                : PetSpecies.Unknown;
 
     /// <summary>
     /// Parses shelter-owned water and both inventory containers. Entries remain in their XML
@@ -272,11 +310,12 @@ internal static class SaveParser
         }
     }
 
-    private static Pet ParsePet(XElement petElement)
+    private static Pet ParsePet(XElement petElement, PetSpecies species)
     {
         Pet pet = new()
         {
             PetId = ParseIdSuffix(petElement.Name.LocalName, "Pet_"),
+            Species = species,
             Name = petElement.Element("name")?.Value ?? string.Empty,
             Age = ParseInt(petElement.Element("age"), 0),
             Health = ParseInt(petElement.Element("health"), 0),
@@ -302,7 +341,48 @@ internal static class SaveParser
             skill.Experience = ParseInt(skillElement.Element("experience"), 0);
         }
 
+        ParseDogSkills(petElement.Element("Dog_Skills"), pet);
+
         return pet;
+    }
+
+    private static void ParseDogSkills(XElement? dogSkillsElement, Pet pet)
+    {
+        if (dogSkillsElement is null)
+        {
+            return;
+        }
+
+        Dictionary<int, XElement> entriesByKey = [];
+        foreach (string listName in new[] { "shelterSkills", "utilitySkills", "combatSkills" })
+        {
+            XElement? list = dogSkillsElement.Element(listName);
+            if (list is null)
+            {
+                continue;
+            }
+
+            foreach (XElement entry in list.Elements())
+            {
+                if (TryParseInt(entry.Element("skillKey")?.Value, out int key))
+                {
+                    entriesByKey[key] = entry;
+                }
+            }
+        }
+
+        foreach (DogSkill skill in pet.DogSkills)
+        {
+            if (entriesByKey.TryGetValue(skill.Key, out XElement? entry))
+            {
+                skill.Purchased = ParseBool(entry.Element("purchased"));
+                skill.CurrentTrainingTime = ParseDouble(entry.Element("currentTrainingTime"), 0);
+            }
+        }
+
+        pet.ShelterSkillPoints = ParseInt(dogSkillsElement.Element("shelterPoints"), 0);
+        pet.UtilitySkillPoints = ParseInt(dogSkillsElement.Element("utilityPoints"), 0);
+        pet.CombatSkillPoints = ParseInt(dogSkillsElement.Element("combatPoints"), 0);
     }
 
     private static double ParseNeedValue(XElement needsElement, string needName) =>

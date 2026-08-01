@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Linq;
 
 namespace SaveOver.Sheltered2.Helpers;
 
@@ -19,6 +20,7 @@ internal sealed class SaveSession
     private readonly List<INotifyPropertyChanged> trackedObjects = [];
     private readonly List<INotifyCollectionChanged> trackedCollections = [];
     private bool suppressChangeTracking;
+    private int nextPetId;
 
     public string? SourceFilePath { get; private set; }
 
@@ -28,6 +30,8 @@ internal sealed class SaveSession
 
     public IReadOnlyList<Pet> Pets { get; private set; } = [];
 
+    public bool CanAddPets { get; private set; }
+
     /// <summary>The shelter-owned water and inventory containers, when present in the save.</summary>
     public ShelterInventory? Inventory { get; private set; }
 
@@ -36,6 +40,9 @@ internal sealed class SaveSession
     /// navigating away and back.
     /// </summary>
     public Character? SelectedCharacter { get; set; }
+
+    /// <summary>The pet the user last selected, including a pet newly added in this session.</summary>
+    public Pet? SelectedPet { get; set; }
 
     public bool IsLoaded => !string.IsNullOrEmpty(SourceFilePath) && !string.IsNullOrEmpty(DecryptedContent);
 
@@ -60,11 +67,68 @@ internal sealed class SaveSession
         Characters = data.Characters;
         Pets = data.Pets;
         Inventory = data.Inventory;
+        nextPetId = Math.Max(data.NextPetId, NextAvailablePetId(Pets));
+        CanAddPets = data.HasPetManager;
         SelectedCharacter = null;
+        SelectedPet = null;
 
         TrackEditableData();
         SetDirty(false);
         SaveDataChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Adds a new pet model; the writer materialises its XML on the next save.</summary>
+    public Pet AddPet(PetSpecies species)
+    {
+        if (!IsLoaded)
+        {
+            throw new InvalidOperationException("Load a save before adding a pet.");
+        }
+
+        if (!CanAddPets)
+        {
+            throw new InvalidOperationException("This save does not contain a PetManager list.");
+        }
+
+        if (species is not PetSpecies.Cat and not PetSpecies.Dog)
+        {
+            throw new ArgumentOutOfRangeException(nameof(species));
+        }
+
+        int petId = nextPetId;
+        HashSet<int> usedIds = [.. Pets.Select(pet => pet.PetId)];
+        while (usedIds.Contains(petId))
+        {
+            petId++;
+        }
+
+        nextPetId = checked(petId + 1);
+        Pet pet = new()
+        {
+            PetId = petId,
+            Species = species,
+            Name = species == PetSpecies.Dog ? "New dog" : "New cat",
+            Age = 1,
+            Health = 100,
+            Hunger = 0,
+            ShelterSkillPoints = species == PetSpecies.Dog ? 2 : 0,
+            UtilitySkillPoints = species == PetSpecies.Dog ? 2 : 0,
+            CombatSkillPoints = species == PetSpecies.Dog ? 2 : 0,
+        };
+
+        if (species == PetSpecies.Cat)
+        {
+            pet.PreyDrive.LevelCap = 7;
+            pet.Scavenging.LevelCap = 9;
+            pet.Affection.LevelCap = 9;
+        }
+
+        Pets = [.. Pets, pet];
+        SelectedPet = pet;
+        TrackEditableData();
+        SetDirty(true);
+        SaveDataChanged?.Invoke(this, EventArgs.Empty);
+        return pet;
     }
 
     /// <summary>Updates the XML baseline after the current session has been saved successfully.</summary>
@@ -113,10 +177,7 @@ internal sealed class SaveSession
 
         foreach (Pet pet in Pets)
         {
-            Track(pet);
-            Track(pet.PreyDrive);
-            Track(pet.Scavenging);
-            Track(pet.Affection);
+            TrackPet(pet);
         }
 
         if (Inventory is { } inventory)
@@ -125,6 +186,29 @@ internal sealed class SaveSession
             TrackItems(inventory.Storage?.Items);
             TrackItems(inventory.Overflow?.Items);
         }
+    }
+
+    private void TrackPet(Pet pet)
+    {
+        Track(pet);
+        Track(pet.PreyDrive);
+        Track(pet.Scavenging);
+        Track(pet.Affection);
+        foreach (DogSkill skill in pet.DogSkills)
+        {
+            Track(skill);
+        }
+    }
+
+    private static int NextAvailablePetId(IReadOnlyList<Pet> pets)
+    {
+        int max = -1;
+        foreach (Pet pet in pets)
+        {
+            max = Math.Max(max, pet.PetId);
+        }
+
+        return checked(max + 1);
     }
 
     private void TrackItems(IReadOnlyList<InventoryItem>? items)

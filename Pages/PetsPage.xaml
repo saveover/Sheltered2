@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Copyright (C) 2026 SaveOver -->
 <Page
@@ -13,12 +13,32 @@
     <Page.Resources>
         <converters:Int32NumberConverter x:Key="Int32NumberConverter"/>
         <converters:PercentageNumberConverter x:Key="PercentageNumberConverter"/>
+
+        <DataTemplate x:Key="DogSkillTemplate" x:DataType="models:DogSkill">
+            <Grid Margin="0,4" ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                    <TextBlock Text="{x:Bind Name}" TextWrapping="Wrap"/>
+                    <TextBlock Text="{x:Bind TrainingDescription}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Style="{StaticResource CaptionTextBlockStyle}"/>
+                </StackPanel>
+                <ComboBox Grid.Column="1"
+                          Width="160"
+                          SelectedIndex="{x:Bind SelectedStateIndex, Mode=TwoWay}"
+                          AutomationProperties.Name="{x:Bind Name}"
+                          AutomationProperties.AutomationId="{x:Bind AutomationId}">
+                    <ComboBoxItem Content="Not purchased"/>
+                    <ComboBoxItem Content="Purchased"/>
+                    <ComboBoxItem Content="Fully trained"/>
+                </ComboBox>
+            </Grid>
+        </DataTemplate>
     </Page.Resources>
 
-    <!-- Basics and Training sit side by side once this page is 950 wide, stacked below that. The
-         breakpoint is the page's width, not the window's, so the navigation pane opening or
-         closing reflows the cards instead of being invisible to them. The groups hang off the
-         page's root element: on an inner element the triggers still fire but nothing applies. -->
     <Grid x:Name="PageRoot">
         <VisualStateManager.VisualStateGroups>
             <VisualStateGroup>
@@ -37,7 +57,6 @@
                     <VisualState.StateTriggers>
                         <toolkit:ControlSizeTrigger TargetElement="{x:Bind PageRoot}" MinWidth="950"/>
                     </VisualState.StateTriggers>
-                    <!-- Default markup already has Basics | Training side by side. -->
                 </VisualState>
             </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
@@ -47,7 +66,6 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Outside the scroller, so it stays put while the cards move under it. -->
         <TextBlock Margin="36,24,36,0"
                    MaxWidth="{StaticResource PageContentMaxWidth}"
                    Text="Pets"
@@ -55,188 +73,232 @@
                    AutomationProperties.HeadingLevel="Level1"/>
 
         <ScrollView Grid.Row="1">
-        <Grid x:Name="RootGrid"
-              Margin="36,16,36,36"
-              MaxWidth="{StaticResource PageContentMaxWidth}"
-              ColumnSpacing="24"
-              RowSpacing="24">
+            <Grid x:Name="RootGrid"
+                  Margin="36,16,36,36"
+                  MaxWidth="{StaticResource PageContentMaxWidth}"
+                  ColumnSpacing="24"
+                  RowSpacing="24">
 
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-            <ComboBox x:Name="PetComboBox"
-                      Grid.Row="0" Grid.ColumnSpan="2"
-                      Header="Select a pet from the drop-down menu and edit the relevant fields."
-                      PlaceholderText="Select a pet"
-                      SelectionChanged="PetComboBox_SelectionChanged">
-                <!-- A template rather than DisplayMemberPath: that resolves "DisplayName" by
-                     reflection at run time, which the trimmer and AOT cannot follow (WMC1510).
-                     OneWay so renaming a pet updates the entry you picked it from. -->
-                <ComboBox.ItemTemplate>
-                    <DataTemplate x:DataType="models:Pet">
-                        <TextBlock Text="{x:Bind DisplayName, Mode=OneWay}"/>
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
+                <Grid Grid.Row="0" Grid.ColumnSpan="2" ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <ComboBox x:Name="PetComboBox"
+                              Grid.Column="0"
+                              Header="Select a pet"
+                              PlaceholderText="Select a pet"
+                              SelectionChanged="PetComboBox_SelectionChanged"
+                              AutomationProperties.AutomationId="PetSelectorComboBox">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="models:Pet">
+                                <TextBlock Text="{x:Bind DisplayName, Mode=OneWay}"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <DropDownButton x:Name="AddPetButton"
+                                    Grid.Column="1"
+                                    VerticalAlignment="Bottom"
+                                    Content="Add pet"
+                                    AutomationProperties.AutomationId="AddPetButton">
+                        <DropDownButton.Flyout>
+                            <MenuFlyout>
+                                <MenuFlyoutItem Text="Add dog"
+                                                Click="AddDogMenuItem_Click"
+                                                AutomationProperties.AutomationId="AddDogMenuItem"/>
+                                <MenuFlyoutItem Text="Add cat"
+                                                Click="AddCatMenuItem_Click"
+                                                AutomationProperties.AutomationId="AddCatMenuItem"/>
+                            </MenuFlyout>
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+                </Grid>
 
-            <!-- Basics -->
-            <ContentControl x:Name="BasicsCardHost"
-                            Grid.Row="1" Grid.Column="0"
-                            VerticalAlignment="Top"
-                            HorizontalContentAlignment="Stretch">
-            <Border x:Name="BasicsCard" Style="{StaticResource CardBorderStyle}">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="Basics"
-                               Style="{StaticResource SubtitleTextBlockStyle}"
-                               AutomationProperties.HeadingLevel="Level2"/>
-                    <TextBox x:Name="PetNameTextBox"
-                             MaxWidth="250"
-                             MinWidth="180"
-                             HorizontalAlignment="Left"
-                             Header="Name:"
-                             PlaceholderText="Daisy"
-                             MaxLength="15"
-                             LostFocus="TrimTextBox_LostFocus"
-                             Text="{x:Bind SelectedPet.Name, Mode=TwoWay, FallbackValue=''}"/>
-                    <NumberBox x:Name="PetAgeNumberBox"
-                               MaxWidth="250"
-                               MinWidth="180"
-                               HorizontalAlignment="Left"
-                               Header="Age (years):"
-                               Minimum="0"
-                               Maximum="30"
-                               SpinButtonPlacementMode="Inline"
-                               SmallChange="1"
-                               Value="{x:Bind SelectedPet.Age, Mode=TwoWay, FallbackValue=0, Converter={StaticResource Int32NumberConverter}}"/>
-                    <NumberBox x:Name="PetHealthNumberBox"
-                               MaxWidth="250"
-                               MinWidth="180"
-                               HorizontalAlignment="Left"
-                               Header="Health:"
-                               Minimum="1"
-                               Maximum="1000"
-                               SpinButtonPlacementMode="Inline"
-                               SmallChange="10"
-                               Value="{x:Bind SelectedPet.Health, Mode=TwoWay, FallbackValue=1, Converter={StaticResource Int32NumberConverter}}"/>
-                    <NumberBox x:Name="PetHungerNumberBox"
-                               MaxWidth="250"
-                               MinWidth="180"
-                               HorizontalAlignment="Left"
-                               Header="Hunger (0 = full, 100 = starving):"
-                               Minimum="0"
-                               Maximum="100"
-                               SpinButtonPlacementMode="Inline"
-                               SmallChange="5"
-                               Value="{x:Bind SelectedPet.Hunger, Mode=TwoWay, FallbackValue=0, Converter={StaticResource PercentageNumberConverter}}"/>
-                    <CheckBox x:Name="PetStarvingCheckBox" Content="Is starving"
-                              IsChecked="{x:Bind SelectedPet.Starving, Mode=TwoWay, FallbackValue=False}"/>
-                    <CheckBox x:Name="PetPoisonedCheckBox" Content="Is poisoned"
-                              IsChecked="{x:Bind SelectedPet.Poisoned, Mode=TwoWay, FallbackValue=False}"/>
-                    <CheckBox x:Name="PetImmuneCheckBox" Content="Is immune"
-                              IsChecked="{x:Bind SelectedPet.Immune, Mode=TwoWay, FallbackValue=False}"/>
-                </StackPanel>
-            </Border>
-            </ContentControl>
+                <ContentControl x:Name="BasicsCardHost"
+                                Grid.Row="1" Grid.Column="0"
+                                VerticalAlignment="Top"
+                                HorizontalContentAlignment="Stretch">
+                    <Border x:Name="BasicsCard" Style="{StaticResource CardBorderStyle}">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="Basics"
+                                       Style="{StaticResource SubtitleTextBlockStyle}"
+                                       AutomationProperties.HeadingLevel="Level2"/>
+                            <TextBox x:Name="PetNameTextBox"
+                                     MaxWidth="250" MinWidth="180" HorizontalAlignment="Left"
+                                     Header="Name" PlaceholderText="Daisy" MaxLength="15"
+                                     LostFocus="TrimTextBox_LostFocus"
+                                     Text="{x:Bind SelectedPet.Name, Mode=TwoWay, FallbackValue=''}"
+                                     AutomationProperties.AutomationId="PetNameTextBox"/>
+                            <NumberBox x:Name="PetAgeNumberBox"
+                                       MaxWidth="250" MinWidth="180" HorizontalAlignment="Left"
+                                       Header="Age (years)" Minimum="0" Maximum="30"
+                                       SpinButtonPlacementMode="Inline" SmallChange="1"
+                                       Value="{x:Bind SelectedPet.Age, Mode=TwoWay, FallbackValue=0, Converter={StaticResource Int32NumberConverter}}"
+                                       AutomationProperties.AutomationId="PetAgeNumberBox"/>
+                            <NumberBox x:Name="PetHealthNumberBox"
+                                       MaxWidth="250" MinWidth="180" HorizontalAlignment="Left"
+                                       Header="Health" Minimum="1" Maximum="1000"
+                                       SpinButtonPlacementMode="Inline" SmallChange="10"
+                                       Value="{x:Bind SelectedPet.Health, Mode=TwoWay, FallbackValue=1, Converter={StaticResource Int32NumberConverter}}"
+                                       AutomationProperties.AutomationId="PetHealthNumberBox"/>
+                            <NumberBox x:Name="PetHungerNumberBox"
+                                       MaxWidth="250" MinWidth="180" HorizontalAlignment="Left"
+                                       Header="Hunger (0 = full, 100 = starving)" Minimum="0" Maximum="100"
+                                       SpinButtonPlacementMode="Inline" SmallChange="5"
+                                       Value="{x:Bind SelectedPet.Hunger, Mode=TwoWay, FallbackValue=0, Converter={StaticResource PercentageNumberConverter}}"
+                                       AutomationProperties.AutomationId="PetHungerNumberBox"/>
+                            <CheckBox x:Name="PetStarvingCheckBox" Content="Is starving"
+                                      IsChecked="{x:Bind SelectedPet.Starving, Mode=TwoWay, FallbackValue=False}"
+                                      AutomationProperties.AutomationId="PetStarvingCheckBox"/>
+                            <CheckBox x:Name="PetPoisonedCheckBox" Content="Is poisoned"
+                                      IsChecked="{x:Bind SelectedPet.Poisoned, Mode=TwoWay, FallbackValue=False}"
+                                      AutomationProperties.AutomationId="PetPoisonedCheckBox"/>
+                            <CheckBox x:Name="PetImmuneCheckBox" Content="Is immune"
+                                      IsChecked="{x:Bind SelectedPet.Immune, Mode=TwoWay, FallbackValue=False}"
+                                      AutomationProperties.AutomationId="PetImmuneCheckBox"/>
+                        </StackPanel>
+                    </Border>
+                </ContentControl>
 
-            <!-- Training -->
-            <ContentControl x:Name="TrainingCardHost"
-                            Grid.Row="1" Grid.Column="1"
-                            VerticalAlignment="Top"
-                            HorizontalContentAlignment="Stretch">
-            <Border x:Name="TrainingCard" Style="{StaticResource CardBorderStyle}">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="Training"
-                               Style="{StaticResource SubtitleTextBlockStyle}"
-                               AutomationProperties.HeadingLevel="Level2"/>
-                    <TextBlock TextWrapping="Wrap"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               Text="Each training skill has a level, a level cap, and accumulated experience." />
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button x:Name="MaxTrainingButton"
-                                Content="Maximise training"
-                                Click="MaxTrainingButton_Click"/>
-                        <Button x:Name="MinTrainingButton"
-                                Content="Minimise training"
-                                Click="MinTrainingButton_Click"/>
-                    </StackPanel>
-                    <TextBlock x:Name="TrainingFeedbackTextBlock"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               AutomationProperties.LiveSetting="Polite"/>
-                    <Grid RowSpacing="8" ColumnSpacing="16">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
+                <ContentControl x:Name="TrainingCardHost"
+                                Grid.Row="1" Grid.Column="1"
+                                VerticalAlignment="Top"
+                                HorizontalContentAlignment="Stretch">
+                    <Border x:Name="TrainingCard" Style="{StaticResource CardBorderStyle}">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="Training"
+                                       Style="{StaticResource SubtitleTextBlockStyle}"
+                                       AutomationProperties.HeadingLevel="Level2"/>
 
-                        <!-- Column headers -->
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="Level:"
-                                   Style="{StaticResource BodyStrongTextBlockStyle}"/>
-                        <TextBlock Grid.Row="0" Grid.Column="2" Text="Level cap:"
-                                   Style="{StaticResource BodyStrongTextBlockStyle}"/>
-                        <TextBlock Grid.Row="0" Grid.Column="3" Text="Experience:"
-                                   Style="{StaticResource BodyStrongTextBlockStyle}"/>
+                            <StackPanel x:Name="CatTrainingPanel" Spacing="12" Visibility="Collapsed">
+                                <TextBlock TextWrapping="Wrap"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           Text="Cats train three attributes with a level, cap, and accumulated experience."/>
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button x:Name="MaxTrainingButton" Content="Maximise training"
+                                            Click="MaxTrainingButton_Click"
+                                            AutomationProperties.AutomationId="MaxCatTrainingButton"/>
+                                    <Button x:Name="MinTrainingButton" Content="Minimise training"
+                                            Click="MinTrainingButton_Click"
+                                            AutomationProperties.AutomationId="MinCatTrainingButton"/>
+                                </StackPanel>
+                                <Grid RowSpacing="8" ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
 
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Prey drive" VerticalAlignment="Center"/>
-                        <NumberBox x:Name="PreyDriveLevelBox" Grid.Row="1" Grid.Column="1" Width="110"
-                                   Minimum="1" Maximum="10" SpinButtonPlacementMode="Compact" SmallChange="1"
-                                   Value="{x:Bind SelectedPet.PreyDrive.Level, Mode=TwoWay, FallbackValue=1, Converter={StaticResource Int32NumberConverter}}"
-                                   AutomationProperties.Name="Prey drive level"/>
-                        <NumberBox x:Name="PreyDriveCapBox" Grid.Row="1" Grid.Column="2" Width="110"
-                                   Minimum="1" Maximum="10" SpinButtonPlacementMode="Compact" SmallChange="1"
-                                   Value="{x:Bind SelectedPet.PreyDrive.LevelCap, Mode=TwoWay, FallbackValue=1, Converter={StaticResource Int32NumberConverter}}"
-                                   AutomationProperties.Name="Prey drive level cap"/>
-                        <NumberBox x:Name="PreyDriveXpBox" Grid.Row="1" Grid.Column="3" Width="130"
-                                   Minimum="0" Maximum="100000" SpinButtonPlacementMode="Compact" SmallChange="50"
-                                   Value="{x:Bind SelectedPet.PreyDrive.Experience, Mode=TwoWay, FallbackValue=0, Converter={StaticResource Int32NumberConverter}}"
-                                   AutomationProperties.Name="Prey drive experience"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="Level" Style="{StaticResource BodyStrongTextBlockStyle}"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="2" Text="Cap" Style="{StaticResource BodyStrongTextBlockStyle}"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="3" Text="Experience" Style="{StaticResource BodyStrongTextBlockStyle}"/>
 
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Scavenging" VerticalAlignment="Center"/>
-                        <NumberBox x:Name="ScavengingLevelBox" Grid.Row="2" Grid.Column="1" Width="110"
-                                   Minimum="1" Maximum="10" SpinButtonPlacementMode="Compact" SmallChange="1"
-                                   Value="{x:Bind SelectedPet.Scavenging.Level, Mode=TwoWay, FallbackValue=1, Converter={StaticResource Int32NumberConverter}}"
-                                   AutomationProperties.Name="Scavenging level"/>
-                        <NumberBox x:Name="ScavengingCapBox" Grid.Row="2" Grid.Column="2" Width="110"
-                                   Minimum="1" Maximum="10" SpinButtonPlacementMode="Compact" SmallChange="1"
-                                   Value="{x:Bind SelectedPet.Scavenging.LevelCap, Mode=TwoWay, FallbackValue=1, Converter={StaticResource Int32NumberConverter}}"
-                                   AutomationProperties.Name="Scavenging level cap"/>
-                        <NumberBox x:Name="ScavengingXpBox" Grid.Row="2" Grid.Column="3" Width="130"
-                                   Minimum="0" Maximum="100000" SpinButtonPlacementMode="Compact" SmallChange="50"
-                                   Value="{x:Bind SelectedPet.Scavenging.Experience, Mode=TwoWay, FallbackValue=0, Converter={StaticResource Int32NumberConverter}}"
-                                   AutomationProperties.Name="Scavenging experience"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Prey drive" VerticalAlignment="Center"/>
+                                    <NumberBox x:Name="PreyDriveLevelBox" Grid.Row="1" Grid.Column="1" Width="100" Minimum="1" Maximum="10" SpinButtonPlacementMode="Compact"
+                                               Value="{x:Bind SelectedPet.PreyDrive.Level, Mode=TwoWay, FallbackValue=1, Converter={StaticResource Int32NumberConverter}}"
+                                               AutomationProperties.Name="Prey drive level" AutomationProperties.AutomationId="PreyDriveLevelBox"/>
+                                    <NumberBox x:Name="PreyDriveCapBox" Grid.Row="1" Grid.Column="2" Width="100" Minimum="1" Maximum="10" SpinButtonPlacementMode="Compact"
+                                               Value="{x:Bind SelectedPet.PreyDrive.LevelCap, Mode=TwoWay, FallbackValue=1, Converter={StaticResource Int32NumberConverter}}"
+                                               AutomationProperties.Name="Prey drive level cap" AutomationProperties.AutomationId="PreyDriveCapBox"/>
+                                    <NumberBox x:Name="PreyDriveXpBox" Grid.Row="1" Grid.Column="3" Width="120" Minimum="0" Maximum="100000" SpinButtonPlacementMode="Compact" SmallChange="50"
+                                               Value="{x:Bind SelectedPet.PreyDrive.Experience, Mode=TwoWay, FallbackValue=0, Converter={StaticResource Int32NumberConverter}}"
+                                               AutomationProperties.Name="Prey drive experience" AutomationProperties.AutomationId="PreyDriveExperienceBox"/>
 
-                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Affection" VerticalAlignment="Center"/>
-                        <NumberBox x:Name="AffectionLevelBox" Grid.Row="3" Grid.Column="1" Width="110"
-                                   Minimum="1" Maximum="10" SpinButtonPlacementMode="Compact" SmallChange="1"
-                                   Value="{x:Bind SelectedPet.Affection.Level, Mode=TwoWay, FallbackValue=1, Converter={StaticResource Int32NumberConverter}}"
-                                   AutomationProperties.Name="Affection level"/>
-                        <NumberBox x:Name="AffectionCapBox" Grid.Row="3" Grid.Column="2" Width="110"
-                                   Minimum="1" Maximum="10" SpinButtonPlacementMode="Compact" SmallChange="1"
-                                   Value="{x:Bind SelectedPet.Affection.LevelCap, Mode=TwoWay, FallbackValue=1, Converter={StaticResource Int32NumberConverter}}"
-                                   AutomationProperties.Name="Affection level cap"/>
-                        <NumberBox x:Name="AffectionXpBox" Grid.Row="3" Grid.Column="3" Width="130"
-                                   Minimum="0" Maximum="100000" SpinButtonPlacementMode="Compact" SmallChange="50"
-                                   Value="{x:Bind SelectedPet.Affection.Experience, Mode=TwoWay, FallbackValue=0, Converter={StaticResource Int32NumberConverter}}"
-                                   AutomationProperties.Name="Affection experience"/>
-                    </Grid>
-                </StackPanel>
-            </Border>
-            </ContentControl>
-        </Grid>
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Scavenging" VerticalAlignment="Center"/>
+                                    <NumberBox x:Name="ScavengingLevelBox" Grid.Row="2" Grid.Column="1" Width="100" Minimum="1" Maximum="10" SpinButtonPlacementMode="Compact"
+                                               Value="{x:Bind SelectedPet.Scavenging.Level, Mode=TwoWay, FallbackValue=1, Converter={StaticResource Int32NumberConverter}}"
+                                               AutomationProperties.Name="Scavenging level" AutomationProperties.AutomationId="ScavengingLevelBox"/>
+                                    <NumberBox x:Name="ScavengingCapBox" Grid.Row="2" Grid.Column="2" Width="100" Minimum="1" Maximum="10" SpinButtonPlacementMode="Compact"
+                                               Value="{x:Bind SelectedPet.Scavenging.LevelCap, Mode=TwoWay, FallbackValue=1, Converter={StaticResource Int32NumberConverter}}"
+                                               AutomationProperties.Name="Scavenging level cap" AutomationProperties.AutomationId="ScavengingCapBox"/>
+                                    <NumberBox x:Name="ScavengingXpBox" Grid.Row="2" Grid.Column="3" Width="120" Minimum="0" Maximum="100000" SpinButtonPlacementMode="Compact" SmallChange="50"
+                                               Value="{x:Bind SelectedPet.Scavenging.Experience, Mode=TwoWay, FallbackValue=0, Converter={StaticResource Int32NumberConverter}}"
+                                               AutomationProperties.Name="Scavenging experience" AutomationProperties.AutomationId="ScavengingExperienceBox"/>
+
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Affection" VerticalAlignment="Center"/>
+                                    <NumberBox x:Name="AffectionLevelBox" Grid.Row="3" Grid.Column="1" Width="100" Minimum="1" Maximum="10" SpinButtonPlacementMode="Compact"
+                                               Value="{x:Bind SelectedPet.Affection.Level, Mode=TwoWay, FallbackValue=1, Converter={StaticResource Int32NumberConverter}}"
+                                               AutomationProperties.Name="Affection level" AutomationProperties.AutomationId="AffectionLevelBox"/>
+                                    <NumberBox x:Name="AffectionCapBox" Grid.Row="3" Grid.Column="2" Width="100" Minimum="1" Maximum="10" SpinButtonPlacementMode="Compact"
+                                               Value="{x:Bind SelectedPet.Affection.LevelCap, Mode=TwoWay, FallbackValue=1, Converter={StaticResource Int32NumberConverter}}"
+                                               AutomationProperties.Name="Affection level cap" AutomationProperties.AutomationId="AffectionCapBox"/>
+                                    <NumberBox x:Name="AffectionXpBox" Grid.Row="3" Grid.Column="3" Width="120" Minimum="0" Maximum="100000" SpinButtonPlacementMode="Compact" SmallChange="50"
+                                               Value="{x:Bind SelectedPet.Affection.Experience, Mode=TwoWay, FallbackValue=0, Converter={StaticResource Int32NumberConverter}}"
+                                               AutomationProperties.Name="Affection experience" AutomationProperties.AutomationId="AffectionExperienceBox"/>
+                                </Grid>
+                            </StackPanel>
+
+                            <StackPanel x:Name="DogTrainingPanel" Spacing="16" Visibility="Collapsed">
+                                <TextBlock TextWrapping="Wrap"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           Text="Dogs purchase and train shelter, utility, and combat skills. Partially trained save values remain unchanged until you choose a new state."/>
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button Content="Train all skills" Click="TrainAllDogSkillsButton_Click"
+                                            AutomationProperties.AutomationId="TrainAllDogSkillsButton"/>
+                                    <Button Content="Remove all skills" Click="RemoveAllDogSkillsButton_Click"
+                                            AutomationProperties.AutomationId="RemoveAllDogSkillsButton"/>
+                                </StackPanel>
+
+                                <StackPanel Spacing="8">
+                                    <Grid ColumnSpacing="12">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="140"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Shelter skills" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center"/>
+                                        <NumberBox Grid.Column="1" Header="Available points" Minimum="0" Maximum="99" SpinButtonPlacementMode="Compact"
+                                                   Value="{x:Bind SelectedPet.ShelterSkillPoints, Mode=TwoWay, FallbackValue=0, Converter={StaticResource Int32NumberConverter}}"
+                                                   AutomationProperties.AutomationId="ShelterSkillPointsBox"/>
+                                    </Grid>
+                                    <ItemsRepeater ItemsSource="{x:Bind SelectedPet.ShelterSkills, Mode=OneWay}" ItemTemplate="{StaticResource DogSkillTemplate}"/>
+                                </StackPanel>
+
+                                <Rectangle Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}"/>
+                                <StackPanel Spacing="8">
+                                    <Grid ColumnSpacing="12">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="140"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Utility skills" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center"/>
+                                        <NumberBox Grid.Column="1" Header="Available points" Minimum="0" Maximum="99" SpinButtonPlacementMode="Compact"
+                                                   Value="{x:Bind SelectedPet.UtilitySkillPoints, Mode=TwoWay, FallbackValue=0, Converter={StaticResource Int32NumberConverter}}"
+                                                   AutomationProperties.AutomationId="UtilitySkillPointsBox"/>
+                                    </Grid>
+                                    <ItemsRepeater ItemsSource="{x:Bind SelectedPet.UtilitySkills, Mode=OneWay}" ItemTemplate="{StaticResource DogSkillTemplate}"/>
+                                </StackPanel>
+
+                                <Rectangle Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}"/>
+                                <StackPanel Spacing="8">
+                                    <Grid ColumnSpacing="12">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="140"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Combat skills" Style="{StaticResource BodyStrongTextBlockStyle}" VerticalAlignment="Center"/>
+                                        <NumberBox Grid.Column="1" Header="Available points" Minimum="0" Maximum="99" SpinButtonPlacementMode="Compact"
+                                                   Value="{x:Bind SelectedPet.CombatSkillPoints, Mode=TwoWay, FallbackValue=0, Converter={StaticResource Int32NumberConverter}}"
+                                                   AutomationProperties.AutomationId="CombatSkillPointsBox"/>
+                                    </Grid>
+                                    <ItemsRepeater ItemsSource="{x:Bind SelectedPet.CombatSkills, Mode=OneWay}" ItemTemplate="{StaticResource DogSkillTemplate}"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <TextBlock x:Name="TrainingFeedbackTextBlock"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       AutomationProperties.LiveSetting="Polite"/>
+                        </StackPanel>
+                    </Border>
+                </ContentControl>
+            </Grid>
         </ScrollView>
     </Grid>
 </Page>
