@@ -6,6 +6,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-01
+
+### Added
+
+- Support for adding new cats and dogs to a save, with unique IDs and species-appropriate defaults.
+- Dog-specific skill editing for shelter, utility, and combat skills, including available skill points and bulk training controls.
+- Support for adding and removing item stacks from shelter storage and overflow inventories.
+- Category filtering and catalog search for finding existing inventory stacks and adding new items.
+- A **Set all to 3 stars** action for updating the quality of every inventory stack.
+- A comprehensive item catalog with friendly names, categories, and locally packaged artwork.
+- Privacy-filtered rolling application logs and an **Open logs folder** button under **Settings → Diagnostics**.
+
+### Changed
+
+- The Pets editor now identifies cats and dogs and displays species-appropriate training controls.
+- Partially trained dog skills remain unchanged unless a new training state is selected.
+- The Inventory editor now uses clearer item cards, star-based quality controls, improved container summaries, and confirmation before deleting stacks.
+- Character, pet, inventory, and supporting pages now use content-based responsive layouts with improved accessibility metadata.
+- Save parsing and writing now run away from the UI thread, while navigation is temporarily disabled during active load and save operations.
+- Diagnostic logging now captures application, navigation, file-operation, and unhandled-error information without recording decrypted save contents or local file paths.
+- Release automation now creates a reviewable draft with a structured changelog template and appends VirusTotal results without publishing the release automatically.
+- Updated the README with application branding, status badges, current feature details, and diagnostic-log guidance.
+- Updated the application version to `0.2.0`.
+
+### Fixed
+
+- Fixed inventory quality values being interpreted as one-based instead of the game’s zero-based format; the editor’s one-to-three-star display now writes the correct save values.
+- Fixed item-specific quality restrictions, including Petrol Cans being allowed to use unsupported quality levels.
+- Fixed known inventory items being shown as unmapped when their definition-key casing differed.
+- Fixed dog training changes not being written to the dog-specific skill data in the save.
+- Fixed malformed decrypted content with an unexpected root element being presented as an empty editable save instead of being rejected.
+- Fixed responsive layouts selecting unsuitable arrangements when the navigation pane reduced the available content width.
+- Prevented the application window from being resized below the minimum usable size for the navigation and editor controls.
+
 ## [0.1.2] - 2026-07-30
 
 ### Added
@@ -161,6 +195,7 @@ Initial public release of SaveOver for Sheltered 2.
 - Fixed portable release artifacts containing unnecessary loose files.
 
 [Unreleased]: https://github.com/saveover/Sheltered2/compare/v0.1.2...HEAD
+[0.2.0]: https://github.com/saveover/Sheltered2/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/saveover/Sheltered2/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/saveover/Sheltered2/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/saveover/Sheltered2/releases/tag/v0.1.0
