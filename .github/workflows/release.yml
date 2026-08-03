@@ -317,7 +317,8 @@ jobs:
               if ($parts.Count -ne 2) {
                 throw "Unexpected VirusTotal analysis output: '$_'"
               }
-              "- [$($parts[0])]($($parts[1]))"
+              $fileName = [IO.Path]::GetFileName($parts[0])
+              "- [$fileName]($($parts[1]))"
             })
           ) | Add-Content release-notes.md -Encoding utf8
 
