@@ -57,14 +57,14 @@ Sheltered 2 normally stores saves in:
 ```
 
 Before modifying a save, SaveOver creates a timestamped backup in its own local application-data
-folder. Keeping backups outside Sheltered 2's directory prevents Steam Cloud from treating them as
+folder. Keeping backups outside the game directory prevents Steam Cloud from treating them as
 game saves. The Settings page lets you choose, open or reset the backup folder and select how many
 backups to retain per save file. The app also confirms before overwriting a save unless you turn
 that confirmation off in the dialog or Settings.
 
 SaveOver writes small rolling diagnostic logs. If something goes wrong, open
 **Settings > Diagnostics > Application logs** and attach the newest `.log` file to the bug report.
-Logs include application and error details, but never decrypted save contents or local file paths.
+Logs include application and error details but never save contents or local file paths.
 
 ## Installation
 
@@ -85,7 +85,7 @@ MSIX packages are produced for Microsoft Store submission. These are currently u
 
 - Windows 10 version 1809 (build 17763) or later, or Windows 11.
 - An x86, x64, or ARM64 processor matching the downloaded release.
-- A Sheltered 2 save file.
+- A game save file.
 
 ## Documentation and support
 
